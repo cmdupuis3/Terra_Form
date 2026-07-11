@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terraform · WBS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0c1820; --ink2:#0f1f29; --panel:#142732; --panel2:#10222c;
+    --line:#22414f; --line2:#1a323d;
+    --paper:#e9e3d3; --muted:#8ba3ad; --dim:#5f7c88;
+    --accent:#45c1d0; --warn:#e0913f;
+    --t-ocean:#123a51; --t-coast:#2f6d8c; --t-grass:#5c8a4a; --t-plains:#a7a44e;
+    --t-desert:#cbb56f; --t-tundra:#808a72; --t-snow:#e9ece0;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--ink); color:var(--paper); font-family:var(--disp); font-size:14px; line-height:1.4; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column; height:100vh; overflow:hidden;}
+  header{display:flex; align-items:baseline; gap:16px; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--ink2); flex:0 0 auto;}
+  .brand{font-weight:700; letter-spacing:.14em; font-size:15px}
+  .brand span{color:var(--accent)}
+  .tagline{color:var(--muted); font-size:12.5px}
+  .pill{margin-left:auto; font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--warn); border:1px solid var(--warn); border-radius:2px; padding:3px 9px; opacity:.9;}
+  main{display:flex; flex:1 1 auto; min-height:0}
+  .stage{flex:1 1 auto; display:flex; flex-direction:column; min-width:0; padding:16px 18px; gap:12px}
+  .rail{flex:0 0 330px; border-left:1px solid var(--line); background:var(--panel2); overflow-y:auto}
+  .tabs{display:flex; gap:2px; flex:0 0 auto; flex-wrap:wrap}
+  .tab{font-family:var(--mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); background:var(--panel2); border:1px solid var(--line2); padding:7px 11px; cursor:pointer; border-radius:2px; transition:color .12s,border-color .12s;}
+  .tab:hover{color:var(--paper)}
+  .tab[aria-pressed="true"]{color:var(--ink); background:var(--accent); border-color:var(--accent); font-weight:600}
+  .tab:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .tabind{margin-left:auto; align-self:center; font-family:var(--mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); background:var(--panel2); border:1px solid var(--line2); padding:7px 11px; border-radius:2px; cursor:default; user-select:none}
+  .tabind.vec{color:var(--accent); border-color:var(--accent)}
+  /* viewer-wrap centers a fixed-aspect map-box and provides the letterbox padding around it */
+  .viewer-wrap{flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; background:var(--ink2); border-radius:3px; overflow:hidden;}
+  .map-box{position:relative; overflow:hidden; border:1px solid var(--line); border-radius:3px; background:#0a151c;}
+  .map-box canvas{display:block; width:100%; height:100%; cursor:grab}
+  .map-box.dragging canvas{cursor:grabbing}
+  .readout{position:absolute; top:8px; left:8px; font-family:var(--mono); font-size:10.5px; color:var(--paper); background:rgba(8,18,24,.72); border:1px solid var(--line2); border-radius:2px; padding:5px 8px; pointer-events:none; backdrop-filter:blur(2px); z-index:2;}
+  .readout b{color:var(--accent); font-weight:600}
+  .axis-lat,.axis-lon{position:absolute; z-index:2; pointer-events:none}
+  .axis-lat{left:0; top:0; bottom:0}
+  .axis-lon{left:0; right:0; bottom:0}
+  .axis-tick{position:absolute; font-family:var(--mono); font-size:9.5px; color:#d3e4ea; text-shadow:0 0 3px rgba(6,14,20,.95),0 0 3px rgba(6,14,20,.95);}
+  .axis-lat .axis-tick{left:5px; transform:translateY(-50%)}
+  .axis-lon .axis-tick{bottom:4px; transform:translateX(-50%)}
+  .vtools{display:flex; align-items:center; gap:8px; flex:0 0 auto; flex-wrap:wrap}
+  .vtools .grp{display:flex; gap:2px}
+  .vbtn{font-family:var(--mono); font-size:12px; color:var(--muted); background:var(--panel); border:1px solid var(--line2); border-radius:2px; padding:5px 10px; cursor:pointer}
+  .vbtn:hover{color:var(--paper); border-color:var(--line)}
+  .vbtn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+  .toggle{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:var(--muted); cursor:pointer; user-select:none}
+  .toggle input{accent-color:var(--accent)}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; flex:0 0 auto; padding-top:2px; min-height:16px}
+  .lg{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10.5px; color:var(--muted)}
+  .sw{width:13px; height:13px; border-radius:2px; border:1px solid rgba(0,0,0,.35)}
+  .ramp{width:120px; height:11px; border-radius:2px; border:1px solid rgba(0,0,0,.35)}
+  .panel{border-bottom:1px solid var(--line2); padding:16px 18px}
+  .panel h2{margin:0 0 3px; font-family:var(--mono); font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--accent); font-weight:600}
+  .panel .sub{margin:0 0 13px; font-size:11.5px; color:var(--dim)}
+  .eyebrow-n{color:var(--dim)}
+  .ctl{margin:11px 0}
+  .ctl .row{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px}
+  .ctl label{font-size:12.5px; color:var(--paper)}
+  .ctl .val{font-family:var(--mono); font-size:11.5px; color:var(--accent)}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:3px; border-radius:2px; background:var(--line); outline:none; margin:0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:14px; height:14px; border-radius:50%; background:var(--accent); border:2px solid var(--ink2); cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:14px; height:14px; border-radius:50%; background:var(--accent); border:2px solid var(--ink2); cursor:pointer}
+  input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:4px}
+  /* multi-knob slider (coupled thumbs; segments coloured by what each band maps to) */
+  .mslider{position:relative; width:100%; height:16px; margin:2px 0 0; touch-action:none; user-select:none}
+  .mslider-track{position:absolute; top:50%; left:0; right:0; height:3px; transform:translateY(-50%); border-radius:2px; background:var(--line); overflow:hidden}
+  .mslider-seg{position:absolute; top:0; bottom:0}
+  .mslider-thumb{position:absolute; top:50%; width:14px; height:14px; border-radius:50%; background:var(--accent); border:2px solid var(--ink2); transform:translate(-50%,-50%); cursor:grab; box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+  .mslider-thumb:active{cursor:grabbing}
+  .mslider-thumb:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+  .valx{font-family:var(--mono); font-size:11px; color:var(--muted)}
+  .valx b{color:var(--accent); font-weight:500}
+  .seg{display:flex; gap:2px; margin-top:6px}
+  .seg button{flex:1; font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); background:var(--panel); border:1px solid var(--line2); border-radius:2px; padding:6px 4px; cursor:pointer}
+  .seg button:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+  .grid2{display:flex; gap:10px; align-items:flex-end}
+  .grid2 .ctl{flex:1; margin:0}
+  .numin{width:100%; font-family:var(--mono); font-size:13px; color:var(--paper); background:var(--ink); border:1px solid var(--line); border-radius:2px; padding:6px 8px}
+  .numin:focus{outline:none; border-color:var(--accent)}
+  .lockbtn{flex:0 0 auto; width:38px; height:33px; display:flex; align-items:center; justify-content:center; background:var(--panel); border:1px solid var(--line2); border-radius:2px; cursor:pointer; color:var(--muted); font-size:15px;}
+  .lockbtn[aria-pressed="true"]{color:var(--ink); background:var(--accent); border-color:var(--accent)}
+  .lockbtn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+  .stat{display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--muted); padding:2px 0}
+  .stat b{color:var(--paper); font-weight:500}
+  .note{font-family:var(--mono); font-size:10.5px; color:var(--dim); line-height:1.5; margin-top:8px}
+  .gen{padding:16px 18px 22px}
+  .genbtn{width:100%; font-family:var(--disp); font-weight:700; font-size:14px; letter-spacing:.04em; color:var(--ink); background:var(--warn); border:none; border-radius:3px; padding:12px; cursor:pointer; transition:filter .12s}
+  .genbtn:hover{filter:brightness(1.08)}
+  .genbtn:focus-visible{outline:2px solid var(--paper); outline-offset:2px}
+  .valid{margin-top:12px; border:1px solid var(--line2); border-radius:3px; padding:11px 12px; background:var(--ink)}
+  .valid .vt{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:7px}
+  .vline{display:flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11px; margin:3px 0}
+  .vok{color:var(--accent)} .vwarn{color:var(--warn)}
+  .dot{width:6px; height:6px; border-radius:50%; flex:0 0 auto}
+  .dot.ok{background:var(--accent)} .dot.warn{background:var(--warn)}
+  @media (max-width:820px){ main{flex-direction:column} .rail{flex-basis:auto; border-left:none; border-top:1px solid var(--line)} .stage{height:60vh} }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">TERRA<span>·</span>WBS</div>
+  <div class="tagline">real-world raster &rarr; Civilization&nbsp;IV worldbuilder save</div>
+  <div class="pill" title="Elevation (NASA-derived), coastline + lakes (Natural Earth 10m), Köppen climate (Beck et al. 2023), and satellite colour (NASA Blue Marble Next Generation, Aug 2004) are all real data.">REAL ELEVATION · COAST · KÖPPEN · SATELLITE</div>
+</header>
+
+<main>
+  <section class="stage">
+    <div class="tabs" role="group" aria-label="View mode">
+      <button class="tab" data-mode="color"     aria-pressed="true">Satellite color</button>
+      <button class="tab" data-mode="elevation" aria-pressed="false">Elevation</button>
+      <button class="tab" data-mode="roughness" aria-pressed="false">Roughness</button>
+      <button class="tab" data-mode="climate"   aria-pressed="false">Köppen climate</button>
+      <button class="tab" data-mode="civ"       aria-pressed="false">Civ preview</button>
+      <span class="tabind" id="viewSource" title="Coastline & Köppen render source at this zoom">Raster</span>
+    </div>
+
+    <div class="viewer-wrap">
+      <div class="map-box" id="mapBox">
+        <canvas id="view"></canvas>
+        <div class="readout" id="readout"></div>
+        <div class="axis-lat" id="latAxis"></div>
+        <div class="axis-lon" id="lonAxis"></div>
+      </div>
+    </div>
+
+    <div class="vtools">
+      <div class="grp">
+        <button class="vbtn" id="zin" title="Zoom in">&plus;</button>
+        <button class="vbtn" id="zout" title="Zoom out">&minus;</button>
+        <button class="vbtn" id="zreset" title="Reset view">reset</button>
+      </div>
+      <button class="vbtn" id="regen" title="Reseed the procedural intra-zone colour texture (real height, coastline, lakes &amp; Köppen unchanged)">⟳ reseed texture</button>
+      <label class="toggle"><input type="checkbox" id="tgGrid"> tile grid</label>
+      <label class="toggle"><input type="checkbox" id="tgGrat" checked> graticule</label>
+      <span class="toggle" style="color:var(--dim)" id="arNote"></span>
+    </div>
+
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <aside class="rail">
+    <div class="panel">
+      <h2>Coast &amp; Seas <span class="eyebrow-n">· real data</span></h2>
+      <p class="sub">Land/water from the Natural Earth coastline. Crisp windowed vector inside the cutoff; coarse baked coast outside it.</p>
+      <div class="ctl"><div class="row"><label>Island bias <span class="eyebrow-n">↑ more islands</span></label><span class="val" id="vIsland"></span></div><input type="range" id="islandBias" min="0" max="1" step="0.02" value="0"></div>
+      <div class="ctl"><div class="row"><label>Seaway bias <span class="eyebrow-n">↑ open channels</span></label><span class="val" id="vSeaway"></span></div><input type="range" id="seawayBias" min="0" max="1" step="0.02" value="0"></div>
+      <div class="ctl"><div class="row"><label>Small-island expander <span class="eyebrow-n">↑ enlarge tiny isles</span></label><span class="val" id="vExpand"></span></div><input type="range" id="islandExpand" min="0" max="1" step="0.02" value="0"></div>
+      <div class="ctl"><div class="row"><label for="expandSteep">Expander steepness <span class="eyebrow-n">1 = linear ramp</span></label></div><input class="numin" id="expandSteep" type="number" min="0.2" max="8" step="0.1" value="1.0"></div>
+      <div class="ctl"><div class="row"><label for="expandMaxMult">Expander max × <span class="eyebrow-n">largest scaled isle</span></label></div><input class="numin" id="expandMaxMult" type="number" min="1" max="5" step="0.1" value="1.5"></div>
+    </div>
+    <div class="panel">
+      <h2>Output grid</h2>
+      <p class="sub">The framed region becomes this many tiles — the viewer matches this shape. Scroll a box to nudge; lock to keep the ratio.</p>
+      <div class="grid2">
+        <div class="ctl"><div class="row"><label for="ow">Width</label></div><input class="numin" id="ow" type="number" min="8" max="160" value="52"></div>
+        <div class="ctl"><div class="row"><label for="oh">Height</label></div><input class="numin" id="oh" type="number" min="8" max="120" value="32"></div>
+        <button class="lockbtn" id="lockAR" aria-pressed="false" title="Lock aspect ratio">&#128275;</button>
+      </div>
+      <div class="stat" style="margin-top:10px"><span>world size</span><b id="stWorld">—</b></div>
+      <div class="stat"><span>tiles</span><b id="stTiles">—</b></div>
+      <div class="stat"><span>source px / tile edge</span><b id="stPerTile">—</b></div>
+      <div class="note" id="perTileNote"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Elevation</h2>
+      <p class="sub">Relief sets flat / hills / peak. Land/water comes from the coastline, not a sea-level cut.</p>
+      <div class="ctl"><div class="row"><label>Roughness smoothing halo <span class="eyebrow-n">feeds relief</span></label><span class="val" id="vRough"></span></div><input type="range" id="roughHalo" min="0" max="1" step="0.01" value="0"></div>
+      <div class="ctl">
+        <div class="row"><label>Relief basis <span class="eyebrow-n">hills &middot; peak · H↔R</span></label><span class="valx" id="vBlend"></span></div>
+        <div id="reliefBasisRange"></div>
+        <div class="seg" role="group" aria-label="Relief basis preset">
+          <button type="button" data-blend="0">raw height</button>
+          <button type="button" data-blend="1">roughness</button>
+        </div>
+      </div>
+      <div class="ctl"><div class="row"><label>Relief thresholds &mdash; hills &middot; peak</label><span class="valx" id="vRelief"></span></div><div id="reliefRange"></div></div>
+      <div class="stat"><span>land</span><b id="stLand">—</b></div>
+      <div class="stat"><span>hills / peaks</span><b id="stRelief">—</b></div>
+    </div>
+
+    <div class="panel">
+      <h2>Base Terrain</h2>
+      <p class="sub">Moisture picks grass / plains / desert (steppe on brightness, iron-red arid soil on hue); bright white is read as salt or snow by the surrounding non-white climate (arid&rarr;salt, cold&rarr;snow). Temperature (Köppen zone, altitude, colour) plus a boreal cold tilt (latitude + tundra/taiga colour) and an alpine snow-cover tilt swap in tundra / snow.</p>
+      <div class="ctl"><div class="row"><label>Dryness &mdash; grass &middot; plains &middot; desert</label><span class="valx" id="vDry"></span></div><div id="drynessRange"></div></div>
+      <div class="ctl"><div class="row"><label>Boreal cold tilt &mdash; tundra &middot; ice <span class="eyebrow-n">temperature thresholds: below &rarr; tundra, further below &rarr; ice</span></label><span class="valx" id="vTemp"></span></div><div id="tempRange"></div></div>
+      <div class="ctl"><div class="row"><label>Latitude ramp &mdash; tundra &middot; ice <span class="eyebrow-n">tundra cold onset &middot; ice onset (latitude)</span></label><span class="valx" id="vBoreal"></span></div><div id="borealRange"></div></div>
+      <div class="ctl"><div class="row"><label>Alpine cold <span class="eyebrow-n">satellite snow cover</span></label><span class="val" id="vAlpine"></span></div><input type="range" id="alpine" min="0" max="1" step="0.05" value="0.6"></div>
+      <div class="ctl"><div class="row"><label>Climate prior weight <span class="eyebrow-n">Köppen</span></label><span class="val" id="vClim"></span></div><input type="range" id="clim" min="0" max="1" step="0.02" value="0.45"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Features <span class="eyebrow-n">· placeholder</span></h2>
+      <p class="sub">Provisional forest/jungle overlay. Real placement (rainfall / potential vegetation) is a later stage.</p>
+      <label class="toggle" style="font-size:12.5px;color:var(--paper)"><input type="checkbox" id="feat"> emit forest &amp; jungle features</label>
+    </div>
+
+    <div class="panel">
+      <h2>Rivers <span class="eyebrow-n">· HydroRIVERS</span></h2>
+      <p class="sub">Top channels by discharge intersecting the current view — each main stem, tributary, and distributary ranks on its own. What you see is what gets written to the save.</p>
+      <div class="ctl"><div class="row"><label>Show top-N rivers <span class="eyebrow-n">by discharge</span></label><span class="val" id="vRiverN"></span></div><input type="range" id="riverN" min="0" max="40" step="1" value="12"></div>
+    </div>
+
+    <div class="panel">
+      <h2>General Options</h2>
+      <p class="sub">Window width (degrees) at which the coastline &amp; Köppen switch from coarse raster to crisp windowed vector.</p>
+      <div class="ctl"><div class="row"><label>Vector cutoff (window width)</label><span class="val" id="vCoast"></span></div><input type="range" id="coastThr" min="4" max="120" step="1" value="30"></div>
+      <div class="ctl"><div class="row"><label>X nudge <span class="eyebrow-n">shift sampling · tiles</span></label><span class="val" id="vNudgeX"></span></div><input type="range" id="nudgeX" min="-1" max="1" step="0.05" value="0"></div>
+      <div class="ctl"><div class="row"><label>Y nudge <span class="eyebrow-n">shift sampling · tiles</span></label><span class="val" id="vNudgeY"></span></div><input type="range" id="nudgeY" min="-1" max="1" step="0.05" value="0"></div>
+    </div>
+
+    <div class="gen">
+      <div class="ctl" style="margin-top:0">
+        <div class="row"><label for="np">Playable civs (auto-placed on land)</label></div>
+        <input class="numin" id="np" type="number" min="0" max="12" value="4">
+      </div>
+      <button class="genbtn" id="generate">Generate &amp; download .CivBeyondSwordWBSave</button>
+      <div class="valid">
+        <div class="vt">Validation</div>
+        <div id="validBody"><div class="vline" style="color:var(--dim)"><span>Run generate to validate the output.</span></div></div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+/* ============================================================
+   TERRA·WBS — interface prototype (procedural stand-in world)
+   ============================================================ */
+const PLOT={PEAK:0,HILLS:1,FLAT:2,WATER:3};
+const TERR={OCEAN:'TERRAIN_OCEAN',COAST:'TERRAIN_COAST',GRASS:'TERRAIN_GRASS',PLAINS:'TERRAIN_PLAINS',DESERT:'TERRAIN_DESERT',TUNDRA:'TERRAIN_TUNDRA',SNOW:'TERRAIN_SNOW'};
+const TCOLOR={[TERR.OCEAN]:[18,58,81],[TERR.COAST]:[47,109,140],[TERR.GRASS]:[92,138,74],[TERR.PLAINS]:[167,164,78],[TERR.DESERT]:[203,181,111],[TERR.TUNDRA]:[128,138,114],[TERR.SNOW]:[233,236,224]};
+const LEADERS=[['LEADER_BRENNUS','CIVILIZATION_CELT'],['LEADER_HUAYNA_CAPAC','CIVILIZATION_INCA'],['LEADER_TOKUGAWA','CIVILIZATION_JAPAN'],['LEADER_GILGAMESH','CIVILIZATION_SUMERIA'],['LEADER_ZARA_YAQOB','CIVILIZATION_ETHIOPIA'],['LEADER_SURYAVARMAN','CIVILIZATION_KHMER'],['LEADER_MANSA_MUSA','CIVILIZATION_MALI'],['LEADER_ASOKA','CIVILIZATION_INDIA'],['LEADER_PERICLES','CIVILIZATION_GREECE'],['LEADER_RAMESSES','CIVILIZATION_EGYPT'],['LEADER_PACAL','CIVILIZATION_MAYA'],['LEADER_QIN_SHI_HUANG','CIVILIZATION_CHINA']];
+
+/* Köppen colours — Beck et al. 2023 (Sci. Data 5:180214) legend RGB. Full 30-class table for when a real raster is wired in. */
+const BECK2018={Af:[0,0,255],Am:[0,120,255],Aw:[70,170,250],BWh:[255,0,0],BWk:[255,150,150],BSh:[245,165,0],BSk:[255,220,100],Csa:[255,255,0],Csb:[200,200,0],Csc:[150,150,0],Cwa:[150,255,150],Cwb:[100,200,100],Cwc:[50,150,50],Cfa:[200,255,80],Cfb:[100,255,80],Cfc:[50,200,0],Dsa:[255,0,255],Dsb:[200,0,200],Dsc:[150,50,150],Dsd:[150,100,150],Dwa:[170,175,255],Dwb:[90,120,220],Dwc:[75,80,180],Dwd:[50,0,135],Dfa:[0,255,255],Dfb:[55,200,255],Dfc:[0,125,125],Dfd:[0,70,95],ET:[178,178,178],EF:[102,102,102]};
+/* real Köppen (Rubel–Kottek 1976–2000) — class index per pixel, 0 = none. */
+const KOPPEN_KEYS=[null,'Af','Am','Aw','BWh','BWk','BSh','BSk','Csa','Csb','Csc','Cwa','Cwb','Cwc','Cfa','Cfb','Cfc','Dsa','Dsb','Dsc','Dsd','Dwa','Dwb','Dwc','Dwd','Dfa','Dfb','Dfc','Dfd','ET','EF'];   // Beck et al. 2023, 30 classes (index 1-30 per legend.txt)
+const KOPPEN_PALETTE=KOPPEN_KEYS.map(k=>k?(BECK2018[k]||BECK2018.Aw):[255,255,255]);
+/* map a Köppen class index to the 6 terrain-prior groups: 0=EF,1=ET,2=arid,3=tropical,4=temperate,5=continental */
+function classGroup(idx){const c=KOPPEN_KEYS[idx];if(!c)return 5;const a=c[0];return a==='A'?3:a==='B'?2:a==='C'?4:a==='D'?5:(c==='EF'?0:1);}
+const ZONE_COLOR=[BECK2018.EF,BECK2018.ET,BECK2018.BWh,BECK2018.Af,BECK2018.Cfb,BECK2018.Dfb];   // 6-group colours for the satellite biome synth
+/* ---- External raster data. Both are equirectangular (2:1); any resolution works, they are
+   nearest-neighbour resampled to the 4096x2048 working grid. Put the files in data/. ----
+   KOPPEN_SRC: 8-bit GRAYSCALE PNG whose pixel value IS the Koppen class index into KOPPEN_KEYS
+               below -- 0 = ocean/none, 1..30 = classes, 30 = EF. A colour/paletted PNG will NOT
+               work (the loader reads the raw index from the red channel). Rasterize your TIFF the
+               way scripts/koppen_to_zones.py does, but make the class order match KOPPEN_KEYS
+               EXACTLY: that script currently lists 31 classes (incl 'As', 1-based to 31), whereas
+               KOPPEN_KEYS has 30 classes (no 'As') with EF=30 -- so verify the mapping. The
+               existing data/koppen_2048.png already follows the app's convention.
+   SAT_SRC:    RGB PNG, Blue Marble-style true colour. Optional -- if the file is missing the app
+               falls back to its procedural colouring.
+   NOTE: reading external image pixels requires serving over http(s). Opened via file:// the canvas
+   is tainted in Chrome and getImageData throws, so BOTH layers fall back silently (this is why the
+   climate view looked broken). Run e.g.  python3 -m http.server  then open http://localhost:8000/
+   -- an on-page banner warns you if a read was blocked. */
+const KOPPEN_SRC = 'data/koppen_2048.png';   // your class-index grayscale PNG
+const SAT_SRC    = 'data/sat_2048.png';      // your satellite RGB PNG (or leave the file absent)
+
+/* ---------- procedural source world ---------- */
+const WSRC=4096,HSRC=2048;
+const WRAP_MARGIN_DEG=90, WRAP_PX=WRAP_MARGIN_DEG/360*WSRC;   // horizontal wrap: pan/frame up to this far past +/-180
+const heightArr=new Float32Array(WSRC*HSRC), colorArr=new Uint8ClampedArray(WSRC*HSRC*3), koppenArr=new Uint8Array(WSRC*HSRC), roughArr=new Float32Array(WSRC*HSRC);
+const satArr=new Uint8ClampedArray(WSRC*HSRC*3); let satLoaded=false;   // real satellite colour (Blue Marble); replaces the procedural interior when present
+function hash2(x,y){let n=Math.imul(x|0,374761393)^Math.imul(y|0,668265263);n=Math.imul(n^(n>>>13),1274126177);n^=n>>>16;return (n>>>0)/4294967295;}
+function smooth(t){return t*t*(3-2*t);}
+function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;const a=hash2(xi,yi),b=hash2(xi+1,yi),c=hash2(xi,yi+1),d=hash2(xi+1,yi+1);const u=smooth(xf),v=smooth(yf);return (a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v;}
+function fbm(x,y,oct,gain,lac){let f=0,amp=0.5,fr=1;for(let i=0;i<oct;i++){f+=amp*vnoise(x*fr,y*fr);amp*=gain;fr*=lac;}return f;}
+function latOf(sy){return 90-(sy/HSRC)*180;}
+function lonOf(sx){return (sx/WSRC)*360-180;}
+function hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360;}return [h,mx?d/mx:0,mx];}
+function rampLerp(stops,t){t=Math.max(0,Math.min(1,t));for(let i=1;i<stops.length;i++){if(t<=stops[i][0]){const a=stops[i-1],b=stops[i],f=(t-a[0])/(b[0]-a[0]||1);return [a[1][0]+(b[1][0]-a[1][0])*f,a[1][1]+(b[1][1]-a[1][1])*f,a[1][2]+(b[1][2]-a[1][2])*f];}}return stops[stops.length-1][1].slice();}
+const HEAT=[[0,[0,0,0]],[0.16,[0,0,255]],[0.33,[120,0,200]],[0.5,[255,0,0]],[0.66,[255,140,0]],[0.83,[255,255,0]],[1,[255,255,255]]];
+const HYPS_LAND=[[0,[40,110,60]],[0.25,[120,175,90]],[0.45,[225,215,130]],[0.65,[180,130,75]],[0.82,[120,85,60]],[1,[245,245,242]]];
+const HYPS_SEA=[[0,[8,44,90]],[1,[95,170,210]]];
+function heatColor(v){return rampLerp(HEAT,v);}
+function elevColor(h,sea){if(h<sea)return rampLerp(HYPS_SEA,sea>0?h/sea:0);return rampLerp(HYPS_LAND,(h-sea)/(1-sea||1));}
+
+/* real coastline (Natural Earth, WGS84 lon/lat) — see scripts/reduce_coastline.py */
+let COAST=null;   // reduced coastline, loaded from data/coast_10m.json (external, not embedded)
+let LAKES=null;   // reduced lakes, loaded from data/lakes_10m.json (external, not embedded)
+function fillPolysGlobal(m,polys){for(const p of polys){m.beginPath();for(const ring of p.r){for(let i=0;i<ring.length;i++){const x=(ring[i][0]+180)/360*WSRC,y=(90-ring[i][1])/180*HSRC;i?m.lineTo(x,y):m.moveTo(x,y);}m.closePath();}m.fill('evenodd');}}
+/* source-resolution land/water mask: land MINUS lakes (equirectangular, north-up) */
+function buildLandMask(lakes){
+  const c=document.createElement('canvas');c.width=WSRC;c.height=HSRC;const m=c.getContext('2d');
+  m.fillStyle='#000';m.fillRect(0,0,WSRC,HSRC);
+  m.fillStyle='#fff';fillPolysGlobal(m,COAST.polys);   // land
+  m.fillStyle='#000';fillPolysGlobal(m,(lakes||LAKES).polys);   // lakes -> water (historic lakes included once hires loads)
+  const d=m.getImageData(0,0,WSRC,HSRC).data,mask=new Uint8Array(WSRC*HSRC);
+  for(let i=0;i<mask.length;i++)mask[i]=d[i*4]>127?1:0;return mask;
+}
+let landMask=null;                 // built after COAST/LAKES load (see boot)
+/* land-alpha canvas (land opaque, water transparent); lakes punched out */
+function buildLandAlpha(lakes){const c=document.createElement('canvas');c.width=WSRC;c.height=HSRC;const m=c.getContext('2d');m.clearRect(0,0,WSRC,HSRC);m.fillStyle='#fff';fillPolysGlobal(m,COAST.polys);m.globalCompositeOperation='destination-out';fillPolysGlobal(m,(lakes||LAKES).polys);m.globalCompositeOperation='source-over';return c;}
+let landAlphaCanvas=null;
+
+/* salt-flat ground truth: data/playas.json rasterized into playaArr at the working grid. A tile that is
+   mostly playa classifies as a salt flat (desert), overriding the colour/climate salt-vs-snow heuristic --
+   this is what disentangles e.g. Salar de Uyuni (high, white, cold) from real snow. */
+let PLAYAS=null, playaArr=null;
+function buildPlayaMask(){
+  if(!PLAYAS||!PLAYAS.polys)return null;
+  const c=document.createElement('canvas');c.width=WSRC;c.height=HSRC;const m=c.getContext('2d');
+  m.fillStyle='#000';m.fillRect(0,0,WSRC,HSRC);m.fillStyle='#fff';fillPolysGlobal(m,PLAYAS.polys);
+  const d=m.getImageData(0,0,WSRC,HSRC).data,mask=new Uint8Array(WSRC*HSRC);
+  for(let i=0;i<mask.length;i++)mask[i]=d[i*4]>127?1:0;return mask;
+}
+function loadPlayas(done){
+  fetch('data/playas.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();})
+    .then(j=>{PLAYAS=(j&&j.polys)?j:null;playaArr=buildPlayaMask();done();})
+    .catch(e=>{PLAYAS=null;playaArr=null;console.warn('playas.json not loaded ('+e+') -- salt flats use the colour/climate heuristic. Serve over http(s).');done();});
+}
+let worldSeed=1;
+const elevArr=new Float32Array(WSRC*HSRC);       // real Earth elevation 0..1, decoded from embedded image
+const ELEV_SRC='data/elev_4096.png';   // external (not embedded) — loaded like koppen/sat over http(s)
+/* height is REAL Earth elevation (relief + colouring). Land/water comes from the coastline,
+   so height is decoupled from the coast. Colour & Köppen come from real height + latitude +
+   procedural moisture — the moisture is what "reseed climate" regenerates. */
+function generateWorld(seed){
+  worldSeed=seed|0;const ox=((worldSeed*127.1)%997)+0.5,oy=((worldSeed*311.7)%991)+0.5;
+  for(let y=0;y<HSRC;y++){const lat=latOf(y),aLat=Math.abs(lat);
+    for(let x=0;x<WSRC;x++){const nx=x/HSRC,ny=y/HSRC;
+      const h=elevArr[y*WSRC+x]; heightArr[y*WSRC+x]=h;                                  // REAL height
+      let moist=fbm(nx*4.0+31.0+ox,ny*4.0+9.0+oy,4,0.5,2.0)+0.22*Math.cos((aLat-8)/20); moist=Math.max(0,Math.min(1,moist));
+      const z=classGroup(koppenArr[y*WSRC+x]);                                           // biome group from REAL Köppen
+      let r,g,b;const hs=Math.max(0,h-0.35)*1.6;                                          // snow-cap on real high terrain
+      if(z===0){r=236;g=238;b=232;}else if(z===1){r=150;g=158;b=138;}else if(z===2){r=205-moist*40;g=180-moist*30;b=120-moist*20;}else if(z===3){r=46;g=104;b=52;}else if(z===4){r=96;g=140;b=70;}else{r=120;g=138;b=88;}
+      r=r*(1-hs)+236*hs;g=g*(1-hs)+236*hs;b=b*(1-hs)+230*hs;
+      const i=(y*WSRC+x)*3;colorArr[i]=r;colorArr[i+1]=g;colorArr[i+2]=b;}}
+  if(satLoaded)colorArr.set(satArr);   // real Blue Marble colour overrides the procedural interior
+}
+let imgReadBlocked=false;   // set true when a pixel read is blocked (file:// canvas taint); drives the on-page banner
+let baseDataMissing=false;  // set true when core base-data files 404 (e.g. serving a folder without the tiles)
+function loadImageInto(src,arr,fallback,done){
+  const img=new Image();
+  img.onload=()=>{try{const c=document.createElement('canvas');c.width=WSRC;c.height=HSRC;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(img,0,0,WSRC,HSRC);const d=g.getImageData(0,0,WSRC,HSRC).data;for(let i=0;i<WSRC*HSRC;i++)arr[i]=fallback(d[i*4]);done();}catch(e){imgReadBlocked=true;console.error('loadImageInto: could not read image pixels for '+String(img.src||'').slice(0,64)+' — if you opened index.html via file://, the browser taints the canvas and getImageData throws; serve the folder over http(s) instead (e.g. python3 -m http.server). Falling back to empty data for this layer.',e);for(let i=0;i<arr.length;i++)arr[i]=fallback(-1);done();}};
+  img.onerror=()=>{for(let i=0;i<arr.length;i++)arr[i]=fallback(-1);done();};
+  img.src=src;
+}
+function loadElevation(done){   // 16-bit two-channel greyscale: R=high byte, G=low byte
+  const img=new Image();
+  img.onload=()=>{try{const c=document.createElement('canvas');c.width=WSRC;c.height=HSRC;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(img,0,0,WSRC,HSRC);const d=g.getImageData(0,0,WSRC,HSRC).data;for(let i=0;i<WSRC*HSRC;i++)elevArr[i]=(d[i*4]*256+d[i*4+1])/65535;done();}catch(e){imgReadBlocked=true;console.error('loadElevation: pixel read blocked -- serve over http(s) so getImageData works.',e);for(let i=0;i<elevArr.length;i++)elevArr[i]=0.2;done();}};
+  img.onerror=()=>{baseDataMissing=true;for(let i=0;i<elevArr.length;i++)elevArr[i]=0.2;done();};
+  img.src=ELEV_SRC;
+}
+function loadKoppen(done){loadImageInto(KOPPEN_SRC,koppenArr,g=>g<0?0:g,done);}   // grayscale value = Koppen class index
+function loadColor(done){                                                          // real satellite RGB -> satArr
+  if(!SAT_SRC){satLoaded=false;return done();}                                      // no satellite file configured -> procedural colour
+  const img=new Image();
+  img.onload=()=>{try{const c=document.createElement('canvas');c.width=WSRC;c.height=HSRC;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(img,0,0,WSRC,HSRC);const d=g.getImageData(0,0,WSRC,HSRC).data;for(let p=0;p<WSRC*HSRC;p++){satArr[p*3]=d[p*4];satArr[p*3+1]=d[p*4+1];satArr[p*3+2]=d[p*4+2];}satLoaded=true;done();}catch(e){imgReadBlocked=true;console.error('loadColor: could not read '+SAT_SRC+' -- serve over http(s) (file:// taints the canvas). Using procedural colour.',e);satLoaded=false;done();}};
+  img.onerror=()=>{satLoaded=false;done();};                                        // fall back to procedural colour
+  img.src=SAT_SRC;
+}
+
+/* ---------- offscreen layers (land-only interiors; water applied from the coastline) ---------- */
+function newLayer(){const c=document.createElement('canvas');c.width=WSRC;c.height=HSRC;return c;}
+function paintTo(canvas,fn){const cx=canvas.getContext('2d');const img=cx.createImageData(WSRC,HSRC);fn(img.data);cx.putImageData(img,0,0);}
+const layerColor=newLayer(),layerElev=newLayer(),layerRough=newLayer(),layerClimate=newLayer();
+function paintColor(){paintTo(layerColor,d=>{for(let p=0;p<WSRC*HSRC;p++){d[p*4]=colorArr[p*3];d[p*4+1]=colorArr[p*3+1];d[p*4+2]=colorArr[p*3+2];d[p*4+3]=255;}});}
+function paintElevation(){paintTo(layerElev,d=>{for(let p=0;p<WSRC*HSRC;p++){const c=rampLerp(HYPS_LAND,heightArr[p]);d[p*4]=c[0];d[p*4+1]=c[1];d[p*4+2]=c[2];d[p*4+3]=255;}});}
+function paintClimate(){paintTo(layerClimate,d=>{for(let p=0;p<WSRC*HSRC;p++){const c=KOPPEN_PALETTE[koppenArr[p]]||KOPPEN_PALETTE[0];d[p*4]=c[0];d[p*4+1]=c[1];d[p*4+2]=c[2];d[p*4+3]=255;}});}
+/* roughness = NORMALIZED gradient computed on a height workspace downsampled by k;
+   k telescopes with zoom (coarse workspace when zoomed out, finer as you zoom in). */
+let curRoughK=-1, roughHalo=0, roughSmooth=null;   // roughSmooth = the same smoothed field the Roughness view shows, reused by classification
+const HALO_LOG_MIN=0.08;   // roughness halo slider is logarithmic: position 0 = off, first nudge -> this value, exponential up to 1.0 (low blur radii get most of the travel)
+function smoothField(a,W,H,r){   // separable box blur, in place
+  const t=new Float32Array(W*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){let s=0,n=0;for(let dx=-r;dx<=r;dx++){const xx=x+dx;if(xx<0||xx>=W)continue;s+=a[y*W+xx];n++;}t[y*W+x]=s/n;}
+  for(let x=0;x<W;x++)for(let y=0;y<H;y++){let s=0,n=0;for(let dy=-r;dy<=r;dy++){const yy=y+dy;if(yy<0||yy>=H)continue;s+=t[yy*W+x];n++;}a[y*W+x]=s/n;}
+}
+function buildRoughLayer(k){
+  const sw=Math.max(2,Math.floor(WSRC/k)),sh=Math.max(2,Math.floor(HSRC/k)),hsm=new Float32Array(sw*sh);
+  for(let y=0;y<sh;y++)for(let x=0;x<sw;x++){let s=0,n=0;for(let dy=0;dy<k;dy++)for(let dx=0;dx<k;dx++){const sx=Math.min(WSRC-1,x*k+dx),sy=Math.min(HSRC-1,y*k+dy);s+=heightArr[sy*WSRC+sx];n++;}hsm[y*sw+x]=s/n;}
+  const rough=new Float32Array(sw*sh);let gmax=1e-6;
+  for(let y=0;y<sh;y++)for(let x=0;x<sw;x++){const gx=hsm[y*sw+Math.min(sw-1,x+1)]-hsm[y*sw+Math.max(0,x-1)],gy=hsm[Math.min(sh-1,y+1)*sw+x]-hsm[Math.max(0,y-1)*sw+x];const g=Math.sqrt(gx*gx+gy*gy);rough[y*sw+x]=g;if(g>gmax)gmax=g;}
+  for(let i=0;i<rough.length;i++)rough[i]=Math.pow(Math.min(1,rough[i]/gmax),0.7);   // normalized to [0,1]
+  const haloR=Math.round((k<=1?7:k<=2?5:3)*roughHalo);                              // zoom-scaled × halo slider; 0 -> no smoothing
+  if(haloR>=1)smoothField(rough,sw,sh,haloR);
+  roughSmooth={data:rough,sw,sh,k};                                                // <- classification samples this same field
+  paintTo(layerRough,d=>{for(let y=0;y<HSRC;y++)for(let x=0;x<WSRC;x++){const sx=Math.min(sw-1,Math.floor(x/k)),sy=Math.min(sh-1,Math.floor(y/k)),c=heatColor(rough[sy*sw+sx]),p=y*WSRC+x;d[p*4]=c[0];d[p*4+1]=c[1];d[p*4+2]=c[2];d[p*4+3]=255;}});
+  curRoughK=k;
+}
+function roughKForZoom(){const ww=windowWidthDeg();return ww>180?8:ww>90?4:ww>30?2:1;}
+function ensureRough(){const k=roughKForZoom();if(k!==curRoughK)buildRoughLayer(k);}
+function repaintLayers(){paintColor();paintElevation();paintClimate();curRoughK=-1;ensureRough();}
+const LAYERS={color:layerColor,elevation:layerElev,roughness:layerRough,climate:layerClimate};
+
+/* ---------- Koppen climate: crisp windowed VECTOR fill when zoomed past coastThr, else the coarse PNG raster ----------
+   Zones are TILED: data/koppen_tiles/<col>_<row>.json (10 deg cells, polygons clipped to the cell), listed in
+   data/koppen_tiles/index.json. Only the tiles overlapping the view are fetched, then cached; the view fills in
+   progressively as each arrives. All EXTERNAL (never embedded); needs http (fetch is blocked from file://). On
+   failure KTILE_INDEX stays null and the climate view falls back to the raster PNG. */
+const KOPPEN_CSS=KOPPEN_PALETTE.map(c=>'rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')');
+let KTILE_DEG=10, KTILE_INDEX=null;   // Set of existing "col_row" ids
+const KTILE=new Map();                // "col_row" -> {polys:[...]} | 'load' (in flight) | null (empty/failed)
+function loadKoppenIndex(done){
+  fetch('data/koppen_tiles/index.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();})
+    .then(j=>{KTILE_DEG=j.deg||10;KTILE_INDEX=new Set(j.tiles||[]);done();})
+    .catch(e=>{KTILE_INDEX=null;console.warn('koppen_tiles/index.json not loaded ('+e+') -- climate view uses the raster PNG. Serve over http(s).');done();});
+}
+function tileIdsForView(R){           // existing "col_row" tiles overlapping the view
+  if(!KTILE_INDEX)return [];
+  const lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h),D=KTILE_DEG;
+  const c0=Math.floor((lonMin+180)/D),c1=Math.floor((lonMax+180)/D),r0=Math.floor((90-latMax)/D),r1=Math.floor((90-latMin)/D);
+  const ids=[];for(let c=c0;c<=c1;c++)for(let r=r0;r<=r1;r++){const k=c+'_'+r;if(KTILE_INDEX.has(k))ids.push(k);}return ids;
+}
+function ensureTiles(ids){            // fetch any not-yet-loaded tiles; re-render as each lands
+  for(const k of ids){ if(KTILE.has(k))continue; KTILE.set(k,'load');
+    fetch('data/koppen_tiles/'+k+'.json').then(r=>{if(!r.ok)throw 0;return r.json();})
+      .then(j=>{KTILE.set(k,(j&&j.polys)?j:null);_fineKopKey=null;render();})
+      .catch(()=>{KTILE.set(k,null);}); }
+}
+function vectorKoppenActive(){return mode==='climate'&&!!KTILE_INDEX&&windowWidthDeg()<=coastThr;}
+function koppenZoneCull(R){           // gather in-view polys from loaded tiles; kick off fetches for the missing ones
+  const ids=tileIdsForView(R);ensureTiles(ids);
+  const lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h);const vis=[];
+  for(const k of ids){const t=KTILE.get(k);if(!t||t==='load')continue;for(const q of t.polys){const b=q.b;if(b[2]<lonMin||b[0]>lonMax||b[3]<latMin||b[1]>latMax)continue;vis.push(q);}}
+  return {vis};
+}
+/* fill each in-view zone with its class colour; holes handled per-polygon by evenodd (closePath supplies closure) */
+function fillKoppenZonesWindowed(g,vis,R,W,H){
+  for(const p of vis){
+    g.fillStyle=KOPPEN_CSS[p.v]||KOPPEN_CSS[0];
+    g.beginPath();
+    for(const ring of p.r){for(let i=0;i<ring.length;i++){const lon=ring[i][0],lat=ring[i][1];const x=(((lon+180)/360*WSRC)-R.x)/R.w*W,y=(((90-lat)/180*HSRC)-R.y)/R.h*H;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();}
+    g.fill('evenodd');
+  }
+}
+
+/* ---------- view state ---------- */
+const cv=document.getElementById('view'),ctx=cv.getContext('2d'),mapBox=document.getElementById('mapBox'),wrap=document.querySelector('.viewer-wrap');
+let view={cx:WSRC/2,cy:HSRC/2,spanX:WSRC};
+let mode='color';
+const P={sea:0.5,blendHill:0.9,blendPeak:0.7,hill:0.55,peak:0.8,
+         dryPlains:0.42,dryDesert:0.66,                        // dryness-axis boundaries (0 wet -> 1 arid): >=dryPlains -> plains, >=dryDesert -> desert
+         tempTundra:0.39,tempSnow:0.27,                        // temperature thresholds (0 cold -> 1 hot); colder than these -> tundra / snow
+         latTundra:55,latIce:70,                              // poleward cold onsets (deg): tundra ramp begins at latTundra, ice ramp at latIce (higher); each climbs to full over LAT_RAMP_SPAN
+         alpine:0.6,                                          // strength of the snow-cover cold tilt (satellite white-fraction -> colder)
+         clim:0.45,feat:false};
+const TEMP_LAPSE=0.6;    // how much land elevation above sea cools the temperature metric (altitude -> tundra/snow)
+const COLOR_WARM=0.30, COLOR_ICE=0.35;   // satellite colour: vegetation/soil warms, bright desaturated ice/snow cools
+const SALT_VAL=0.60, SALT_SAT=0.30, SALT_FRAC=0.12;   // salt-pan detector (in arid B): bright + desaturated average, OR this white-fraction
+const RED_LO=8, RED_HI=32, RED_SAT=0.50;              // iron-red arid-soil detector: hue in [RED_LO,RED_HI] and saturated -> desert
+const SNOW_FULL=0.30;
+const PLAYA_MIN=0.5;   // tile is a salt flat if >= this fraction of its footprint lies inside a playa polygon (ground truth)                                 // white-fraction giving full snow-cover cold tilt
+/* --- surrounding-climate disambiguation (Norway / Etosha). White pixels (snow OR salt) carry no climate
+       signal, so a tile that is white-dominated is classified by looking at NEARBY non-white tiles: arid
+       surroundings -> the white is a salt pan (desert); cold surroundings -> real snow. All first-guess,
+       UNTESTED against actual Norway/Etosha output — tune here. */
+const SURR_R=3;               // neighbourhood radius, in tiles, for the surrounding-climate sample
+const SURR_WHITE_TILE=0.15;   // a tile at least this white is itself snow/salt -> excluded as a climate witness
+const SURR_ARID_FRAC=0.5;     // >= this fraction of non-white witnesses in arid B -> read white as salt (desert)
+const SALT_SURR_WARM=0.45;    // ...but only if surrounding base-temp is at least this (excludes cold playa->snow)
+const SNOW_WARM_T=0.55;       // surrounding base-temp at/above which the snow tilt is fully damped (mild region)
+const SNOW_COLD_T=0.35;       // ...and at/below which it is untouched (cold region); linear between the two
+const SNOW_GATE_FLOOR=0.30;   // never damp the snow tilt below this — protects real cold-surrounded snowfields
+/* --- boreal cold tilt composition (was 100% latitude). */
+const TUNDRA_HUE=62, TAIGA_HUE=82, TUNDRA_W=0.35, TUNDRA_KC_MAX=0.32, LAT_TILT_W=0.6;   // boreal colour term: brown/tan tundra (hue<=TUNDRA_HUE) reads cold, dark-green taiga (hue>=TAIGA_HUE) mild, only inside the cold Köppen zone (KOPPEN_TEMP<=TUNDRA_KC_MAX); LAT_TILT_W lowers the latitude weight
+const LAT_NUDGE_LO=50, LAT_NUDGE_HI=80, LAT_NUDGE_W=0.15;   // gentle broad poleward cold nudge (~15%) filling in below the sharp 60°N Arctic ramp, to cool subarctic Alaska/Siberia taiga
+const LAT_RAMP_SPAN=20;   // degrees over which each poleward ramp (tundra, ice) climbs 0 -> full past its onset latitude
+const ALT_TUNDRA_HI=0.42;   // the tundra COLOUR term applies only below this elevation (lowland Arctic); higher brown ground (Tibet, Altiplano, alpine peaks) is left to the white-gated alpine term, so brown ≠ snow at altitude
+const PROX_SCALE_DEG=8;       // proximity tilt falls to ~1/e this many degrees from the nearest polar zone
+const PROX_SCALE_PX=PROX_SCALE_DEG*WSRC/360;
+/* per-class base temperature (hot 1 -> cold 0), no latitude; index 0 = ocean/nodata */
+const KOPPEN_TEMP=[0.50,0.95,0.95,0.95, 0.90,0.50,0.90,0.50, 0.72,0.58,0.44, 0.72,0.58,0.44, 0.72,0.58,0.44,
+                   0.48,0.38,0.28,0.20, 0.48,0.38,0.28,0.20, 0.48,0.38,0.28,0.20, 0.26,0.04];
+const clamp01=v=>v<0?0:v>1?1:v;
+let out={W:52,H:32}; let lockAR=false,arRatio=52/32;
+let showGrid=false,showGrat=true,lastTiles=null;
+let RMAN=null;             // river tile manifest {gs, tiles:[{id,b:[bbox],n}]} (data/river_tiles/, external)
+const RTILE=new Map();     // tile id -> {features:[{d,c,l,bbox,rid}]} | 'load' | null  (terminal-tiled: whole channels per tile)
+let _riverGen=0;           // bumps when a tile loads, to invalidate the edge memo
+let riverN=12;            // show the top-N rivers by in-frame discharge (WYSIWYG: same set is serialized)
+/* coastline level-of-detail: crisp windowed vector when the view is narrower than coastThr degrees */
+let coastThr=30;
+let nudgeX=0, nudgeY=0;   // sub-tile sampling offset (in Civ-tile units) for the high-res -> Civ-tile downsample
+const bufCanvas=document.createElement('canvas'),bctx=bufCanvas.getContext('2d');
+const lgCanvas=document.createElement('canvas'),lgctx=lgCanvas.getContext('2d');
+function windowWidthDeg(){return view.spanX/WSRC*360;}
+function vectorCoastActive(){return windowWidthDeg()<=coastThr;}
+
+/* viewer aspect is locked to the output grid (W/H) */
+function maxSpanX(){return Math.min(WSRC,HSRC*(out.W/out.H));}
+function spanY(){return view.spanX*(out.H/out.W);}
+function clampView(){
+  view.spanX=Math.max(6,Math.min(maxSpanX(),view.spanX));
+  const sy=spanY();
+  view.cx=Math.max(-WRAP_PX,Math.min(WSRC+WRAP_PX,view.cx));   // horizontal wrap margin
+  view.cy=Math.max(sy/2,Math.min(HSRC-sy/2,view.cy));
+}
+function srcRect(){const sy=spanY();return {x:view.cx-view.spanX/2,y:view.cy-sy/2,w:view.spanX,h:sy};}
+function wrapOffsets(R){const k0=Math.floor(R.x/WSRC),k1=Math.floor((R.x+R.w-1e-6)/WSRC),o=[];for(let k=k0;k<=k1;k++)o.push(k*WSRC);return o;}   // world copies the view spans (x*WSRC), [0] unless it straddles +/-180
+function wrapLon(l){return ((l%360)+540)%360-180;}   // normalise a longitude into [-180,180) for display
+
+/* size the map-box to the largest W/H-aspect rectangle that fits the wrap; window resize only changes box size, never the framing */
+function fitMapBox(){
+  const availW=wrap.clientWidth-2, availH=wrap.clientHeight-2, ar=out.W/out.H;
+  let w=availW,h=w/ar; if(h>availH){h=availH;w=h*ar;}
+  mapBox.style.width=Math.max(40,Math.floor(w))+'px';
+  mapBox.style.height=Math.max(40,Math.floor(h))+'px';
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  cv.width=Math.max(2,Math.round(mapBox.clientWidth*dpr));
+  cv.height=Math.max(2,Math.round(mapBox.clientHeight*dpr));
+}
+function relayout(){ fitMapBox(); clampView(); render(); refreshStats(); updateArNote(); }
+window.addEventListener('resize',relayout);
+function updateArNote(){document.getElementById('arNote').textContent='viewer '+out.W+':'+out.H;}
+
+/* ---------- classification core ---------- */
+let islandBias=0, seawayBias=0;
+/* halo land fraction selects the regime: mostly-water halo -> island (lower the land
+   threshold so small islands survive); mostly-land halo -> seaway (raise it so channels open). */
+function landThreshold(hf){
+  const island=Math.max(0,0.5-hf)*2, seaway=Math.max(0,hf-0.5)*2;
+  return Math.max(0.03,Math.min(0.97, 0.5 - islandBias*0.45*island + seawayBias*0.45*seaway));
+}
+function haloRadius(){
+  if(!vectorCoastActive()) return 1;
+  const r=Math.round(2*coastThr/Math.max(1,windowWidthDeg()));   // grows as the window narrows past the cutoff
+  return Math.max(2,Math.min(14,r));
+}
+function haloBlur(src,W,H,r){   // separable box blur
+  const t=new Float32Array(W*H),out=new Float32Array(W*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){let s=0,n=0;for(let dx=-r;dx<=r;dx++){const xx=x+dx;if(xx<0||xx>=W)continue;s+=src[y*W+xx];n++;}t[y*W+x]=s/n;}
+  for(let x=0;x<W;x++)for(let y=0;y<H;y++){let s=0,n=0;for(let dy=-r;dy<=r;dy++){const yy=y+dy;if(yy<0||yy>=H)continue;s+=t[yy*W+x];n++;}out[y*W+x]=s/n;}
+  return out;
+}
+/* distance (in source px) from every pixel to the nearest polar (ET/EF) Köppen pixel, via a 2-pass
+   chamfer transform. Built once; feeds the boreal tilt's "proximity to tundra / snow-ice" term.
+   NB: equirectangular px distance overstates E-W spans near the poles — fine for a soft proximity ramp. */
+let distPolar=null;
+function buildPolarDistance(){
+  const N=WSRC*HSRC,INF=1e9,d=new Float32Array(N);
+  for(let i=0;i<N;i++){const g=classGroup(koppenArr[i]);d[i]=(g===0||g===1)?0:INF;}   // ET(1) or EF(0) are the anchors
+  const D1=1,D2=Math.SQRT2;
+  for(let y=0;y<HSRC;y++)for(let x=0;x<WSRC;x++){const i=y*WSRC+x;let v=d[i];
+    if(x>0)v=Math.min(v,d[i-1]+D1); if(y>0)v=Math.min(v,d[i-WSRC]+D1);
+    if(x>0&&y>0)v=Math.min(v,d[i-WSRC-1]+D2); if(x<WSRC-1&&y>0)v=Math.min(v,d[i-WSRC+1]+D2); d[i]=v;}
+  for(let y=HSRC-1;y>=0;y--)for(let x=WSRC-1;x>=0;x--){const i=y*WSRC+x;let v=d[i];
+    if(x<WSRC-1)v=Math.min(v,d[i+1]+D1); if(y<HSRC-1)v=Math.min(v,d[i+WSRC]+D1);
+    if(x<WSRC-1&&y<HSRC-1)v=Math.min(v,d[i+WSRC+1]+D2); if(x>0&&y<HSRC-1)v=Math.min(v,d[i+WSRC-1]+D2); d[i]=v;}
+  distPolar=d;
+}
+/* global land-height distribution (sorted, subsampled), for relief-basis normalization: map a tile's
+   average height to its GLOBAL land percentile so the raw-height basis spans [0,1] like the (already
+   self-normalized) roughness basis. Keeps flat regions flat (low absolute height -> low percentile),
+   unlike a per-region stretch. Built once. */
+// relief-basis percentiles are computed per-view (per generated region) inside classifyRegion, from the region land tiles
+function pctl(sorted,x){if(!sorted||!sorted.length)return x;let lo=0,hi=sorted.length;while(lo<hi){const m=(lo+hi)>>1;if(sorted[m]<=x)lo=m+1;else hi=m;}return lo/sorted.length;}
+function classifyRegion(W,H){
+  const R=srcRect(),N=W*H;
+  const fineH=buildFineHeightForView(R);   // fine-scale elevation from the zoom-in height tiles (null when zoomed out / not loaded)
+  const fineKop=buildFineKoppenForView(R,W,H);   // crisp Köppen from the vector tiles at zoom-in (null -> raster koppenArr)
+  const fineC=buildFineColorForView(R);   // high-res satellite colour from the sat tiles at zoom-in (null -> raster colorArr)
+  ensureRough();                                                   // build/refresh the smoothed roughness field for the current zoom + halo
+  if(!distPolar)buildPolarDistance();                             // one-time: distance-to-polar field (boreal proximity tilt)
+  const rf=roughSmooth;                                            // {data,sw,sh,k}
+  const lf=new Float32Array(N),hA=new Float32Array(N),rgh=new Float32Array(N),kcA=new Uint8Array(N),rA=new Float32Array(N),gA=new Float32Array(N),bA=new Float32Array(N),ltA=new Float32Array(N),wA=new Float32Array(N),proxA=new Float32Array(N),pA=new Float32Array(N);
+  const kcHist=new Uint16Array(31);                                // reused per tile: histogram over the 30 Köppen classes
+  const nX=nudgeX*R.w/W, nY=nudgeY*R.h/H;                           // X/Y nudge: shift each tile sampling footprint by a fraction of a tile
+  for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){
+    const x0=R.x+(tx/W)*R.w+nX,x1=R.x+((tx+1)/W)*R.w+nX,y0=R.y+(ty/H)*R.h+nY,y1=R.y+((ty+1)/H)*R.h+nY;
+    const sx0=Math.floor(x0),sx1=Math.ceil(x1)-1,sy0=Math.max(0,Math.floor(y0)),sy1=Math.min(HSRC-1,Math.ceil(y1)-1);   // sx may cross +/-180 (wrapped below); sy stays clamped
+    const stepx=Math.max(1,Math.floor((sx1-sx0+1)/12)),stepy=Math.max(1,Math.floor((sy1-sy0+1)/12));
+    let n=0,hSum=0,rS=0,gS=0,bS=0,lSum=0,wS=0,pS=0;kcHist.fill(0);
+    for(let sy=sy0;sy<=sy1;sy+=stepy)for(let sx=sx0;sx<=sx1;sx+=stepx){const i=sy*WSRC+(((sx%WSRC)+WSRC)%WSRC),h=heightArr[i],rr=colorArr[i*3],gg=colorArr[i*3+1],bb=colorArr[i*3+2];hSum+=h;rS+=rr;gS+=gg;bS+=bb;const mx=rr>gg?(rr>bb?rr:bb):(gg>bb?gg:bb),mn=rr<gg?(rr<bb?rr:bb):(gg<bb?gg:bb);if(mx>168&&mn>0.75*mx)wS++;kcHist[koppenArr[i]]++;lSum+=landMask[i];pS+=playaArr?playaArr[i]:0;n++;}
+    if(!n)n=1; const idx=ty*W+tx; let hAvg=hSum/n;
+    let rghV=null;
+    if(fineH){let fs=0,fn=0,frs=0;const fx0=Math.max(0,Math.floor((x0-R.x)/R.w*fineH.fw)),fx1=Math.min(fineH.fw-1,Math.ceil((x1-R.x)/R.w*fineH.fw)-1),fy0=Math.max(0,Math.floor((y0-R.y)/R.h*fineH.fh)),fy1=Math.min(fineH.fh-1,Math.ceil((y1-R.y)/R.h*fineH.fh)-1);const fsx=Math.max(1,Math.floor((fx1-fx0+1)/10)),fsy=Math.max(1,Math.floor((fy1-fy0+1)/10));for(let fy=fy0;fy<=fy1;fy+=fsy)for(let fx=fx0;fx<=fx1;fx+=fsx){const fi=fy*fineH.fw+fx;fs+=fineH.data[fi];frs+=fineH.rough[fi];fn++;}if(fn){hAvg=fs/fn;rghV=frs/fn;}}   // fine-scale height AND roughness override at zoom-in
+    hA[idx]=hAvg; rA[idx]=rS/n;gA[idx]=gS/n;bA[idx]=bS/n; wA[idx]=wS/n;pA[idx]=pS/n;   // wA = fraction of footprint that is snow/salt-white
+    if(fineC){const cx0=Math.max(0,Math.floor((x0-R.x)/R.w*fineC.fw)),cx1=Math.min(fineC.fw-1,Math.ceil((x1-R.x)/R.w*fineC.fw)-1),cy0=Math.max(0,Math.floor((y0-R.y)/R.h*fineC.fh)),cy1=Math.min(fineC.fh-1,Math.ceil((y1-R.y)/R.h*fineC.fh)-1);const csx=Math.max(1,Math.floor((cx1-cx0+1)/8)),csy=Math.max(1,Math.floor((cy1-cy0+1)/8));let rs2=0,gs2=0,bs2=0,ws2=0,cn=0;for(let cy=cy0;cy<=cy1;cy+=csy)for(let cx=cx0;cx<=cx1;cx+=csx){const ci=(cy*fineC.fw+cx)*4,rr=fineC.data[ci],gg=fineC.data[ci+1],bb=fineC.data[ci+2];rs2+=rr;gs2+=gg;bs2+=bb;const mx=rr>gg?(rr>bb?rr:bb):(gg>bb?gg:bb),mn=rr<gg?(rr<bb?rr:bb):(gg<bb?gg:bb);if(mx>168&&mn>0.75*mx)ws2++;cn++;}if(cn){rA[idx]=rs2/cn;gA[idx]=gs2/cn;bA[idx]=bs2/cn;wA[idx]=ws2/cn;}}   // fine-scale satellite colour override at zoom-in
+    if(rghV===null){const rcx=(x0+x1)/2,rcy=(y0+y1)/2,rsx=Math.min(rf.sw-1,Math.max(0,Math.floor(rcx/rf.k))),rsy=Math.min(rf.sh-1,Math.max(0,Math.floor(rcy/rf.k)));rghV=rf.data[rsy*rf.sw+rsx];}   // base roughness fallback (zoomed out / tiles not loaded)
+    rgh[idx]=rghV;
+    let kcls=0,kb=0;for(let k=1;k<31;k++)if(kcHist[k]>kb){kb=kcHist[k];kcls=k;} kcA[idx]=kcls;   // dominant non-ocean Köppen class
+    if(fineKop){const fx0=Math.max(0,Math.floor((x0-R.x)/R.w*fineKop.fw)),fx1=Math.min(fineKop.fw-1,Math.ceil((x1-R.x)/R.w*fineKop.fw)-1),fy0=Math.max(0,Math.floor((y0-R.y)/R.h*fineKop.fh)),fy1=Math.min(fineKop.fh-1,Math.ceil((y1-R.y)/R.h*fineKop.fh)-1);kcHist.fill(0);for(let fy=fy0;fy<=fy1;fy++)for(let fx=fx0;fx<=fx1;fx++){const kv=fineKop.data[fy*fineKop.fw+fx];if(kv>0&&kv<31)kcHist[kv]++;}let fb=0,fc=0;for(let k=1;k<31;k++)if(kcHist[k]>fb){fb=kcHist[k];fc=k;}if(fb>0)kcA[idx]=fc;}   // crisp vector Köppen overrides the raster dominant at zoom-in
+    ltA[idx]=latOf((y0+y1)/2); lf[idx]=lSum/n;
+    const pcx=Math.min(WSRC-1,Math.max(0,Math.round((x0+x1)/2))),pcy=Math.min(HSRC-1,Math.max(0,Math.round((y0+y1)/2)));
+    proxA[idx]=Math.exp(-distPolar[pcy*WSRC+pcx]/PROX_SCALE_PX);   // 1 at a polar zone, decaying outward
+  }
+  if(vectorCoastActive()){const vf=rasterizeVectorLandFrac(W,H,R);for(let i=0;i<N;i++)lf[i]=vf[i];}   // crisp fractional land
+  const hf=haloBlur(lf,W,H,haloRadius());                                                             // halo land fraction
+  const isLandA=new Uint8Array(N);for(let i=0;i<N;i++)isLandA[i]=lf[i]>=landThreshold(hf[i])?1:0;
+  // surrounding-climate sample: for each tile, summarise nearby NON-white LAND tiles -> arid fraction & mean base temp
+  const surrAridA=new Float32Array(N),surrTempA=new Float32Array(N);
+  for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){let bC=0,tSum=0,nn=0;
+    for(let dy=-SURR_R;dy<=SURR_R;dy++)for(let dx=-SURR_R;dx<=SURR_R;dx++){const ny=ty+dy,nx=tx+dx;if(ny<0||ny>=H||nx<0||nx>=W)continue;
+      const j=ny*W+nx;if(!isLandA[j]||wA[j]>=SURR_WHITE_TILE)continue;                                 // skip sea & snow/salt witnesses
+      if(classGroup(kcA[j])===2)bC++; tSum+=KOPPEN_TEMP[kcA[j]]; nn++;}
+    const idx=ty*W+tx; surrAridA[idx]=nn?bC/nn:0; surrTempA[idx]=nn?tSum/nn:KOPPEN_TEMP[kcA[idx]];
+  }
+  // relief-basis normalization: PER-VIEW land percentiles for BOTH height and roughness, so the blend only relocates relief, not its amount
+  const hL=[],rL=[];for(let i=0;i<N;i++)if(isLandA[i]){hL.push(hA[i]);rL.push(rgh[i]);}
+  const hSort=Float64Array.from(hL).sort(),rSort=Float64Array.from(rL).sort();
+  const metricHill=new Float32Array(N),metricPeak=new Float32Array(N);
+  for(let i=0;i<N;i++){const hp=pctl(hSort,hA[i]),rp=pctl(rSort,rgh[i]);metricHill[i]=(1-P.blendHill)*hp+P.blendHill*rp;metricPeak[i]=(1-P.blendPeak)*hp+P.blendPeak*rp;}
+  const tiles=[];let land=0,hills=0,peaks=0;
+  for(let ty=0;ty<H;ty++){const row=[];for(let tx=0;tx<W;tx++){const idx=ty*W+tx;
+    const tile=classifyTile(hA[idx],metricHill[idx],metricPeak[idx],[rA[idx],gA[idx],bA[idx]],ltA[idx],kcA[idx],isLandA[idx],wA[idx],surrAridA[idx],surrTempA[idx],proxA[idx],pA[idx]);
+    if(tile.plot!==PLOT.WATER){land++;if(tile.plot===PLOT.HILLS)hills++;if(tile.plot===PLOT.PEAK)peaks++;}
+    row.push(tile);}
+    tiles.push(row);}
+  coastPass(tiles,W,H);if(P.feat)featurePass(tiles,W,H);
+  return {tiles,W,H,land,hills,peaks};
+}
+/* colour-only aridity proxy in [0,1] (0 humid -> 1 arid): bright + desaturated reads drier */
+function colorAridity(hue,sat,val){
+  let d=clamp01(0.5+0.75*(val-sat));
+  if(hue>25&&hue<70)d=clamp01(d+0.12);                     // tan/yellow -> drier
+  else if(hue>=70&&hue<170)d=clamp01(d-0.12);              // green -> wetter
+  return d;
+}
+/* moisture biome from Köppen class + satellite colour. Specific-class overrides first, then the general dryness model. */
+function moistureBiome(kc,hue,sat,val){
+  const ca=colorAridity(hue,sat,val);
+  if(kc===8) return TERR.PLAINS;                                       // Csa -> plains by default
+  const z=classGroup(kc);
+  if(z===2){                                                          // arid B climates
+    if(hue>=RED_LO&&hue<=RED_HI&&sat>=RED_SAT) return TERR.DESERT;      // iron-red arid soil (Australia, Somalia) -> desert even when not bright
+    if(kc===6||kc===7) return val>=P.dryDesert?TERR.DESERT:TERR.PLAINS; // BSh/BSk steppe: lighter -> desert, darker -> plains
+  }
+  const kop=z===2?0.85:z===3?0.18:z===4?0.30:z===5?0.42:0.45;         // B arid / A trop / C temp / D cont / polar-neutral
+  const D=clamp01((1-P.clim)*ca+P.clim*kop);
+  return D>=P.dryDesert?TERR.DESERT:D>=P.dryPlains?TERR.PLAINS:TERR.GRASS;
+}
+/* temperature T in [0,1] (0 cold -> 1 hot) from Köppen class + altitude lapse + satellite colour (NO latitude) */
+function temperature(h,kc,hue,sat,val){
+  const ice=clamp01((val-0.70)/0.25)*clamp01((0.25-sat)/0.25);   // bright + desaturated = snow/ice
+  const colorT=COLOR_WARM-(COLOR_WARM+COLOR_ICE)*ice;            // vegetation/soil warms; ice cools
+  return clamp01(KOPPEN_TEMP[kc]+colorT-Math.max(0,h-P.sea)*TEMP_LAPSE);
+}
+function classifyTile(h,metricHill,metricPeak,rgb,lat,kc,isLand,whiteFrac,surrArid,surrTemp,prox,playaFrac){
+  if(!isLand)return {terrain:TERR.OCEAN,plot:PLOT.WATER,rgb};
+  let plot=PLOT.FLAT;if(metricPeak>P.peak)plot=PLOT.PEAK;else if(metricHill>P.hill)plot=PLOT.HILLS;   // separate relief bases for peak vs hills; metrics normalized in classifyRegion
+  const [hue,sat,val]=hsv(rgb[0],rgb[1],rgb[2]),aLat=Math.abs(lat),z=classGroup(kc),arid=(z===2),wf=whiteFrac||0;
+  const kk=KOPPEN_KEYS[kc], warmSummerD=(kk&&kk[0]==='D'&&(kk[2]==='a'||kk[2]==='b'));   // Dxa/Dxb: warm/hot-summer continental — never tundra/ice
+  if(playaFrac>=PLAYA_MIN) return {terrain:TERR.DESERT,plot,rgb,z,lat};   // ground-truth playa/salt flat -> desert, never snow
+  // salt pan: bright/white ground reads as a hot salt flat (desert, not snow) when this tile's own climate is
+  // arid B, OR the surrounding non-white climate is arid and not cold (catches pans whose own tile isn't B, e.g. Etosha).
+  const saltWhite=(val>=SALT_VAL&&sat<=SALT_SAT)||wf>=SALT_FRAC;
+  const surrHotArid=(surrArid>=SURR_ARID_FRAC)&&(surrTemp>=SALT_SURR_WARM);
+  if(saltWhite && (arid||surrHotArid)) return {terrain:TERR.DESERT,plot,rgb,z,lat};
+  let terrain=moistureBiome(kc,hue,sat,val);                          // 1) moisture: grass / plains / desert
+  let T=temperature(h,kc,hue,sat,val);                               // 2) temperature: Köppen + colour + altitude lapse
+  // 3a) boreal cold tilt = latitude + altitude (no proximity; the base temperature stays latitude-free)
+  const latTundra=clamp01((aLat-P.latTundra)/LAT_RAMP_SPAN), latIce=clamp01((aLat-P.latIce)/LAT_RAMP_SPAN);   // two poleward ramps: tundra (lower onset) and ice (higher onset)
+  const latNudge=LAT_NUDGE_W*clamp01((aLat-LAT_NUDGE_LO)/Math.max(1e-6,LAT_NUDGE_HI-LAT_NUDGE_LO));   // small broad latitude factor — nudges subarctic taiga colder
+  const green=clamp01((hue-TUNDRA_HUE)/Math.max(1e-6,TAIGA_HUE-TUNDRA_HUE));                        // 0 = tundra brown, 1 = taiga green
+  const tundraCold=(KOPPEN_TEMP[kc]<=TUNDRA_KC_MAX&&h<ALT_TUNDRA_HI)?(1-green)*TUNDRA_W:0;           // brown lowland tundra = cold; lowland gate keeps high brown plateaus (Tibet, Altiplano) out — those go to the white/alpine term
+  const coldCommon=tundraCold+latNudge;   // shared non-latitude cold: lowland tundra colour + broad poleward nudge; the latitude ramps below are added per-transition. Altitude cold stays white-gated in the alpine term (P.alpine*snowTerm) so brown high ground (Tibet/Andes) does not freeze
+  // 3b) snow-cover cold tilt (satellite white in non-arid tiles), damped where the SURROUNDING climate is mild —
+  //     white in a warm neighbourhood is unlikely to be a real snowfield; floored so cold-surrounded snow survives
+  let snowTerm=arid?0:clamp01(wf/SNOW_FULL);
+  const snowGate=SNOW_GATE_FLOOR+(1-SNOW_GATE_FLOOR)*clamp01((SNOW_WARM_T-surrTemp)/Math.max(1e-6,SNOW_WARM_T-SNOW_COLD_T));
+  snowTerm*=snowGate;
+  const cold=coldCommon+P.alpine*snowTerm;
+  const Tice=clamp01(T-clamp01(LAT_TILT_W*latIce+cold)), Ttundra=clamp01(T-clamp01(LAT_TILT_W*latTundra+cold));   // each transition gets its own poleward ramp
+  if(z!==4&&!warmSummerD){if(Tice<P.tempSnow)terrain=TERR.SNOW;else if(Ttundra<P.tempTundra)terrain=TERR.TUNDRA;}   // ice ramp gates snow; tundra ramp gates tundra; C (z===4) and warm-summer Dxa/Dxb never freeze
+  return {terrain,plot,rgb,z,lat};
+}
+function coastPass(tiles,W,H){for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(tiles[y][x].plot!==PLOT.WATER)continue;let adj=false;for(let dy=-1;dy<=1&&!adj;dy++)for(let dx=-1;dx<=1;dx++){const ny=y+dy,nx=x+dx;if(ny<0||ny>=H||nx<0||nx>=W)continue;if(tiles[ny][nx].plot!==PLOT.WATER){adj=true;break;}}tiles[y][x].terrain=adj?TERR.COAST:TERR.OCEAN;}}
+function featurePass(tiles,W,H){for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x];if(t.plot===PLOT.WATER||t.plot===PLOT.PEAK)continue;if(t.z===3){t.feature='FEATURE_JUNGLE';t.fv=0;}else if((t.z===4||t.z===5)&&(t.terrain===TERR.GRASS||t.terrain===TERR.PLAINS||t.terrain===TERR.TUNDRA)){t.feature='FEATURE_FOREST';t.fv=(t.z===5?1:0);}}}
+
+/* ---------- coastline (windowed vector) ---------- */
+let COAST_HI=null;   // hires land polygons (data/coast_hires.json); used in the windowed pass when loaded. Coarse land mask keeps the embedded reduced COAST.
+function loadCoastHires(done){
+  fetch('data/coast_hires.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();})
+    .then(j=>{COAST_HI=(j&&j.polys)?j:null;done();})
+    .catch(e=>{COAST_HI=null;console.warn('coast_hires.json not loaded ('+e+') -- windowed coast uses the reduced set. Serve over http(s).');done();});
+}
+let LAKES_HI=null;   // hires lakes (data/lakes_hires.json); used in the windowed pass when loaded. Coarse land mask keeps the embedded reduced LAKES.
+function loadLakesHires(done){
+  fetch('data/lakes_hires.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();})
+    .then(j=>{LAKES_HI=(j&&j.polys)?j:null;landMask=buildLandMask(LAKES_HI);landAlphaCanvas=buildLandAlpha(LAKES_HI);done();})
+    .catch(e=>{LAKES_HI=null;console.warn('lakes_hires.json not loaded ('+e+') -- windowed lakes use the reduced set. Serve over http(s).');done();});
+}
+function coastPathCull(R){const lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h);const vis=[];for(const p of (COAST_HI||COAST).polys){const b=p.b;if(b[2]<lonMin||b[0]>lonMax||b[3]<latMin||b[1]>latMax)continue;vis.push(p);}return {vis};}
+function lakePathCull(R){const lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h);const vis=[];for(const p of (LAKES_HI||LAKES).polys){const b=p.b;if(b[2]<lonMin||b[0]>lonMax||b[3]<latMin||b[1]>latMax)continue;vis.push(p);}return {vis};}
+function waterColorFor(m){return m==='climate'?'rgb(255,255,255)':m==='roughness'?'rgb(0,0,0)':m==='elevation'?'rgb(24,74,120)':'rgb(20,66,104)';}
+let islandExpand=0, expandSteep=1.0, expandMaxMult=1.5, expLmin=0, expLmax=-1, expAreaCap=Infinity;
+/* scaled set = islands under 10% of the view area. Target LINEAR extent is a monotonic ramp from
+   half-max·mult (smallest) up to max·mult (largest); the max multiplier caps the largest island's
+   growth, steepness warps the ramp (1 = linear). Nothing shrinks. */
+function updateExpandBounds(vis,R){
+  const viewArea=(R.w/WSRC*360)*(R.h/HSRC*180); expAreaCap=0.10*viewArea;
+  let mn=Infinity,mx=-Infinity;
+  for(const p of vis){const A=(p.b[2]-p.b[0])*(p.b[3]-p.b[1]);if(A>=expAreaCap)continue;const L=Math.max(1e-9,Math.max(p.b[2]-p.b[0],p.b[3]-p.b[1]));if(L<mn)mn=L;if(L>mx)mx=L;}
+  if(mx<=mn){expLmin=0;expLmax=-1;return;}          // <2 scaled islands -> disabled
+  expLmin=mn;expLmax=mx;
+}
+function expandFactor(b){
+  if(islandExpand<=0||expLmax<=expLmin)return 1;
+  const A=(b[2]-b[0])*(b[3]-b[1]); if(A>=expAreaCap)return 1;                    // >=10% of view: never scaled
+  const L=Math.max(1e-9,Math.max(b[2]-b[0],b[3]-b[1]));
+  const p=Math.min(1,Math.max(0,(L-expLmin)/(expLmax-expLmin))), q=Math.pow(p,expandSteep);
+  const targetL=Math.max(L, expLmax*expandMaxMult*(0.5+0.5*q));                  // half-max·mult -> max·mult, no shrink
+  return 1+islandExpand*(targetL/L-1);
+}
+/* fill per-polygon so overlapping polygons UNION (OR), not XOR; holes still cut within each polygon */
+function fillPolysWindowed(g,vis,R,W,H,expand){
+  if(expand&&islandExpand>0)updateExpandBounds(vis,R);
+  for(const p of vis){
+    const f=expand?expandFactor(p.b):1,cx=(p.b[0]+p.b[2])/2,cy=(p.b[1]+p.b[3])/2;
+    g.beginPath();
+    for(const ring of p.r){
+      for(let i=0;i<ring.length;i++){
+        let lon=ring[i][0],lat=ring[i][1];
+        if(f!==1){lon=cx+(lon-cx)*f;lat=cy+(lat-cy)*f;}
+        const x=(((lon+180)/360*WSRC)-R.x)/R.w*W,y=(((90-lat)/180*HSRC)-R.y)/R.h*H;
+        i?g.lineTo(x,y):g.moveTo(x,y);
+      }
+      g.closePath();
+    }
+    g.fill('evenodd');
+  }
+}
+const aCanvas=document.createElement('canvas'),actx=aCanvas.getContext('2d');
+const wcCanvas=document.createElement('canvas'),wctx=wcCanvas.getContext('2d');
+/* true-res satellite tiles: data/sat_tiles/<col>_<row>.png (10 deg cells) drawn OVER the 2048 base in the
+   colour view when zoomed past coastThr. External PNGs, fetched on demand and cached; the water/background
+   colour logic is unchanged (the coastline water pass paints over the tiles' ocean afterwards). */
+let STILE_META=null; const STILE=new Map();
+let _jeKey=null,_jeCanvas=null,HYPS_LUT=null;   // JIT elevation colouring: view cache + 256-entry hypsometric LUT
+const RGH_REF=0.14;   // global 99.9th-pct gradient normalizer (matches the former pre-baked roughness tiles)
+let _jrKey=null,_jrCanvas=null,ROUGH_LUT=null;   // JIT roughness: view cache + 256-entry heat LUT (gamma baked into the index)
+function loadSatIndex(done){
+  fetch('data/sat_tiles/index.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();})
+    .then(j=>{STILE_META=j;done();})
+    .catch(e=>{STILE_META=null;console.warn('sat_tiles/index.json not loaded ('+e+') -- colour view uses the 2048 base. Serve over http(s).');done();});
+}
+function satTilesActive(){return mode==='color'&&!!STILE_META&&windowWidthDeg()<=coastThr;}
+function satTileIdsForView(R){
+  const D=STILE_META.deg,lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h);
+  const c0=Math.max(0,Math.floor((lonMin+180)/D)),c1=Math.min(STILE_META.cols-1,Math.floor((lonMax+180)/D));
+  const r0=Math.max(0,Math.floor((90-latMax)/D)),r1=Math.min(STILE_META.rows-1,Math.floor((90-latMin)/D));
+  const ids=[];for(let c=c0;c<=c1;c++)for(let r=r0;r<=r1;r++)ids.push(c+'_'+r);return ids;
+}
+function ensureSatTiles(ids){
+  for(const id of ids){ if(STILE.has(id))continue; STILE.set(id,'load');
+    const img=new Image();
+    img.onload=()=>{STILE.set(id,img);_fineCKey=null;render();};
+    img.onerror=()=>{STILE.set(id,'err');};
+    img.src='data/sat_tiles/'+id+'.'+(STILE_META.ext||'png');
+  }
+}
+function drawSatTile(g,img,id,R){
+  const q=id.split('_'),c=+q[0],r=+q[1],D=STILE_META.deg;
+  const sx=(c*D)/360*WSRC, sy=(r*D)/180*HSRC;                          // tile top-left (lon=c*D-180, lat=90-r*D) in source px
+  const dx=(sx-R.x)/R.w*cv.width, dy=(sy-R.y)/R.h*cv.height;
+  const dw=(D/360*WSRC)/R.w*cv.width, dh=(D/180*HSRC)/R.h*cv.height;
+  g.drawImage(img,dx,dy,dw,dh);
+}
+
+// --- JIT elevation colouring: hypsometric tint computed on the fly from the 16-bit height tiles (renderer owns the colour mapping) ---
+function buildHypsLUT(){HYPS_LUT=[new Uint8Array(256),new Uint8Array(256),new Uint8Array(256)];for(let k=0;k<256;k++){const c=rampLerp(HYPS_LAND,k/255);HYPS_LUT[0][k]=c[0];HYPS_LUT[1][k]=c[1];HYPS_LUT[2][k]=c[2];}}
+function jitElevCanvas(R){
+  const F=buildFineHeightForView(R); if(!F) return null;
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w);
+  if(key===_jeKey&&_jeCanvas) return _jeCanvas;
+  if(!HYPS_LUT) buildHypsLUT();
+  const hd=F.data,fw=F.fw,fh=F.fh;
+  const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const c2=cvs.getContext('2d'),img=c2.createImageData(fw,fh),o=img.data,LR=HYPS_LUT[0],LG=HYPS_LUT[1],LB=HYPS_LUT[2];
+  for(let i=0;i<fw*fh;i++){let idx=(hd[i]*255)|0;if(idx>255)idx=255;const p=i*4;o[p]=LR[idx];o[p+1]=LG[idx];o[p+2]=LB[idx];o[p+3]=255;}
+  c2.putImageData(img,0,0);_jeKey=key;_jeCanvas=cvs;return cvs;
+}
+
+// --- JIT roughness: fine-scale ruggedness computed on the fly from the grayscale height tiles (no pre-baked image files) ---
+function buildRoughLUT(){ROUGH_LUT=[new Uint8Array(256),new Uint8Array(256),new Uint8Array(256)];for(let k=0;k<256;k++){const c=heatColor(Math.pow(k/255,0.7));ROUGH_LUT[0][k]=c[0];ROUGH_LUT[1][k]=c[1];ROUGH_LUT[2][k]=c[2];}}   // gamma folded into index -> colour is a table lookup
+function jitRoughCanvas(R){
+  const F=buildFineHeightForView(R); if(!F) return null;                             // needs the fine height buffer (zoomed in, tiles loaded, not wrapped)
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+'|'+roughHalo;
+  if(key===_jrKey&&_jrCanvas) return _jrCanvas;
+  if(!ROUGH_LUT) buildRoughLUT();
+  const hd=F.data,fw=F.fw,fh=F.fh,g=new Float32Array(fw*fh),inv=1/RGH_REF;
+  for(let y=0;y<fh;y++)for(let x=0;x<fw;x++){const i=y*fw+x,xr=x<fw-1?i+1:i,xl=x>0?i-1:i,yd=y<fh-1?i+fw:i,yu=y>0?i-fw:i;const gx=hd[xr]-hd[xl],gy=hd[yd]-hd[yu];let v=Math.sqrt(gx*gx+gy*gy)*inv;g[i]=v>1?1:v;}
+  const haloR=Math.round(7*roughHalo); if(haloR>=1)smoothField(g,fw,fh,haloR);        // same halo the slider drives on the base
+  const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const c2=cvs.getContext('2d'),img=c2.createImageData(fw,fh),o=img.data,LR=ROUGH_LUT[0],LG=ROUGH_LUT[1],LB=ROUGH_LUT[2];
+  for(let i=0;i<fw*fh;i++){let idx=(g[i]*255)|0;if(idx>255)idx=255;const p=i*4;o[p]=LR[idx];o[p+1]=LG[idx];o[p+2]=LB[idx];o[p+3]=255;}
+  c2.putImageData(img,0,0);_jrKey=key;_jrCanvas=cvs;return cvs;
+}
+let HTILE_META=null; const HTILE=new Map();   // grayscale raw-height tiles: fine elevation for the Civ classification when zoomed in
+let _fineHKey=null,_fineH=null;
+let _fineKopKey=null,_fineKop=null;
+let _fineCKey=null,_fineC=null;
+function loadHgtIndex(done){
+  fetch('data/hgt_tiles/index.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();})
+    .then(j=>{HTILE_META=j;done();})
+    .catch(e=>{HTILE_META=null;console.warn('hgt_tiles/index.json not loaded ('+e+') -- Civ classification uses the base elevation. Serve over http(s).');done();});
+}
+function hgtTileIdsForView(R){
+  const D=HTILE_META.deg,lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h);
+  const c0=Math.max(0,Math.floor((lonMin+180)/D)),c1=Math.min(HTILE_META.cols-1,Math.floor((lonMax+180)/D));
+  const r0=Math.max(0,Math.floor((90-latMax)/D)),r1=Math.min(HTILE_META.rows-1,Math.floor((90-latMin)/D));
+  const ids=[];for(let c=c0;c<=c1;c++)for(let r=r0;r<=r1;r++)ids.push(c+'_'+r);return ids;
+}
+function ensureHgtTiles(ids){
+  for(const id of ids){ if(HTILE.has(id))continue; HTILE.set(id,'load');
+    const img=new Image();
+    img.onload=()=>{HTILE.set(id,img);_fineHKey=null;render();};
+    img.onerror=()=>{HTILE.set(id,'err');};
+    img.src='data/hgt_tiles/'+id+'.'+(HTILE_META.ext||'png');
+  }
+}
+// assemble a fine-scale height buffer for the current view from the height tiles (null -> fall back to the base grid)
+function buildFineHeightForView(R){
+  if(!HTILE_META||windowWidthDeg()>coastThr) return null;
+  if(R.x<0||R.x+R.w>WSRC) return null;                              // antimeridian-crossing view -> base grid
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w);
+  if(key===_fineHKey&&_fineH) return _fineH;
+  const fullW=HTILE_META.cols*HTILE_META.tileW, fullH=HTILE_META.rows*HTILE_META.tileH, CAP=2400;
+  let fw=Math.round(R.w/WSRC*fullW), fh=Math.round(R.h/HSRC*fullH);
+  if(fw>CAP){fh=Math.max(2,Math.round(fh*CAP/fw));fw=CAP;} if(fh>CAP){fw=Math.max(2,Math.round(fw*CAP/fh));fh=CAP;}
+  fw=Math.max(2,fw);fh=Math.max(2,fh);
+  const ids=hgtTileIdsForView(R); ensureHgtTiles(ids);
+  const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const g=cvs.getContext('2d');g.imageSmoothingEnabled=false;
+  let drew=0;
+  for(const id of ids){const t=HTILE.get(id);if(t&&t!=='load'&&t!=='err'){
+    const q=id.split('_'),c=+q[0],rr=+q[1],D=HTILE_META.deg;
+    const sx=(c*D)/360*WSRC, sy=(rr*D)/180*HSRC;
+    const dx=(sx-R.x)/R.w*fw, dy=(sy-R.y)/R.h*fh, dw=(D/360*WSRC)/R.w*fw, dh=(D/180*HSRC)/R.h*fh;
+    g.drawImage(t,dx,dy,dw,dh);drew++;
+  }}
+  if(drew<ids.length) return null;                                 // not fully loaded yet -> base grid this pass
+  const px=g.getImageData(0,0,fw,fh).data, data=new Float32Array(fw*fh);
+  for(let i=0;i<fw*fh;i++)data[i]=(px[i*4]*256+px[i*4+1])/65535;   // 16-bit two-channel (R=hi, G=lo) -> encoded height
+  const rough=new Float32Array(fw*fh);                             // fine roughness = gradient magnitude of the fine height, so classification ruggedness is fine too (not the 4096 base)
+  for(let y=0;y<fh;y++)for(let x=0;x<fw;x++){const i=y*fw+x,xr=x<fw-1?i+1:i,xl=x>0?i-1:i,yd=y<fh-1?i+fw:i,yu=y>0?i-fw:i;const gx=data[xr]-data[xl],gy=data[yd]-data[yu];rough[i]=Math.sqrt(gx*gx+gy*gy);}
+  _fineHKey=key;_fineH={data,rough,fw,fh};return _fineH;
+}
+// rasterize the in-view Köppen VECTOR zones into a class-indexed buffer (red channel = class), so the Civ classification samples crisp Köppen at zoom-in instead of the coarse raster
+function buildFineKoppenForView(R,W,H){
+  if(!KTILE_INDEX||windowWidthDeg()>coastThr) return null;
+  if(R.x<0||R.x+R.w>WSRC) return null;                              // antimeridian-crossing view -> raster koppenArr
+  const ids=tileIdsForView(R); ensureTiles(ids);
+  for(const k of ids){const t=KTILE.get(k); if(t==='load'||t===undefined) return null;}   // not fully loaded -> raster this pass
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+W+'x'+H;
+  if(key===_fineKopKey&&_fineKop) return _fineKop;
+  const fw=Math.min(2000,Math.max(2,W*6)), fh=Math.min(2000,Math.max(2,H*6));   // ~6 px per Civ tile -> stable dominant-class histogram
+  const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const g=cvs.getContext('2d');
+  g.fillStyle='#000';g.fillRect(0,0,fw,fh);                        // background = class 0 (ocean/none)
+  const {vis}=koppenZoneCull(R);
+  for(const q of vis){ g.fillStyle='rgb('+(q.v&255)+',0,0)'; g.beginPath();
+    for(const ring of q.r){for(let i=0;i<ring.length;i++){const lon=ring[i][0],lat=ring[i][1];const x=(((lon+180)/360*WSRC)-R.x)/R.w*fw,y=(((90-lat)/180*HSRC)-R.y)/R.h*fh;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();}
+    g.fill('evenodd'); }
+  const px=g.getImageData(0,0,fw,fh).data, data=new Uint8Array(fw*fh);
+  for(let i=0;i<fw*fh;i++)data[i]=px[i*4];                         // red channel = class index
+  _fineKopKey=key;_fineKop={data,fw,fh};return _fineKop;
+}
+// assemble a high-res satellite-colour buffer for the current view from the sat tiles, so the colour heuristics (aridity, brightness, redness, white-cover) run on crisp colour instead of the 2048 base
+function buildFineColorForView(R){
+  if(!STILE_META||windowWidthDeg()>coastThr) return null;
+  if(R.x<0||R.x+R.w>WSRC) return null;                              // antimeridian-crossing view -> raster colorArr
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w);
+  if(key===_fineCKey&&_fineC) return _fineC;
+  const fullW=STILE_META.cols*STILE_META.tileW, fullH=STILE_META.rows*STILE_META.tileH, CAP=2000;
+  let fw=Math.round(R.w/WSRC*fullW), fh=Math.round(R.h/HSRC*fullH);
+  if(fw>CAP){fh=Math.max(2,Math.round(fh*CAP/fw));fw=CAP;} if(fh>CAP){fw=Math.max(2,Math.round(fw*CAP/fh));fh=CAP;}
+  fw=Math.max(2,fw);fh=Math.max(2,fh);
+  const ids=satTileIdsForView(R); ensureSatTiles(ids);
+  const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const g=cvs.getContext('2d');g.imageSmoothingEnabled=true;
+  let drew=0;
+  for(const id of ids){const t=STILE.get(id);if(t&&t!=='load'&&t!=='err'){
+    const q=id.split('_'),c=+q[0],rr=+q[1],D=STILE_META.deg;
+    const sx=(c*D)/360*WSRC, sy=(rr*D)/180*HSRC;
+    const dx=(sx-R.x)/R.w*fw, dy=(sy-R.y)/R.h*fh, dw=(D/360*WSRC)/R.w*fw, dh=(D/180*HSRC)/R.h*fh;
+    g.drawImage(t,dx,dy,dw,dh);drew++;
+  }}
+  if(drew<ids.length) return null;                                 // not fully loaded yet -> raster colorArr this pass
+  const data=g.getImageData(0,0,fw,fh).data;                       // RGBA, high-res satellite colour
+  _fineCKey=key;_fineC={data,fw,fh};return _fineC;
+}
+function drawLayerWithCoast(R){
+  const offs=wrapOffsets(R), dw=WSRC/R.w*cv.width, up=(R.w/cv.width)<1;
+  const koppenVec=(mode==='climate'&&vectorKoppenActive());
+  // ---- land interior colouring, drawn once per wrapped world copy (offs=[0] unless the view straddles +/-180) ----
+  if(koppenVec){ctx.fillStyle=KOPPEN_CSS[0];ctx.fillRect(0,0,cv.width,cv.height);}   // ocean/none background, once
+  for(const off of offs){
+    const Rk={x:R.x-off,y:R.y,w:R.w,h:R.h}, destX=(off-R.x)/R.w*cv.width;
+    if(koppenVec){fillKoppenZonesWindowed(ctx,koppenZoneCull(Rk).vis,Rk,cv.width,cv.height);}
+    else{ctx.imageSmoothingEnabled=(up&&mode!=='climate');ctx.drawImage(LAYERS[mode],0,R.y,WSRC,R.h,destX,0,dw,cv.height);ctx.imageSmoothingEnabled=false;}   // full-width copy positioned by destX
+    if(satTilesActive()){ctx.imageSmoothingEnabled=true;const ids=satTileIdsForView(Rk);ensureSatTiles(ids);for(const id of ids){const t=STILE.get(id);if(t&&t!=='load'&&t!=='err')drawSatTile(ctx,t,id,Rk);}ctx.imageSmoothingEnabled=false;}
+  }
+  if(mode==='roughness'){const jr=jitRoughCanvas(R);if(jr){ctx.imageSmoothingEnabled=true;ctx.drawImage(jr,0,0,cv.width,cv.height);ctx.imageSmoothingEnabled=false;}}   // fine-scale roughness, single buffer (no tile seams)
+  if(mode==='elevation'){const je=jitElevCanvas(R);if(je){ctx.imageSmoothingEnabled=true;ctx.drawImage(je,0,0,cv.width,cv.height);ctx.imageSmoothingEnabled=false;}}   // fine-scale hypsometric tint, single buffer
+  // ---- land-alpha mask, accumulated across copies ----
+  if(aCanvas.width!==cv.width||aCanvas.height!==cv.height){aCanvas.width=cv.width;aCanvas.height=cv.height;wcCanvas.width=cv.width;wcCanvas.height=cv.height;}
+  actx.imageSmoothingEnabled=false;actx.clearRect(0,0,cv.width,cv.height);
+  const vec=vectorCoastActive();
+  for(const off of offs){
+    const Rk={x:R.x-off,y:R.y,w:R.w,h:R.h}, destX=(off-R.x)/R.w*cv.width;
+    if(vec){actx.fillStyle='#fff';fillPolysWindowed(actx,coastPathCull(Rk).vis,Rk,cv.width,cv.height,true);actx.globalCompositeOperation='destination-out';fillPolysWindowed(actx,lakePathCull(Rk).vis,Rk,cv.width,cv.height,false);actx.globalCompositeOperation='source-over';}
+    else{actx.drawImage(landAlphaCanvas,0,R.y,WSRC,R.h,destX,0,dw,cv.height);}
+  }
+  // ---- water (once), only where the coastline says water ----
+  wctx.globalCompositeOperation='source-over';wctx.clearRect(0,0,cv.width,cv.height);wctx.fillStyle=waterColorFor(mode);wctx.fillRect(0,0,cv.width,cv.height);
+  wctx.globalCompositeOperation='destination-out';wctx.drawImage(aCanvas,0,0);wctx.globalCompositeOperation='source-over';
+  ctx.drawImage(wcCanvas,0,0);
+}
+function rasterizeVectorLandFrac(W,H,R){
+  const ss=3,sw=W*ss,sh=H*ss;
+  if(lgCanvas.width!==sw||lgCanvas.height!==sh){lgCanvas.width=sw;lgCanvas.height=sh;}
+  lgctx.fillStyle='#000';lgctx.fillRect(0,0,sw,sh);
+  for(const off of wrapOffsets(R)){const Rk={x:R.x-off,y:R.y,w:R.w,h:R.h};
+    lgctx.fillStyle='#fff';fillPolysWindowed(lgctx,coastPathCull(Rk).vis,Rk,sw,sh,true);   // land (+expander, union)
+    lgctx.fillStyle='#000';fillPolysWindowed(lgctx,lakePathCull(Rk).vis,Rk,sw,sh,false);   // lakes -> water
+  }
+  const d=lgctx.getImageData(0,0,sw,sh).data,frac=new Float32Array(W*H);
+  for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){let s=0;for(let j=0;j<ss;j++)for(let i=0;i<ss;i++){if(d[((ty*ss+j)*sw+(tx*ss+i))*4]>127)s++;}frac[ty*W+tx]=s/(ss*ss);}
+  return frac;
+}
+
+/* ---------- rendering ---------- */
+function render(){
+  ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,cv.width,cv.height);const R=srcRect();
+  if(mode==='roughness')ensureRough();
+  if(HTILE_META&&windowWidthDeg()<=coastThr&&R.x>=0&&R.x+R.w<=WSRC)ensureHgtTiles(hgtTileIdsForView(R));   // warm the fine-height cache for classification
+  if(KTILE_INDEX&&windowWidthDeg()<=coastThr&&R.x>=0&&R.x+R.w<=WSRC)ensureTiles(tileIdsForView(R));   // warm the koppen vector tiles for classification (any mode)
+  if(STILE_META&&windowWidthDeg()<=coastThr&&R.x>=0&&R.x+R.w<=WSRC)ensureSatTiles(satTileIdsForView(R));   // warm the satellite tiles for classification colour (any mode)
+  if(RMAN&&riverN>0)ensureRiverTiles(riverTileIdsForView(R));   // warm the river tiles (whole channels) overlapping the view
+  if(mode==='civ'){
+    lastTiles=classifyRegion(out.W,out.H);const tw=cv.width/out.W,th=cv.height/out.H;
+    for(let y=0;y<out.H;y++)for(let x=0;x<out.W;x++){const t=lastTiles.tiles[y][x];let c=TCOLOR[t.terrain].slice();
+      if(t.plot===PLOT.HILLS)c=c.map(v=>v*0.8);else if(t.plot===PLOT.PEAK)c=c.map(v=>v*0.55+54);
+      if(t.feature==='FEATURE_FOREST')c=[c[0]*0.5+20,c[1]*0.5+40,c[2]*0.5+22];
+      if(t.feature==='FEATURE_JUNGLE')c=[c[0]*0.4+27,c[1]*0.4+57,c[2]*0.4+24];
+      ctx.fillStyle='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';ctx.fillRect(Math.floor(x*tw),Math.floor(y*th),Math.ceil(tw)+1,Math.ceil(th)+1);}
+  }else{drawLayerWithCoast(R);if(showGrid)drawTileGrid();}
+  drawRivers(R);
+  if(showGrat)drawGraticule(R);drawAxes(R);updateReadout(R);
+}
+function drawTileGrid(){ctx.save();ctx.strokeStyle='rgba(233,227,211,0.18)';ctx.lineWidth=1;for(let x=0;x<=out.W;x++){const px=Math.round(x/out.W*cv.width)+0.5;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,cv.height);ctx.stroke();}for(let y=0;y<=out.H;y++){const py=Math.round(y/out.H*cv.height)+0.5;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(cv.width,py);ctx.stroke();}ctx.restore();}
+function niceStep(range){const raw=range/6,p=Math.pow(10,Math.floor(Math.log10(Math.max(1e-6,raw)))),m=raw/p;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*p;}
+function drawGraticule(R){ctx.save();ctx.strokeStyle='rgba(69,193,208,0.16)';ctx.lineWidth=1;const latT=latOf(R.y),latB=latOf(R.y+R.h),lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,py=(sy-R.y)/R.h*cv.height;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(cv.width,py);ctx.stroke();}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,px=(sx-R.x)/R.w*cv.width;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,cv.height);ctx.stroke();}ctx.restore();}
+function drawAxes(R){const latAx=document.getElementById('latAxis'),lonAx=document.getElementById('lonAxis');latAx.innerHTML='';lonAx.innerHTML='';const latT=latOf(R.y),latB=latOf(R.y+R.h),lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,frac=(sy-R.y)/R.h;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.top=(frac*100)+'%';const v=Math.round(L);el.textContent=(v>0?v+'°N':v<0?(-v)+'°S':'0°');latAx.appendChild(el);}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,frac=(sx-R.x)/R.w;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.left=(frac*100)+'%';const v=Math.round(((L+540)%360)-180);el.textContent=(v>0?v+'°E':v<0?(-v)+'°W':'0°');lonAx.appendChild(el);}}
+function updateReadout(R){const latT=latOf(R.y),latB=latOf(R.y+R.h),kmW=(R.w/WSRC)*40075*Math.max(0.05,Math.cos((latT+latB)/2*Math.PI/180));document.getElementById('readout').innerHTML='center&nbsp; <b>'+latOf(view.cy).toFixed(1)+'°, '+wrapLon(lonOf(view.cx)).toFixed(1)+'°</b><br>span&nbsp;&nbsp;&nbsp; <b>'+Math.round(kmW).toLocaleString()+' km</b> wide · '+(latT-latB).toFixed(1)+'° lat';const vs=document.getElementById('viewSource');if(vs){const vec=vectorCoastActive();vs.textContent=vec?'Vector':'Raster';vs.classList.toggle('vec',vec);}}
+
+/* ---------- WBS serializer (verified) ---------- */
+function worldSizeFor(W,H){const n=W*H;if(n<=40*24)return'WORLDSIZE_DUEL';if(n<=56*36)return'WORLDSIZE_TINY';if(n<=66*44)return'WORLDSIZE_SMALL';if(n<=84*52)return'WORLDSIZE_STANDARD';if(n<=104*64)return'WORLDSIZE_LARGE';return'WORLDSIZE_HUGE';}
+/* ---------- Rivers: centerline -> Civ4 river edges (corner-path + per-reach net-flow) ----------
+   Snap each reach vertex to the nearest tile corner and Manhattan-connect consecutive corners.
+   Net-flow is accumulated PER REACH (a single reach's out-and-back U-turn cancels to nothing),
+   then merged across reaches -- so a reach's own U-turn is dropped but a tributary is never
+   cancelled against the river it joins, keeping confluences connected. */
+function reachesToEdges(reaches,view,W,H){
+  const nof=new Map(),wof=new Map(),{lonL,lonR,latT,latB}=view,sx=W/(lonR-lonL),sy=H/(latT-latB);
+  const FX=lon=>(lon-lonL)*sx,FY=lat=>(latT-lat)*sy;            // fx:0=west..W=east  fy:0=NORTH..H=south
+  const cl=(v,hi)=>v<0?0:v>hi?hi:v;
+  for(const r of reaches){
+    const NH=new Map(),VE=new Map();                            // per-reach signed traversal
+    const accN=(gr,gx,s)=>{if(gr<0||gr>=H||gx<0||gx>=W)return;const k=gr+','+gx;NH.set(k,(NH.get(k)||0)+s);};
+    const accW=(gy,gx,s)=>{if(gy<0||gy>=H||gx<0||gx>=W)return;const k=gy+','+gx;VE.set(k,(VE.get(k)||0)+s);};
+    const step=(x0,y0,x1,y1)=>{                                 // one unit lattice edge, signed (E/S=+1, W/N=-1)
+      if(y0===y1)accN(y0-1,Math.min(x0,x1),x1>x0?1:-1);         // horizontal: south edge of north tile
+      else accW(Math.min(y0,y1),x0-1,y1>y0?1:-1);              // vertical: east edge of west tile (fy grows south)
+    };
+    const connect=(ax,ay,bx,by)=>{
+      let x=ax,y=ay;const dx=Math.sign(bx-ax),dy=Math.sign(by-ay),xFirst=Math.abs(bx-ax)>=Math.abs(by-ay);
+      if(xFirst){while(x!==bx){step(x,y,x+dx,y);x+=dx;}while(y!==by){step(x,y,x,y+dy);y+=dy;}}
+      else{while(y!==by){step(x,y,x,y+dy);y+=dy;}while(x!==bx){step(x,y,x+dx,y);x+=dx;}}
+    };
+    let px=null,py=null;
+    for(const part of r.l)for(const pt of part){
+      const cx=cl(Math.round(FX(pt[0])),W),cy=cl(Math.round(FY(pt[1])),H);
+      if(px!==null&&(cx!==px||cy!==py))connect(px,py,cx,cy);
+      px=cx;py=cy;
+    }
+    for(const [k,net] of NH){if(net>0){const e=nof.get(k);if(!e||r.d>e.d)nof.set(k,{dir:1,d:r.d});}else if(net<0){const e=nof.get(k);if(!e||r.d>e.d)nof.set(k,{dir:3,d:r.d});}}
+    for(const [k,net] of VE){if(net>0){const e=wof.get(k);if(!e||r.d>e.d)wof.set(k,{dir:2,d:r.d});}else if(net<0){const e=wof.get(k);if(!e||r.d>e.d)wof.set(k,{dir:0,d:r.d});}}
+  }
+  return {nof,wof};
+}
+function plotRiverLines(nof,wof,gx,civY,H){
+  const gr=(H-1)-civY,out=[],n=nof.get(gr+','+gx),w=wof.get(gr+','+gx);
+  if(n){out.push('\tisNOfRiver');out.push('\tRiverWEDirection='+n.dir);}
+  if(w){out.push('\tisWOfRiver');out.push('\tRiverNSDirection='+w.dir);}
+  return out;
+}
+// Precompute per-reach bbox. Channel id (main-stem decomposition) is precomputed offline
+// and carried as f.c; each channel = one river or tributary (ranked independently by the slider).
+// Per-tile prep: bbox + rid(=channel id) per reach. Channels are whole within a tile (terminal-tiled).
+function prepTile(j){
+  const F=(j&&j.features)?j.features:[];
+  for(const f of F){
+    let mnx=1/0,mny=1/0,mxx=-1/0,mxy=-1/0;
+    for(const part of f.l)for(const p of part){if(p[0]<mnx)mnx=p[0];if(p[0]>mxx)mxx=p[0];if(p[1]<mny)mny=p[1];if(p[1]>mxy)mxy=p[1];}
+    f.bbox=[mnx,mny,mxx,mxy]; f.rid=f.c;
+  }
+  return {features:F};
+}
+function maxRiverLodForZoom(){const ww=windowWidthDeg();return ww>120?0:ww>40?1:ww>12?2:3;}   // load smaller rivers only as the window narrows
+function riverTileIdsForView(R){        // manifest tiles overlapping the view whose LOD is coarse enough for this zoom
+  if(!RMAN)return [];
+  const lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),latT=latOf(R.y),latB=latOf(R.y+R.h),ids=[],maxLod=maxRiverLodForZoom();
+  for(const t of RMAN.tiles){if((t.lod||0)>maxLod)continue;const b=t.b;if(b[2]<lonL||b[0]>lonR||b[3]<latB||b[1]>latT)continue;ids.push(t.id);}
+  return ids;
+}
+function ensureRiverTiles(ids){         // fetch not-yet-loaded tiles; bump the memo generation + re-render as each lands
+  for(const id of ids){ if(RTILE.has(id))continue; RTILE.set(id,'load');
+    fetch('data/river_tiles/'+id+'.json').then(r=>{if(!r.ok)throw 0;return r.json();})
+      .then(j=>{RTILE.set(id,prepTile(j));_riverGen++;render();})
+      .catch(()=>{RTILE.set(id,null);}); }
+}
+// Select the top-N in-frame rivers by discharge and rasterize to Civ edges.
+// If tiles is given, drop edges whose BOTH flanking plots are water (river between two ocean/coast tiles).
+let _rivMemo={key:'',raw:null,inView:0};   // memoise the (expensive) filter+group+rasterize per view+N
+function computeRiverEdges(R,W,H,N,tiles){
+  const empty={nof:new Map(),wof:new Map()};
+  if(!RMAN||N<=0)return empty;
+  const key=_riverGen+'|'+R.x.toFixed(3)+'_'+R.y.toFixed(3)+'_'+R.w.toFixed(3)+'_'+R.h.toFixed(3)+'_'+W+'_'+H+'_'+N;
+  let raw;
+  if(_rivMemo.key===key){raw=_rivMemo.raw;}
+  else{
+    const lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),latT=latOf(R.y),latB=latOf(R.y+R.h);
+    const inv=[];for(const t of RTILE.values()){if(!t||t==='load')continue;for(const f of t.features){const b=f.bbox;if(b[2]<lonL||b[0]>lonR||b[3]<latB||b[1]>latT)continue;inv.push(f);}}
+    if(!inv.length){raw=empty;_rivMemo={key,raw,inView:0};}
+    else{
+      const best=new Map();for(const f of inv){const c=best.get(f.rid);if(c==null||f.d>c)best.set(f.rid,f.d);}
+      const keep=new Set([...best.entries()].sort((a,b)=>b[1]-a[1]).slice(0,N).map(e=>e[0]));
+      const sel=inv.filter(f=>keep.has(f.rid));
+      raw=reachesToEdges(sel,{lonL,lonR,latT,latB},W,H);
+      _rivMemo={key,raw,inView:best.size};
+    }
+  }
+  // clone (never mutate the memoised raw) and apply cleanup with the CURRENT tiles:
+  // drop any edge that touches a COAST tile, or sits between two water tiles.
+  const nof=new Map(raw.nof),wof=new Map(raw.wof);
+  if(tiles){
+    const isW=(x,y)=>(x<0||x>=W||y<0||y>=H)?true:tiles[y][x].plot===PLOT.WATER;
+    const isC=(x,y)=>(x<0||x>=W||y<0||y>=H)?false:tiles[y][x].terrain===TERR.COAST;
+    for(const k of [...nof.keys()]){const p=k.split(',');const gr=+p[0],gx=+p[1];
+      if(isC(gx,gr)||isC(gx,gr+1)||(isW(gx,gr)&&isW(gx,gr+1)))nof.delete(k);}     // flanks: (gx,gr) N, (gx,gr+1) S
+    for(const k of [...wof.keys()]){const p=k.split(',');const gy=+p[0],gx=+p[1];
+      if(isC(gx,gy)||isC(gx+1,gy)||(isW(gx,gy)&&isW(gx+1,gy)))wof.delete(k);}     // flanks: (gx,gy) W, (gx+1,gy) E
+  }
+  return {nof,wof};
+}
+// Blue overlay at ~8% tile width, drawn along the exact tile edges that get serialized.
+function drawRivers(R){
+  if(!RMAN||riverN<=0)return;
+  try{
+    const tiles=(mode==='civ'&&lastTiles)?lastTiles.tiles:null;
+    const {nof,wof}=computeRiverEdges(R,out.W,out.H,riverN,tiles);
+    if(!nof.size&&!wof.size)return;
+    const tw=cv.width/out.W,th=cv.height/out.H;
+    ctx.save();ctx.strokeStyle='#3aa0e0';ctx.lineWidth=Math.max(1,0.08*tw);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    for(const k of nof.keys()){const p=k.split(',');const gr=+p[0],gx=+p[1];const y=(gr+1)*th;ctx.moveTo(gx*tw,y);ctx.lineTo((gx+1)*tw,y);}
+    for(const k of wof.keys()){const p=k.split(',');const gy=+p[0],gx=+p[1];const x=(gx+1)*tw;ctx.moveTo(x,gy*th);ctx.lineTo(x,(gy+1)*th);}
+    ctx.stroke();ctx.restore();
+  }catch(e){try{ctx.restore();}catch(_){}console.error('drawRivers skipped this frame:',e);}
+}
+function serialize(grid,opts){const {W,H,topLat,botLat,startYear,players,rivers}=opts;const L=[];L.push('Version=11','BeginGame','\tCalendar=CALENDAR_DEFAULT','\tGameTurn=0','\tStartYear='+startYear,'\tDescription=Generated by Terra-WBS (placeholder data)','EndGame');for(let i=0;i<players.length;i++){L.push('BeginTeam','EndTeam');}for(let i=0;i<players.length;i++){const p=players[i];L.push('BeginPlayer','\tLeaderType='+p.leader,'\tCivType='+p.civ,'\tTeam='+i,'\tPlayableCiv=1','\tStartingX='+p.x+', StartingY='+p.y,'\tHandicap=HANDICAP_NOBLE','EndPlayer');}L.push('BeginMap','\tgrid width='+W,'\tgrid height='+H,'\twrap X=1','\twrap Y=0','\ttop latitude='+Math.round(topLat),'\tbottom latitude='+Math.round(botLat),'\tworld size='+worldSizeFor(W,H),'\tclimate=CLIMATE_TEMPERATE','\tsealevel=SEALEVEL_MEDIUM','\tnum plots written='+(W*H),'EndMap','','### Plot Info ###');for(let x=0;x<W;x++)for(let y=0;y<H;y++){const t=grid[(H-1)-y][x];L.push('BeginPlot','\tx='+x+',y='+y);if(t.feature)L.push('\tFeatureType='+t.feature+', FeatureVariety='+(t.fv||0));L.push('\tTerrainType='+t.terrain,'\tPlotType='+t.plot);if(rivers){const rl=plotRiverLines(rivers.nof,rivers.wof,x,y,H);for(let q=0;q<rl.length;q++)L.push(rl[q]);}L.push('EndPlot');}return L.join('\n')+'\n';}
+function pickStarts(region,k){const {tiles,W,H}=region;const land=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(tiles[y][x].plot!==PLOT.WATER&&tiles[y][x].plot!==PLOT.PEAK)land.push([x,y]);const chosen=[];if(!land.length)return chosen;for(let i=0;i<k;i++){const idx=Math.floor((i+0.5)/k*land.length)%land.length,[tx,ty]=land[idx];chosen.push({leader:LEADERS[i%LEADERS.length][0],civ:LEADERS[i%LEADERS.length][1],x:tx,y:(H-1)-ty});}return chosen;}
+function generate(){const region=classifyRegion(out.W,out.H),R=srcRect(),k=Math.max(0,Math.min(12,parseInt(document.getElementById('np').value)||0)),players=pickStarts(region,k);const rivers=computeRiverEdges(R,out.W,out.H,riverN,region.tiles);const text=serialize(region.tiles,{W:out.W,H:out.H,topLat:latOf(R.y),botLat:latOf(R.y+R.h),startYear:-4000,players,rivers});const blob=new Blob([text],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='terra_generated.CivBeyondSwordWBSave';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);validate(region,text,players,rivers);}
+function validate(region,text,players,rivers){const {tiles,W,H}=region,want=W*H,got=(text.match(/BeginPlot/g)||[]).length;let bad=0;for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x],isW=(t.terrain===TERR.OCEAN||t.terrain===TERR.COAST);if(isW!==(t.plot===PLOT.WATER))bad++;}
+  const wantEdges=rivers?(rivers.nof.size+rivers.wof.size):0,gotEdges=(text.match(/isNOfRiver|isWOfRiver/g)||[]).length;
+  let waterRiver=0;if(rivers){const isW=(x,y)=>(x<0||x>=W||y<0||y>=H)?true:tiles[y][x].plot===PLOT.WATER;for(const k of rivers.nof.keys()){const p=k.split(',');if(isW(+p[1],+p[0])&&isW(+p[1],+p[0]+1))waterRiver++;}for(const k of rivers.wof.keys()){const p=k.split(',');if(isW(+p[1],+p[0])&&isW(+p[1]+1,+p[0]))waterRiver++;}}
+  let fourSided=0;if(rivers){const {nof,wof}=rivers;for(let gy=0;gy<H;gy++)for(let gx=0;gx<W;gx++){if(nof.has((gy-1)+','+gx)&&nof.has(gy+','+gx)&&wof.has(gy+','+gx)&&wof.has(gy+','+(gx-1)))fourSided++;}}   // rivers on all 4 sides of a tile: almost always a rasterization error
+  const rows=[['plots written = '+W+'×'+H,got===want,got+' / '+want],['land ↔ plot-type consistent',bad===0,bad?bad+' mismatched':'all '+want+' ok'],['river edges written',gotEdges===wantEdges,gotEdges+' / '+wantEdges+(wantEdges?' ('+riverN+' rivers)':'')],['no river on all-water edge',waterRiver===0,waterRiver?waterRiver+' bad':'ok'],['no tile with rivers on all 4 sides',fourSided===0,fourSided?fourSided+' tile(s)':'ok'],['starting plots on land',players.length===(parseInt(document.getElementById('np').value)||0),players.length+' placed'],['header + map block present',/BeginMap/.test(text)&&/num plots written=/.test(text),'ok']];document.getElementById('validBody').innerHTML=rows.map(r=>'<div class="vline '+(r[1]?'vok':'vwarn')+'"><span class="dot '+(r[1]?'ok':'warn')+'"></span>'+r[0]+' · <span style="color:var(--muted)">'+r[2]+'</span></div>').join('');}
+
+/* ---------- stats ---------- */
+function fmtBlend(b){return b<=0.02?'raw height':b>=0.98?'roughness':(Math.round((1-b)*100)+'/'+Math.round(b*100)+' H·R');}
+function refreshStats(){
+  if(typeof updateRiverReadout==='function')updateRiverReadout();
+  document.getElementById('vClim').textContent=P.clim.toFixed(2);
+  document.getElementById('vAlpine').textContent=P.alpine.toFixed(2);
+  if(typeof updateMultiReadouts==='function')updateMultiReadouts();
+  document.getElementById('stWorld').textContent=worldSizeFor(out.W,out.H).replace('WORLDSIZE_','');document.getElementById('stTiles').textContent=(out.W*out.H).toLocaleString()+'  ('+out.W+'×'+out.H+')';
+  const R=srcRect();document.getElementById('stPerTile').textContent=(R.w/out.W).toFixed(1)+' × '+(R.h/out.H).toFixed(1);
+  const minEdge=Math.min(R.w/out.W,R.h/out.H);document.getElementById('perTileNote').textContent=minEdge<2?'⚠ under ~2 source px/tile — upsampling; averages are noisy at this zoom.':'healthy averaging regime.';
+  const reg=lastTiles||classifyRegion(out.W,out.H),tot=out.W*out.H;document.getElementById('stLand').textContent=Math.round(reg.land/tot*100)+'%';document.getElementById('stRelief').textContent=Math.round(reg.hills/tot*100)+'% / '+Math.round(reg.peaks/tot*100)+'%';
+  document.getElementById('vCoast').textContent=coastThr.toFixed(0)+'° wide';document.getElementById('vNudgeX').textContent=nudgeX.toFixed(2);document.getElementById('vNudgeY').textContent=nudgeY.toFixed(2);
+  document.getElementById('vIsland').textContent=islandBias.toFixed(2);document.getElementById('vSeaway').textContent=seawayBias.toFixed(2);document.getElementById('vExpand').textContent=islandExpand.toFixed(2);document.getElementById('vRough').textContent=roughHalo.toFixed(2);
+}
+
+/* ---------- interactions ---------- */
+let raf=null;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=null;render();refreshStats();});}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-pressed','false'));t.setAttribute('aria-pressed','true');mode=t.dataset.mode;lastTiles=null;drawLegend();schedule();}));
+function bindRange(id,key,after){const el=document.getElementById(id);el.addEventListener('input',()=>{P[key]=parseFloat(el.value);lastTiles=null;if(after)after();schedule();});}
+bindRange('clim','clim');   // relief-basis is now a dual-knob slider (see reliefBasisRange below); sea-level slider removed, P.sea fixed at 0.5
+
+/* ---------- multi-knob slider (coupled thumbs) ---------- */
+/* segMode 'knots'  : thumbs ARE the boundaries -> N+1 segments split at the thumbs (relief, temperature, boreal)
+   segMode 'centers': thumbs are set-points    -> N segments split at the midpoints between thumbs (dryness) */
+function makeMultiSlider(el,opts){
+  const {min,max,step=0.01,segColors=null,thumbColors=null,segMode='knots',independent=false,onInput}=opts;
+  const values=opts.values.slice(),n=values.length,nSeg=segMode==='centers'?n:n+1;
+  el.classList.add('mslider');el.innerHTML='';
+  const track=document.createElement('div');track.className='mslider-track';el.appendChild(track);
+  const segs=[];for(let s=0;s<nSeg;s++){const d=document.createElement('div');d.className='mslider-seg';if(segColors&&segColors[s])d.style.background=segColors[s];track.appendChild(d);segs.push(d);}
+  const thumbs=values.map((_,ti)=>{const t=document.createElement('div');t.className='mslider-thumb';t.tabIndex=0;t.setAttribute('role','slider');t.setAttribute('aria-valuemin',min);t.setAttribute('aria-valuemax',max);if(thumbColors&&thumbColors[ti])t.style.background=thumbColors[ti];el.appendChild(t);return t;});
+  const pct=v=>(v-min)/(max-min)*100;
+  const round=v=>Math.max(min,Math.min(max,+(Math.round(v/step)*step).toFixed(6)));
+  function layout(){
+    values.forEach((v,i)=>{thumbs[i].style.left=pct(v)+'%';thumbs[i].setAttribute('aria-valuenow',v);});
+    for(let s=0;s<nSeg;s++){
+      let lo,hi;
+      if(segMode==='centers'){lo=s===0?0:(pct(values[s-1])+pct(values[s]))/2;hi=s===n-1?100:(pct(values[s])+pct(values[s+1]))/2;}
+      else{lo=s===0?0:pct(values[s-1]);hi=s===n?100:pct(values[s]);}
+      segs[s].style.left=lo+'%';segs[s].style.width=Math.max(0,hi-lo)+'%';
+    }
+  }
+  function set(i,raw){
+    const v=independent?round(raw):Math.max(i>0?values[i-1]:min,Math.min(i<n-1?values[i+1]:max,round(raw)));   // coupling keeps thumbs ordered unless independent
+    if(v===values[i])return;values[i]=v;layout();onInput&&onInput(values.slice(),i);
+  }
+  const xToVal=cx=>{const r=el.getBoundingClientRect();return min+((cx-r.left)/r.width)*(max-min);};
+  const nearest=cx=>{const r=el.getBoundingClientRect(),f=(cx-r.left)/r.width*100;let bi=0,bd=1e9;values.forEach((v,i)=>{const d=Math.abs(pct(v)-f);if(d<bd){bd=d;bi=i;}});return bi;};
+  let active=-1;
+  el.addEventListener('pointerdown',e=>{const i=e.target.classList.contains('mslider-thumb')?thumbs.indexOf(e.target):nearest(e.clientX);active=i;thumbs[i].focus();try{el.setPointerCapture(e.pointerId);}catch{}set(i,xToVal(e.clientX));e.preventDefault();});
+  el.addEventListener('pointermove',e=>{if(active<0)return;set(active,xToVal(e.clientX));});
+  const end=e=>{active=-1;try{el.releasePointerCapture(e.pointerId);}catch{}};
+  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+  thumbs.forEach((t,i)=>t.addEventListener('keydown',e=>{let d=0;const k=e.key;if(k==='ArrowLeft'||k==='ArrowDown')d=-step;else if(k==='ArrowRight'||k==='ArrowUp')d=step;else if(k==='PageDown')d=-step*10;else if(k==='PageUp')d=step*10;else return;e.preventDefault();set(i,values[i]+d);}));
+  layout();
+  return {get:()=>values.slice(),set:vs=>{for(let i=0;i<vs.length;i++)values[i]=round(vs[i]);layout();}};
+}
+const TC={grass:'rgba(92,138,74,.72)',plains:'rgba(167,164,78,.72)',desert:'rgba(203,181,111,.72)',tundra:'rgba(128,138,114,.72)',snow:'rgba(233,236,224,.72)',hills:'rgba(120,138,88,.5)',peak:'rgba(180,186,190,.65)'};
+function fmt2(v){return v.toFixed(2);}
+function updateMultiReadouts(){
+  document.getElementById('vBlend').innerHTML='hills <b>'+fmtBlend(P.blendHill)+'</b> · peak <b>'+fmtBlend(P.blendPeak)+'</b>';
+  document.getElementById('vRelief').innerHTML='hills <b>'+fmt2(P.hill)+'</b> · peak <b>'+fmt2(P.peak)+'</b>';
+  document.getElementById('vDry').innerHTML='plains <b>'+fmt2(P.dryPlains)+'</b> · desert <b>'+fmt2(P.dryDesert)+'</b>';
+  document.getElementById('vTemp').innerHTML='tundra <b>'+fmt2(P.tempTundra)+'</b> · ice <b>'+fmt2(P.tempSnow)+'</b>';
+  document.getElementById('vBoreal').innerHTML='tundra <b>'+Math.round(P.latTundra)+'°</b> · ice <b>'+Math.round(P.latIce)+'°</b>';
+}
+const commit=()=>{lastTiles=null;updateMultiReadouts();schedule();};
+makeMultiSlider(document.getElementById('reliefRange'),{min:0,max:1,step:0.005,values:[P.hill,P.peak],segMode:'knots',segColors:['',TC.hills,TC.peak],
+  onInput:v=>{P.hill=v[0];P.peak=v[1];commit();}});
+// relief BASIS: two independent thumbs (green = hills basis, grey = peak basis), 0 = raw height .. 1 = roughness
+const reliefBasisMS=makeMultiSlider(document.getElementById('reliefBasisRange'),{min:0,max:1,step:0.02,values:[P.blendHill,P.blendPeak],independent:true,segMode:'centers',thumbColors:['#7e9a52','#b9bfc4'],
+  onInput:v=>{P.blendHill=v[0];P.blendPeak=v[1];commit();}});
+document.querySelectorAll('.seg button[data-blend]').forEach(b=>b.addEventListener('click',()=>{const v=parseFloat(b.dataset.blend);P.blendHill=v;P.blendPeak=v;reliefBasisMS.set([v,v]);commit();}));
+makeMultiSlider(document.getElementById('drynessRange'),{min:0,max:1,step:0.01,values:[P.dryPlains,P.dryDesert],segMode:'knots',segColors:[TC.grass,TC.plains,TC.desert],
+  onInput:v=>{P.dryPlains=v[0];P.dryDesert=v[1];commit();}});
+/* temperature axis reads cold(left) -> hot(right); the two thumbs are the snow and tundra cutoffs, so left band = snow, middle = tundra, right = no override */
+makeMultiSlider(document.getElementById('tempRange'),{min:0,max:1,step:0.01,values:[P.tempSnow,P.tempTundra],segMode:'knots',segColors:[TC.snow,TC.tundra,''],
+  onInput:v=>{P.tempSnow=v[0];P.tempTundra=v[1];commit();}});
+/* boreal axis reads equator(left) -> pole(right); cold tilt ramps 0 at the min-lat thumb to full at the max-lat thumb, subtracted from temperature */
+makeMultiSlider(document.getElementById('borealRange'),{min:35,max:95,step:1,values:[P.latTundra,P.latIce],segMode:'knots',segColors:['',TC.tundra,TC.snow],
+  onInput:v=>{P.latTundra=v[0];P.latIce=v[1];commit();}});
+document.getElementById('alpine').addEventListener('input',e=>{P.alpine=parseFloat(e.target.value);document.getElementById('vAlpine').textContent=P.alpine.toFixed(2);lastTiles=null;schedule();});
+updateMultiReadouts();
+document.getElementById('feat').addEventListener('change',e=>{P.feat=e.target.checked;lastTiles=null;schedule();});
+const coastThrEl=document.getElementById('coastThr');
+coastThrEl.addEventListener('input',()=>{coastThr=parseFloat(coastThrEl.value);lastTiles=null;schedule();});
+const riverNEl=document.getElementById('riverN');
+function updateRiverReadout(){const el=document.getElementById('vRiverN');if(!el)return;el.textContent=(riverN<=0?'off':'top '+riverN)+((RMAN&&riverN>0)?' / '+_rivMemo.inView+' in view':'');}
+riverNEl.addEventListener('input',()=>{riverN=parseInt(riverNEl.value)||0;updateRiverReadout();render();});updateRiverReadout();
+document.getElementById('nudgeX').addEventListener('input',e=>{nudgeX=parseFloat(e.target.value);document.getElementById('vNudgeX').textContent=nudgeX.toFixed(2);lastTiles=null;schedule();});
+document.getElementById('nudgeY').addEventListener('input',e=>{nudgeY=parseFloat(e.target.value);document.getElementById('vNudgeY').textContent=nudgeY.toFixed(2);lastTiles=null;schedule();});
+document.getElementById('islandBias').addEventListener('input',e=>{islandBias=parseFloat(e.target.value);document.getElementById('vIsland').textContent=islandBias.toFixed(2);lastTiles=null;schedule();});
+document.getElementById('seawayBias').addEventListener('input',e=>{seawayBias=parseFloat(e.target.value);document.getElementById('vSeaway').textContent=seawayBias.toFixed(2);lastTiles=null;schedule();});
+document.getElementById('islandExpand').addEventListener('input',e=>{islandExpand=parseFloat(e.target.value);document.getElementById('vExpand').textContent=islandExpand.toFixed(2);lastTiles=null;schedule();});
+const expandSteepEl=document.getElementById('expandSteep');
+expandSteepEl.addEventListener('input',()=>{expandSteep=Math.max(0.2,Math.min(8,parseFloat(expandSteepEl.value)||1));lastTiles=null;schedule();});
+expandSteepEl.addEventListener('wheel',e=>{e.preventDefault();expandSteep=Math.max(0.2,Math.min(8,+(expandSteep+(e.deltaY<0?0.1:-0.1)).toFixed(1)));expandSteepEl.value=expandSteep;lastTiles=null;schedule();},{passive:false});
+const expandMaxMultEl=document.getElementById('expandMaxMult');
+expandMaxMultEl.addEventListener('input',()=>{expandMaxMult=Math.max(1,Math.min(5,parseFloat(expandMaxMultEl.value)||1.5));lastTiles=null;schedule();});
+expandMaxMultEl.addEventListener('wheel',e=>{e.preventDefault();expandMaxMult=Math.max(1,Math.min(5,+(expandMaxMult+(e.deltaY<0?0.1:-0.1)).toFixed(1)));expandMaxMultEl.value=expandMaxMult;lastTiles=null;schedule();},{passive:false});
+document.getElementById('roughHalo').addEventListener('input',e=>{const pp=parseFloat(e.target.value);roughHalo=pp<=0?0:HALO_LOG_MIN*Math.pow(1/HALO_LOG_MIN,pp);document.getElementById('vRough').textContent=roughHalo.toFixed(2);curRoughK=-1;lastTiles=null;schedule();});
+
+/* output grid: typing, wheel-scroll, aspect lock — changing W/H reshapes the viewer to match */
+const owEl=document.getElementById('ow'),ohEl=document.getElementById('oh');
+function syncInputs(){owEl.value=out.W;ohEl.value=out.H;}
+function afterGridChange(){syncInputs();lastTiles=null;relayout();}
+function setW(v){out.W=Math.max(8,Math.min(160,Math.round(v)||8));if(lockAR)out.H=Math.max(8,Math.min(120,Math.round(out.W/arRatio)));afterGridChange();}
+function setH(v){out.H=Math.max(8,Math.min(120,Math.round(v)||8));if(lockAR)out.W=Math.max(8,Math.min(160,Math.round(out.H*arRatio)));afterGridChange();}
+owEl.addEventListener('input',()=>setW(parseFloat(owEl.value)));
+ohEl.addEventListener('input',()=>setH(parseFloat(ohEl.value)));
+owEl.addEventListener('wheel',e=>{e.preventDefault();setW(out.W+(e.deltaY<0?1:-1)*(e.shiftKey?10:1));},{passive:false});
+ohEl.addEventListener('wheel',e=>{e.preventDefault();setH(out.H+(e.deltaY<0?1:-1)*(e.shiftKey?10:1));},{passive:false});
+const lockBtn=document.getElementById('lockAR');
+lockBtn.addEventListener('click',()=>{lockAR=!lockAR;lockBtn.setAttribute('aria-pressed',lockAR?'true':'false');lockBtn.innerHTML=lockAR?'&#128274;':'&#128275;';if(lockAR)arRatio=out.W/out.H;});
+
+document.getElementById('tgGrid').addEventListener('change',e=>{showGrid=e.target.checked;render();});
+document.getElementById('tgGrat').addEventListener('change',e=>{showGrat=e.target.checked;render();});
+document.getElementById('zin').addEventListener('click',()=>{view.spanX*=0.7;clampView();lastTiles=null;schedule();});
+document.getElementById('zout').addEventListener('click',()=>{view.spanX/=0.7;clampView();lastTiles=null;schedule();});
+document.getElementById('zreset').addEventListener('click',()=>{view={cx:WSRC/2,cy:HSRC/2,spanX:1e9};clampView();lastTiles=null;schedule();});
+document.getElementById('regen').addEventListener('click',()=>{generateWorld((Math.random()*1e6)|0);repaintLayers();lastTiles=null;render();refreshStats();});
+document.getElementById('generate').addEventListener('click',generate);
+
+/* pan + cursor-anchored wheel zoom */
+let drag=null;
+mapBox.addEventListener('mousedown',e=>{drag={x:e.clientX,y:e.clientY};mapBox.classList.add('dragging');});
+window.addEventListener('mouseup',()=>{drag=null;mapBox.classList.remove('dragging');});
+window.addEventListener('mousemove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY};const r=mapBox.getBoundingClientRect();view.cx-=dx*(view.spanX/r.width);view.cy-=dy*(spanY()/r.height);clampView();lastTiles=null;schedule();});
+mapBox.addEventListener('wheel',e=>{e.preventDefault();const r=mapBox.getBoundingClientRect(),R=srcRect(),ux=R.x+((e.clientX-r.left)/r.width)*R.w,uy=R.y+((e.clientY-r.top)/r.height)*R.h;view.spanX*=(e.deltaY<0?0.85:1/0.85);clampView();const R2=srcRect(),nx=R2.x+((e.clientX-r.left)/r.width)*R2.w,ny=R2.y+((e.clientY-r.top)/r.height)*R2.h;view.cx+=ux-nx;view.cy+=uy-ny;clampView();lastTiles=null;schedule();},{passive:false});
+
+/* ---------- legend (per mode) ---------- */
+function rampCSS(stops){return 'linear-gradient(90deg,'+stops.map(s=>'rgb('+s[1].map(v=>v|0).join(',')+') '+(s[0]*100).toFixed(0)+'%').join(',')+')';}
+function drawLegend(){const el=document.getElementById('legend');
+  if(mode==='civ'){const items=[['Ocean',TERR.OCEAN],['Coast',TERR.COAST],['Grass',TERR.GRASS],['Plains',TERR.PLAINS],['Desert',TERR.DESERT],['Tundra',TERR.TUNDRA],['Snow',TERR.SNOW]];el.innerHTML=items.map(([n,t])=>{const c=TCOLOR[t];return '<div class="lg"><span class="sw" style="background:rgb('+c.join(',')+')"></span>'+n+'</div>';}).join('')+'<div class="lg"><span class="sw" style="background:#2f5d38"></span>Forest</div>';}
+  else if(mode==='roughness'){el.innerHTML='<div class="lg"><span class="ramp" style="background:'+rampCSS(HEAT)+'"></span>low &rarr; high relief</div>';}
+  else if(mode==='elevation'){el.innerHTML='<div class="lg"><span class="ramp" style="background:'+rampCSS(HYPS_SEA)+'"></span>bathymetry</div><div class="lg"><span class="ramp" style="background:'+rampCSS(HYPS_LAND)+'"></span>elevation</div>';}
+  else if(mode==='climate'){const keys=['Af','BWh','Cfb','Dfb','ET','EF'];el.innerHTML=keys.map(k=>'<div class="lg"><span class="sw" style="background:rgb('+BECK2018[k].join(',')+')"></span>'+k+'</div>').join('')+'<div class="lg"><span class="sw" style="background:#fff"></span>ocean</div><div class="lg" style="color:var(--dim)">Beck et al. 2023</div>';}
+  else{el.innerHTML='<div class="lg" style="color:var(--dim)">real elevation, coastline &amp; '+(satLoaded?'satellite colour (Blue Marble)':'procedural climate colour')+'</div>';}
+}
+
+/* ---------- boot ---------- */
+drawLegend();updateArNote();
+function maybeWarnMissingData(){
+  if(!baseDataMissing) return;
+  const b=document.createElement('div');
+  b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px 16px;font:12px/1.4 var(--mono),ui-monospace,monospace;color:#111;background:#ff8a5a;border-bottom:1px solid #c25a2f;box-shadow:0 2px 8px rgba(0,0,0,.35)';
+  b.innerHTML='Base map data not found (elevation / coast / climate / satellite returned 404). Only the river layer loaded. This directory is missing the <code>data/</code> tiles &mdash; serve the full project folder (the one containing <code>data/coast_hires.json</code>, <code>data/sat_tiles/</code>, etc.), not a partial copy.<span style="float:right;cursor:pointer;font-weight:700;padding-left:12px" onclick="this.parentNode.remove()">&#10005;</span>';
+  document.body.appendChild(b);
+}
+function maybeWarnFileProtocol(){
+  if(!imgReadBlocked) return;
+  const b=document.createElement('div');
+  b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px 16px;font:12px/1.4 var(--mono),ui-monospace,monospace;color:#111;background:#ffd54a;border-bottom:1px solid #b8952f;box-shadow:0 2px 8px rgba(0,0,0,.35)';
+  b.innerHTML='Climate / satellite data could not be read. External images cannot be decoded from <b>file://</b> in Chrome (tainted canvas), so those layers fell back. Serve this folder over http instead &mdash; e.g. <code>python3 -m http.server</code>, then open <code>http://localhost:8000/</code>.<span style="float:right;cursor:pointer;font-weight:700;padding-left:12px" onclick="this.parentNode.remove()">&#10005;</span>';
+  document.body.appendChild(b);
+}
+function loadCoast(done){fetch('data/coast_10m.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{COAST=(j&&j.polys)?j:{polys:[]};done();}).catch(e=>{baseDataMissing=true;COAST={polys:[]};console.warn('coast_10m.json not loaded ('+e+') -- serve over http(s).');done();});}
+function loadLakes(done){fetch('data/lakes_10m.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{LAKES=(j&&j.polys)?j:{polys:[]};done();}).catch(e=>{LAKES={polys:[]};console.warn('lakes_10m.json not loaded ('+e+').');done();});}
+function loadRivers(done){fetch('data/river_tiles/manifest.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{RMAN=j;updateRiverReadout();done();}).catch(e=>{RMAN=null;console.warn('river tiles manifest not loaded ('+e+') -- serve over http(s).');done();});}
+loadElevation(()=>loadKoppen(()=>loadColor(()=>loadCoast(()=>loadLakes(()=>{landMask=buildLandMask();landAlphaCanvas=buildLandAlpha();generateWorld(1);repaintLayers();relayout();maybeWarnFileProtocol();maybeWarnMissingData();loadKoppenIndex(()=>render());loadLakesHires(()=>render());loadCoastHires(()=>render());loadPlayas(()=>render());loadSatIndex(()=>render());loadHgtIndex(()=>render());loadRivers(()=>render());})))));
+</script>
+</body>
+</html>
