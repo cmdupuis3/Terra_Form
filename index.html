@@ -143,6 +143,7 @@
       <button class="vbtn" id="regen" title="Reseed the procedural intra-zone colour texture (real height, coastline, lakes &amp; Köppen unchanged)">⟳ reseed texture</button>
       <label class="toggle"><input type="checkbox" id="tgGrid"> tile grid</label>
       <label class="toggle"><input type="checkbox" id="tgGrat" checked> graticule</label>
+      <label class="toggle" title="View only — rivers are still written to the generated map. Set top-N to 0 to drop them entirely."><input type="checkbox" id="tgRivers" checked> rivers</label>
       <span class="toggle" style="color:var(--dim)" id="arNote"></span>
     </div>
 
@@ -209,7 +210,9 @@
     <div class="panel">
       <h2>Rivers <span class="eyebrow-n">· HydroRIVERS</span></h2>
       <p class="sub">Top channels by discharge intersecting the current view — each main stem, tributary, and distributary ranks on its own. What you see is what gets written to the save.</p>
-      <div class="ctl"><div class="row"><label>Show top-N rivers <span class="eyebrow-n">by discharge</span></label><span class="val" id="vRiverN"></span></div><input type="range" id="riverN" min="0" max="40" step="1" value="12"></div>
+      <div class="ctl"><div class="row"><label>Show top-N rivers <span class="eyebrow-n">by discharge</span></label><span class="val" id="vRiverN"></span></div><input type="range" id="riverN" min="0" max="40" step="1" value="12">
+        <label class="toggle" style="margin-top:6px"><input type="checkbox" id="riverEstuaries" checked> connect estuaries to coast <span class="eyebrow-n">(civ view)</span></label>
+      </div>
     </div>
 
     <div class="panel">
@@ -484,6 +487,9 @@ let RMAN=null;             // river tile manifest {gs, tiles:[{id,b:[bbox],n}]} 
 const RTILE=new Map();     // tile id -> {features:[{d,c,l,bbox,rid}]} | 'load' | null  (terminal-tiled: whole channels per tile)
 let _riverGen=0;           // bumps when a tile loads, to invalidate the edge memo
 let riverN=12;            // show the top-N rivers by in-frame discharge (WYSIWYG: same set is serialized)
+let riverEstuaries=true;  // item 6: trace river mouths down the estuary to the sea (civ view / export)
+let showRivers=true;      // VIEW-ONLY: skip the river passes while panning/zooming. Export always renders them.
+const RIVER_OFF=new Set();// deselected channels (click a river to toggle): drawn red, never serialized
 /* coastline level-of-detail: crisp windowed vector when the view is narrower than coastThr degrees */
 let coastThr=30;
 let nudgeX=0, nudgeY=0;   // sub-tile sampling offset (in Civ-tile units) for the high-res -> Civ-tile downsample
@@ -965,10 +971,13 @@ function reachesToEdges(reaches,view,W,H){
       if(y0===y1)accN(y0-1,Math.min(x0,x1),x1>x0?1:-1);         // horizontal: south edge of north tile
       else accW(Math.min(y0,y1),x0-1,y1>y0?1:-1);              // vertical: east edge of west tile (fy grows south)
     };
-    const connect=(ax,ay,bx,by)=>{
-      let x=ax,y=ay;const dx=Math.sign(bx-ax),dy=Math.sign(by-ay),xFirst=Math.abs(bx-ax)>=Math.abs(by-ay);
-      if(xFirst){while(x!==bx){step(x,y,x+dx,y);x+=dx;}while(y!==by){step(x,y,x,y+dy);y+=dy;}}
-      else{while(y!==by){step(x,y,x,y+dy);y+=dy;}while(x!==bx){step(x,y,x+dx,y);x+=dx;}}
+    const connect=(ax,ay,bx,by)=>{   // Bresenham staircase, not an L: follows the true line, tile by tile
+      let x=ax,y=ay;const adx=Math.abs(bx-ax),ady=Math.abs(by-ay),sx=Math.sign(bx-ax),sy=Math.sign(by-ay);
+      let err=adx-ady;
+      while(x!==bx||y!==by){const e2=2*err;let moved=false;
+        if(e2>-ady&&x!==bx){err-=ady;step(x,y,x+sx,y);x+=sx;moved=true;}
+        if(e2<adx&&y!==by){err+=adx;step(x,y,x,y+sy);y+=sy;moved=true;}
+        if(!moved)break;}
     };
     let px=null,py=null;
     for(const part of r.l)for(const pt of part){
@@ -976,8 +985,8 @@ function reachesToEdges(reaches,view,W,H){
       if(px!==null&&(cx!==px||cy!==py))connect(px,py,cx,cy);
       px=cx;py=cy;
     }
-    for(const [k,net] of NH){if(net>0){const e=nof.get(k);if(!e||r.d>e.d)nof.set(k,{dir:1,d:r.d});}else if(net<0){const e=nof.get(k);if(!e||r.d>e.d)nof.set(k,{dir:3,d:r.d});}}
-    for(const [k,net] of VE){if(net>0){const e=wof.get(k);if(!e||r.d>e.d)wof.set(k,{dir:2,d:r.d});}else if(net<0){const e=wof.get(k);if(!e||r.d>e.d)wof.set(k,{dir:0,d:r.d});}}
+    for(const [k,net] of NH){if(net>0){const e=nof.get(k);if(!e||r.d>e.d)nof.set(k,{dir:1,d:r.d,rid:r.rid});}else if(net<0){const e=nof.get(k);if(!e||r.d>e.d)nof.set(k,{dir:3,d:r.d,rid:r.rid});}}
+    for(const [k,net] of VE){if(net>0){const e=wof.get(k);if(!e||r.d>e.d)wof.set(k,{dir:2,d:r.d,rid:r.rid});}else if(net<0){const e=wof.get(k);if(!e||r.d>e.d)wof.set(k,{dir:0,d:r.d,rid:r.rid});}}
   }
   return {nof,wof};
 }
@@ -1015,6 +1024,195 @@ function ensureRiverTiles(ids){         // fetch not-yet-loaded tiles; bump the 
 // Select the top-N in-frame rivers by discharge and rasterize to Civ edges.
 // If tiles is given, drop edges whose BOTH flanking plots are water (river between two ocean/coast tiles).
 let _rivMemo={key:'',raw:null,inView:0};   // memoise the (expensive) filter+group+rasterize per view+N
+let _cleanMemo=null;                       // memoise cleanup+estuary tracing per (raw,tiles,estuary flag)
+/* ---------- item 6: estuary bridging (fine coastline) ----------
+   HydroRIVERS ends rivers at the fall line, so at tile resolution a river stops inland of its
+   estuary; the estuary itself is usually narrower than the 10km landMask, so following THAT cuts
+   across land (Schuylkill across NJ). Instead we rasterize the hi-res coast vector into a fine
+   local patch (~0.7km/px) around each mouth, find the estuary head by proximity, and BFS the
+   fine-water channel until it reaches a tile the export grid already calls water -- the "would-be
+   estuary tiles" hand us the path to the tiled ocean. Lay a synthetic reach along it. Bridge edges
+   are tagged {bridge:true}. Civ mode / export only; toggled by riverEstuaries. */
+let _cpCanvas=null;
+function rasterCoastPatch(box,RES){
+  const coast=(typeof COAST_HI!=='undefined'&&COAST_HI)||(typeof COAST!=='undefined'&&COAST);
+  if(!coast||!coast.polys||typeof document==='undefined')return null;
+  const c=_cpCanvas||(_cpCanvas=document.createElement('canvas'));c.width=RES;c.height=RES;
+  const m=c.getContext('2d',{willReadFrequently:true}),sX=RES/(box.lon1-box.lon0),sY=RES/(box.lat1-box.lat0);
+  const X=lon=>(lon-box.lon0)*sX,Y=lat=>(box.lat1-lat)*sY;
+  m.fillStyle='#000';m.fillRect(0,0,RES,RES);                                    // water
+  const fill=(polys,col)=>{if(!polys)return;m.fillStyle=col;for(const p of polys){const b=p.b;
+    if(b[2]<box.lon0||b[0]>box.lon1||b[3]<box.lat0||b[1]>box.lat1)continue;
+    m.beginPath();for(const ring of p.r){for(let i=0;i<ring.length;i++){const x=X(ring[i][0]),y=Y(ring[i][1]);i?m.lineTo(x,y):m.moveTo(x,y);}m.closePath();}m.fill('evenodd');}};
+  fill(coast.polys,'#fff');                                                      // land
+  fill(((typeof LAKES_HI!=='undefined'&&LAKES_HI)||(typeof LAKES!=='undefined'&&LAKES)||{}).polys,'#000');   // lakes -> water
+  const d=m.getImageData(0,0,RES,RES).data,mask=new Uint8Array(RES*RES);
+  for(let i=0;i<mask.length;i++)mask[i]=d[i*4]>127?1:0;                          // 1=land, 0=water
+  return mask;
+}
+/* Build the estuary field for a patch ONCE (the expensive part): halo-dilate the fine water to close
+   the sub-pixel gaps a 1-2px tidal channel leaves when rasterized, then flood-fill from the open
+   ocean. Water reached that way is MARINE -- it demonstrably connects to the sea, which is the
+   algorithmic form of zooming in and checking. BFS runs *from* the sea, so par[] already points
+   seaward: from any marine pixel we can walk straight out. Shared by every mouth in the patch. */
+function estuaryField(mask,RES,box,isSeaLL,HALO){
+  const N=RES*RES,inB=(px,py)=>px>=0&&px<RES&&py>=0&&py<RES;
+  const pxLon=px=>box.lon0+(px+0.5)/RES*(box.lon1-box.lon0),pyLat=py=>box.lat1-(py+0.5)/RES*(box.lat1-box.lat0);
+  const tmp=new Uint8Array(N),wH=new Uint8Array(N);   // HALO is passed in: a real distance (~1.5km), not a fixed pixel count
+  for(let y=0;y<RES;y++)for(let x=0;x<RES;x++){let w=0;
+    for(let k=-HALO;k<=HALO&&!w;k++){const nx=x+k;if(nx>=0&&nx<RES&&mask[y*RES+nx]===0)w=1;}tmp[y*RES+x]=w;}
+  for(let y=0;y<RES;y++)for(let x=0;x<RES;x++){let w=0;
+    for(let k=-HALO;k<=HALO&&!w;k++){const ny=y+k;if(ny>=0&&ny<RES&&tmp[ny*RES+x])w=1;}wH[y*RES+x]=w;}
+  const marine=new Uint8Array(N),par=new Int32Array(N).fill(-1),q=[];
+  for(let y=0;y<RES;y++)for(let x=0;x<RES;x++){const i=y*RES+x;
+    if(wH[i]&&!marine[i]&&isSeaLL(pxLon(x),pyLat(y))){marine[i]=1;q.push(i);}}   // seeds: fine water inside a SEA tile
+  for(let h=0;h<q.length;h++){const c=q[h],px=c%RES,py=(c-px)/RES;
+    for(const d of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=px+d[0],ny=py+d[1];
+      if(!inB(nx,ny))continue;const ni=ny*RES+nx;
+      if(!wH[ni]||marine[ni])continue;marine[ni]=1;par[ni]=c;q.push(ni);}}
+  return {mask,marine,par};
+}
+function traceEstuaryPath(field,RES,box,mouth,isSeaLL,dLon,dLat){
+  /* TRUE MOUTH = nearest marine pixel to the river's terminal; then just walk par[] out to the sea.
+     Fallback (no marine water near the terminal -- e.g. a river ending in a lake whose outflow isn't
+     in the coast vector): 0-1 BFS, water free / land cost 1, so it crosses the minimum land. */
+  const {mask,marine,par}=field,N=RES*RES;
+  const inB=(px,py)=>px>=0&&px<RES&&py>=0&&py<RES;
+  const water=(px,py)=>inB(px,py)&&mask[py*RES+px]===0;
+  const pxLon=px=>box.lon0+(px+0.5)/RES*(box.lon1-box.lon0),pyLat=py=>box.lat1-(py+0.5)/RES*(box.lat1-box.lat0);
+  const s=[Math.round((mouth.lon-box.lon0)/(box.lon1-box.lon0)*RES),Math.round((box.lat1-mouth.lat)/(box.lat1-box.lat0)*RES)];
+  if(!inB(s[0],s[1]))return null;
+  let mouthPx=-1;const RAD=Math.floor(RES/8);
+  for(let r=0;r<=RAD&&mouthPx<0;r++)for(let dy=-r;dy<=r&&mouthPx<0;dy++)for(let dx=-r;dx<=r;dx++){
+    if(r&&Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+    const nx=s[0]+dx,ny=s[1]+dy;if(!inB(nx,ny))continue;
+    if(marine[ny*RES+nx]){mouthPx=ny*RES+nx;break;}}
+  let path=null;
+  if(mouthPx>=0){path=[];for(let c=mouthPx;c>=0;c=par[c])path.push(c);}          // walk the estuary out to the sea
+  else{
+    const INF=0x7fffffff,dist=new Int32Array(N).fill(INF),par2=new Int32Array(N).fill(-1);
+    const buckets=[[s[1]*RES+s[0]]];dist[s[1]*RES+s[0]]=0;let target=-1,seen=0;
+    for(let c=0;c<buckets.length;c++){const b=buckets[c];if(!b)continue;
+      for(let i=0;i<b.length;i++){const cur=b[i];
+        if(dist[cur]!==c)continue;
+        const px=cur%RES,py=(cur-px)/RES;
+        if(++seen>200000){c=buckets.length;break;}
+        if(isSeaLL(pxLon(px),pyLat(py))){target=cur;c=buckets.length;break;}
+        for(const d of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=px+d[0],ny=py+d[1];
+          if(!inB(nx,ny))continue;const ni=ny*RES+nx,nd=c+(water(nx,ny)?0:1);
+          if(nd>=dist[ni])continue;dist[ni]=nd;par2[ni]=cur;
+          (buckets[nd]||(buckets[nd]=[])).push(ni);}
+      }
+    }
+    if(target<0)return null;
+    path=[];for(let c=target;c>=0;c=par2[c])path.unshift(c);
+  }
+  if(!path||!path.length)return null;
+  const line=[[mouth.lon,mouth.lat]];                        // sample ~0.4 tile apart so the raster staircases along the estuary
+  const stepLon=Math.abs(dLon)*0.4||1e-4,stepLat=Math.abs(dLat)*0.4||1e-4;
+  let last=[mouth.lon,mouth.lat];
+  for(const c of path){const px=c%RES,py=(c-px)/RES,lo=pxLon(px),la=pyLat(py);
+    if(Math.abs(lo-last[0])>=stepLon||Math.abs(la-last[1])>=stepLat){line.push([lo,la]);last=[lo,la];if(line.length>400)break;}}
+  const tp=path[path.length-1],tx=tp%RES,ty=(tp-tx)/RES;
+  line.push([pxLon(tx),pyLat(ty)]);
+  return line;
+}
+function bridgeEstuaries(nof,wof,tiles,W,H,R,mouths){
+  if(!mouths||!mouths.length)return;
+  const lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),latT=latOf(R.y),latB=latOf(R.y+R.h);
+  const isW=(tx,ty)=>tx>=0&&tx<W&&ty>=0&&ty<H&&tiles[ty][tx].plot===PLOT.WATER;
+  /* label water bodies: a body of <=LAKE_MAX tiles is a LAKE, not the sea. The estuary course may
+     run through lakes, so they are not a valid terminus -- keep tracing until the real ocean, and
+     the land tiles between each lake and the sea get river reaches like any other stretch. */
+  const LAKE_MAX=10,comp=new Int32Array(W*H).fill(-1),size=[];
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    if(!isW(x,y)||comp[y*W+x]!==-1)continue;
+    const id=size.length,st=[[x,y]];comp[y*W+x]=id;let n=0;
+    while(st.length){const c=st.pop(),cx=c[0],cy=c[1];n++;
+      for(const d of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=cx+d[0],ny=cy+d[1];
+        if(!isW(nx,ny)||comp[ny*W+nx]!==-1)continue;comp[ny*W+nx]=id;st.push([nx,ny]);}}
+    size.push(n);
+  }
+  const tileAt=(lon,lat)=>[Math.floor((lon-lonL)/(lonR-lonL)*W),Math.floor((latT-lat)/(latT-latB)*H)];
+  const isSeaLL=(lon,lat)=>{const t=tileAt(lon,lat);if(!isW(t[0],t[1]))return false;
+    const id=comp[t[1]*W+t[0]];return id>=0&&size[id]>LAKE_MAX;};      // stops at the sea, passes through lakes
+  const isAnyWaterLL=(lon,lat)=>{const t=tileAt(lon,lat);return isW(t[0],t[1]);};
+  const dLon=(lonR-lonL)/W,dLat=(latT-latB)/H,bridges=[];
+  /* Adaptive patch. Resolving estuary detail far finer than a TILE is wasted work -- the bridge can
+     only ever be expressed at tile granularity -- and the patch only has to reach far enough to hit
+     a sea tile. So scale both to the tile size:
+       HALF (box half-width): ~8 tiles of reach, clamped [0.6, 2.5] deg
+       px  (patch pixel):     ~1/12 of a tile, floored at 0.0065 deg (~0.7km, the old fixed value)
+     Cost is RES^2, so a world view now costs a fraction of a zoomed-in one instead of the same. */
+  const tileDeg=Math.max(Math.abs(dLon),Math.abs(dLat),1e-6);
+  const HALF=Math.max(0.6,Math.min(2.5,8*tileDeg));
+  const px=Math.max(0.0065,Math.min(0.05,tileDeg/12));
+  const RES=Math.max(128,Math.min(768,Math.round(2*HALF/px)));
+  const HALO=Math.max(1,Math.min(2,Math.round(0.013/px)));   // dilation as a real distance (~1.5km), so a coarse patch doesn't merge water across a strait
+  const SNAP=HALF/2;   // snap box centres so nearby mouths share a patch, while keeping >=0.75*HALF of margin
+  const patches=new Map();
+  for(const m of mouths){
+    const t0=tileAt(m.lon,m.lat);
+    // A mouth outside the view can't be bridged: its edges would be clamped onto the frame border,
+    // smearing spurious rivers along the edge. Reject first -- it's also the cheapest reject we have.
+    if(t0[0]<0||t0[0]>=W||t0[1]<0||t0[1]>=H)continue;
+    if(isAnyWaterLL(m.lon,m.lat)&&isSeaLL(m.lon,m.lat))continue;               // already at the sea
+    // cheap reject: if there is no SEA tile anywhere within reach, this terminal is landlocked --
+    // no estuary can exist, so never pay for a patch raster + flood fill.
+    const rx=Math.ceil(HALF/Math.abs(dLon||1)),ry=Math.ceil(HALF/Math.abs(dLat||1));
+    let nearSea=false;
+    for(let ty=Math.max(0,t0[1]-ry);ty<=Math.min(H-1,t0[1]+ry)&&!nearSea;ty++)
+      for(let tx=Math.max(0,t0[0]-rx);tx<=Math.min(W-1,t0[0]+rx);tx++){
+        if(!isW(tx,ty))continue;const id=comp[ty*W+tx];
+        if(id>=0&&size[id]>LAKE_MAX){nearSea=true;break;}}
+    if(!nearSea)continue;
+    const bx=Math.round(m.lon/SNAP)*SNAP,by=Math.round(m.lat/SNAP)*SNAP,pk=bx+','+by;   // mouths nearby share a patch
+    let P=patches.get(pk);
+    if(P===undefined){
+      const box={lon0:bx-HALF,lon1:bx+HALF,lat0:by-HALF,lat1:by+HALF};
+      const mask=rasterCoastPatch(box,RES);
+      P=mask?{box,field:estuaryField(mask,RES,box,isSeaLL,HALO)}:null;
+      patches.set(pk,P);
+    }
+    if(!P)return;                                                              // coast vector not ready
+    const line=traceEstuaryPath(P.field,RES,P.box,m,isSeaLL,dLon,dLat);
+    if(line&&line.length>1)bridges.push({d:1,rid:m.rid,l:[line]});
+  }
+  if(bridges.length){const be=reachesToEdges(bridges,{lonL,lonR,latT,latB},W,H);
+    for(const [k,v] of be.nof)if(!nof.has(k)){v.bridge=true;nof.set(k,v);}
+    for(const [k,v] of be.wof)if(!wof.has(k)){v.bridge=true;wof.set(k,v);}}
+}
+/* ---------- hairpin sanitize (final pass) ----------
+   A tight bend can rasterize into a single channel wrapping a tile (rivers on all 4 sides, one
+   rid) -- a hairpin that resolves into a normal bend when zoomed in. Straighten it: keep the arc
+   of the perimeter between the channel's two entry/exit corners and drop the pure-detour arc
+   (whose corners have no edges leaving the tile), so connectivity is preserved. Only touches
+   single-channel wraps -- a genuine two-river crossing (different rids on the 4 sides) is left
+   for the reach-nudging step. */
+function sanitizeHairpins(nof,wof){
+  const deg=new Map(),bump=(cx,cy)=>{const k=cx+','+cy;deg.set(k,(deg.get(k)||0)+1);};
+  for(const k of nof.keys()){const p=k.split(',').map(Number);bump(p[1],p[0]+1);bump(p[1]+1,p[0]+1);}
+  for(const k of wof.keys()){const p=k.split(',').map(Number);bump(p[1]+1,p[0]);bump(p[1]+1,p[0]+1);}
+  const D=(cx,cy)=>deg.get(cx+','+cy)||0,toDel=[],seen=new Set();
+  for(const k of nof.keys()){const p=k.split(',').map(Number),gy=p[0],gx=p[1];const tk=gx+','+gy;if(seen.has(tk))continue;seen.add(tk);
+    const N=nof.get((gy-1)+','+gx),S=nof.get(gy+','+gx),E=wof.get(gy+','+gx),Wd=wof.get(gy+','+(gx-1));
+    if(!(N&&S&&E&&Wd))continue;
+    const rid=N.rid;if(rid==null||S.rid!==rid||E.rid!==rid||Wd.rid!==rid)continue;   // single channel only
+    const corners=[[gx,gy],[gx+1,gy],[gx+1,gy+1],[gx,gy+1]];   // NW,NE,SE,SW (cycle)
+    const ek=[['nof',(gy-1)+','+gx],['wof',gy+','+gx],['nof',gy+','+gx],['wof',gy+','+(gx-1)]];   // edge i joins corner i,(i+1)
+    const ext=corners.map(c=>D(c[0],c[1])-2);const io=[];for(let i=0;i<4;i++)if(ext[i]>0)io.push(i);
+    if(io.length===0){for(const e of ek)toDel.push(e);continue;}   // isolated loop -> drop
+    if(io.length!==2)continue;
+    const a=io[0],b=io[1],fwdE=[],fwdI=[],bwdE=[],bwdI=[];
+    for(let i=a;i<b;i++)fwdE.push(ek[i]);for(let i=a+1;i<b;i++)fwdI.push(i);
+    for(let i=b;i<a+4;i++)bwdE.push(ek[i%4]);for(let i=b+1;i<a+4;i++)bwdI.push(i%4);
+    const fp=fwdI.every(i=>ext[i]===0),bp=bwdI.every(i=>ext[i]===0);
+    let rem=null;if(fp&&bp)rem=fwdE.length>=bwdE.length?fwdE:bwdE;else if(fp)rem=fwdE;else if(bp)rem=bwdE;
+    if(rem)for(const e of rem)toDel.push(e);
+  }
+  for(const [m,key] of toDel)(m==='nof'?nof:wof).delete(key);
+  return toDel.length;
+}
 function computeRiverEdges(R,W,H,N,tiles){
   const empty={nof:new Map(),wof:new Map()};
   if(!RMAN||N<=0)return empty;
@@ -1030,44 +1228,85 @@ function computeRiverEdges(R,W,H,N,tiles){
       const keep=new Set([...best.entries()].sort((a,b)=>b[1]-a[1]).slice(0,N).map(e=>e[0]));
       const sel=inv.filter(f=>keep.has(f.rid));
       raw=reachesToEdges(sel,{lonL,lonR,latT,latB},W,H);
-      _rivMemo={key,raw,inView:best.size};
+      // per-channel mouths for estuary bridging. A channel's downstream terminal is only a real
+      // MOUTH if it doesn't land on another channel -- a tributary ends at a CONFLUENCE, and must
+      // never go hunting for an estuary (it's usually far inland, and the search is expensive).
+      const byc=new Map();for(const f of sel){(byc.get(f.rid)||byc.set(f.rid,[]).get(f.rid)).push(f);}
+      const vtx=new Map();   // vertex -> channels touching it
+      for(const f of sel)for(const part of f.l)for(const p of part){const k=p[0]+','+p[1];
+        let s=vtx.get(k);if(!s){s=new Set();vtx.set(k,s);}s.add(f.rid);}
+      const mouths=[];
+      for(const [rid,rs] of byc){const firsts=new Set();for(const f of rs)for(const part of f.l)firsts.add(part[0][0]+','+part[0][1]);
+        for(const f of rs)for(const part of f.l){const lp=part[part.length-1],k=lp[0]+','+lp[1];
+          if(firsts.has(k))continue;                                   // continues within its own channel
+          const s=vtx.get(k);let conf=false;if(s)for(const r of s)if(r!==rid){conf=true;break;}
+          if(conf)continue;                                            // confluence with another channel -> not a mouth
+          const pv=part.length>1?part[part.length-2]:part[0];
+          mouths.push({lon:lp[0],lat:lp[1],dlon:lp[0]-pv[0],dlat:lp[1]-pv[1],rid});}}
+      _rivMemo={key,raw,inView:best.size,mouths};
     }
   }
+  const mouths=_rivMemo.mouths||[];
+  // The cleanup + estuary trace depend on the classified tiles, so memoise on (raw, tiles, estuary flag):
+  // the fine-coastline BFS is expensive and would otherwise re-run on every render and every click.
+  const ck=_rivMemo.key+'|'+(riverEstuaries?1:0);
+  if(_cleanMemo&&_cleanMemo.ck===ck&&_cleanMemo.tiles===tiles)return _cleanMemo.out;
   // clone (never mutate the memoised raw) and apply cleanup with the CURRENT tiles:
   // drop any edge that touches a COAST tile, or sits between two water tiles.
   const nof=new Map(raw.nof),wof=new Map(raw.wof);
   if(tiles){
-    const isW=(x,y)=>(x<0||x>=W||y<0||y>=H)?true:tiles[y][x].plot===PLOT.WATER;
-    const isC=(x,y)=>(x<0||x>=W||y<0||y>=H)?false:tiles[y][x].terrain===TERR.COAST;
-    for(const k of [...nof.keys()]){const p=k.split(',');const gr=+p[0],gx=+p[1];
-      if(isC(gx,gr)||isC(gx,gr+1)||(isW(gx,gr)&&isW(gx,gr+1)))nof.delete(k);}     // flanks: (gx,gr) N, (gx,gr+1) S
-    for(const k of [...wof.keys()]){const p=k.split(',');const gy=+p[0],gx=+p[1];
-      if(isC(gx,gy)||isC(gx+1,gy)||(isW(gx,gy)&&isW(gx+1,gy)))wof.delete(k);}     // flanks: (gx,gy) W, (gx+1,gy) E
+    cleanupRiverEdges(nof,wof,tiles,W,H);
+    if(riverEstuaries)bridgeEstuaries(nof,wof,tiles,W,H,R,mouths);   // item 6: trace mouths down the estuary, through lakes, to the sea
+    cleanupRiverEdges(nof,wof,tiles,W,H);   // bridges obey the same rule: no river edge may border a sea tile
+    sanitizeHairpins(nof,wof);              // final pass: straighten single-channel hairpin wraps
   }
-  return {nof,wof};
+  const out2={nof,wof};_cleanMemo={ck,tiles,out:out2};
+  return out2;
 }
-// Blue overlay at ~8% tile width, drawn along the exact tile edges that get serialized.
+/* Rivers never border water: drop any edge touching a COAST tile (all water tiles adjacent to land
+   are COAST) or sitting between two water tiles. Applied BEFORE and AFTER estuary bridging, so a
+   bridge stops at the last land-land edge instead of running out onto the sea. */
+function cleanupRiverEdges(nof,wof,tiles,W,H){
+  const isW=(x,y)=>(x<0||x>=W||y<0||y>=H)?true:tiles[y][x].plot===PLOT.WATER;
+  const isC=(x,y)=>(x<0||x>=W||y<0||y>=H)?false:tiles[y][x].terrain===TERR.COAST;
+  for(const k of [...nof.keys()]){const p=k.split(',');const gr=+p[0],gx=+p[1];
+    if(isC(gx,gr)||isC(gx,gr+1)||(isW(gx,gr)&&isW(gx,gr+1)))nof.delete(k);}   // flanks: (gx,gr) N, (gx,gr+1) S
+  for(const k of [...wof.keys()]){const p=k.split(',');const gy=+p[0],gx=+p[1];
+    if(isC(gx,gy)||isC(gx+1,gy)||(isW(gx,gy)&&isW(gx+1,gy)))wof.delete(k);}   // flanks: (gx,gy) W, (gx+1,gy) E
+}
+// Drop deselected channels: they are shown (red) but never serialized.
+function selectedOnly(rv){if(!rv)return rv;const nof=new Map(),wof=new Map();
+  for(const [k,e] of rv.nof)if(!RIVER_OFF.has(e.rid))nof.set(k,e);
+  for(const [k,e] of rv.wof)if(!RIVER_OFF.has(e.rid))wof.set(k,e);
+  return {nof,wof};}
+const riverLineWidth=()=>Math.max(2.5,Math.min(9,cv.width*0.0042));   // scale with the viewer, not the tile grid, so width stays sane at any out.W and stays clickable
+// Blue overlay drawn along the exact tile edges that get serialized.
 function drawRivers(R){
-  if(!RMAN||riverN<=0)return;
+  if(!RMAN||riverN<=0||!showRivers)return;
   try{
     const tiles=(mode==='civ'&&lastTiles)?lastTiles.tiles:null;
     const {nof,wof}=computeRiverEdges(R,out.W,out.H,riverN,tiles);
     if(!nof.size&&!wof.size)return;
     const tw=cv.width/out.W,th=cv.height/out.H;
-    ctx.save();ctx.strokeStyle='#3aa0e0';ctx.lineWidth=Math.max(1,0.08*tw);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
-    for(const k of nof.keys()){const p=k.split(',');const gr=+p[0],gx=+p[1];const y=(gr+1)*th;ctx.moveTo(gx*tw,y);ctx.lineTo((gx+1)*tw,y);}
-    for(const k of wof.keys()){const p=k.split(',');const gy=+p[0],gx=+p[1];const x=(gx+1)*tw;ctx.moveTo(x,gy*th);ctx.lineTo(x,(gy+1)*th);}
-    ctx.stroke();ctx.restore();
+    ctx.save();ctx.lineWidth=riverLineWidth();ctx.lineCap='round';ctx.lineJoin='round';
+    for(const off of [false,true]){                    // pass 1: live rivers (blue) · pass 2: deselected (red)
+      ctx.strokeStyle=off?'#e04a3a':'#3aa0e0';ctx.beginPath();
+      for(const [k,e] of nof){if(RIVER_OFF.has(e.rid)!==off)continue;const p=k.split(',');const gr=+p[0],gx=+p[1];const y=(gr+1)*th;ctx.moveTo(gx*tw,y);ctx.lineTo((gx+1)*tw,y);}
+      for(const [k,e] of wof){if(RIVER_OFF.has(e.rid)!==off)continue;const p=k.split(',');const gy=+p[0],gx=+p[1];const x=(gx+1)*tw;ctx.moveTo(x,gy*th);ctx.lineTo(x,(gy+1)*th);}
+      ctx.stroke();
+    }
+    ctx.restore();
   }catch(e){try{ctx.restore();}catch(_){}console.error('drawRivers skipped this frame:',e);}
 }
 function serialize(grid,opts){const {W,H,topLat,botLat,startYear,players,rivers}=opts;const L=[];L.push('Version=11','BeginGame','\tCalendar=CALENDAR_DEFAULT','\tGameTurn=0','\tStartYear='+startYear,'\tDescription=Generated by Terra-WBS (placeholder data)','EndGame');for(let i=0;i<players.length;i++){L.push('BeginTeam','EndTeam');}for(let i=0;i<players.length;i++){const p=players[i];L.push('BeginPlayer','\tLeaderType='+p.leader,'\tCivType='+p.civ,'\tTeam='+i,'\tPlayableCiv=1','\tStartingX='+p.x+', StartingY='+p.y,'\tHandicap=HANDICAP_NOBLE','EndPlayer');}L.push('BeginMap','\tgrid width='+W,'\tgrid height='+H,'\twrap X=1','\twrap Y=0','\ttop latitude='+Math.round(topLat),'\tbottom latitude='+Math.round(botLat),'\tworld size='+worldSizeFor(W,H),'\tclimate=CLIMATE_TEMPERATE','\tsealevel=SEALEVEL_MEDIUM','\tnum plots written='+(W*H),'EndMap','','### Plot Info ###');for(let x=0;x<W;x++)for(let y=0;y<H;y++){const t=grid[(H-1)-y][x];L.push('BeginPlot','\tx='+x+',y='+y);if(t.feature)L.push('\tFeatureType='+t.feature+', FeatureVariety='+(t.fv||0));L.push('\tTerrainType='+t.terrain,'\tPlotType='+t.plot);if(rivers){const rl=plotRiverLines(rivers.nof,rivers.wof,x,y,H);for(let q=0;q<rl.length;q++)L.push(rl[q]);}L.push('EndPlot');}return L.join('\n')+'\n';}
 function pickStarts(region,k){const {tiles,W,H}=region;const land=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(tiles[y][x].plot!==PLOT.WATER&&tiles[y][x].plot!==PLOT.PEAK)land.push([x,y]);const chosen=[];if(!land.length)return chosen;for(let i=0;i<k;i++){const idx=Math.floor((i+0.5)/k*land.length)%land.length,[tx,ty]=land[idx];chosen.push({leader:LEADERS[i%LEADERS.length][0],civ:LEADERS[i%LEADERS.length][1],x:tx,y:(H-1)-ty});}return chosen;}
-function generate(){const region=classifyRegion(out.W,out.H),R=srcRect(),k=Math.max(0,Math.min(12,parseInt(document.getElementById('np').value)||0)),players=pickStarts(region,k);const rivers=computeRiverEdges(R,out.W,out.H,riverN,region.tiles);const text=serialize(region.tiles,{W:out.W,H:out.H,topLat:latOf(R.y),botLat:latOf(R.y+R.h),startYear:-4000,players,rivers});const blob=new Blob([text],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='terra_generated.CivBeyondSwordWBSave';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);validate(region,text,players,rivers);}
+function generate(){const region=classifyRegion(out.W,out.H),R=srcRect(),k=Math.max(0,Math.min(12,parseInt(document.getElementById('np').value)||0)),players=pickStarts(region,k);const rivers=selectedOnly(computeRiverEdges(R,out.W,out.H,riverN,region.tiles));/* always written to the output map even when the view toggle is off; deselected channels dropped */const text=serialize(region.tiles,{W:out.W,H:out.H,topLat:latOf(R.y),botLat:latOf(R.y+R.h),startYear:-4000,players,rivers});const blob=new Blob([text],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='terra_generated.CivBeyondSwordWBSave';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);validate(region,text,players,rivers);}
 function validate(region,text,players,rivers){const {tiles,W,H}=region,want=W*H,got=(text.match(/BeginPlot/g)||[]).length;let bad=0;for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x],isW=(t.terrain===TERR.OCEAN||t.terrain===TERR.COAST);if(isW!==(t.plot===PLOT.WATER))bad++;}
   const wantEdges=rivers?(rivers.nof.size+rivers.wof.size):0,gotEdges=(text.match(/isNOfRiver|isWOfRiver/g)||[]).length;
-  let waterRiver=0;if(rivers){const isW=(x,y)=>(x<0||x>=W||y<0||y>=H)?true:tiles[y][x].plot===PLOT.WATER;for(const k of rivers.nof.keys()){const p=k.split(',');if(isW(+p[1],+p[0])&&isW(+p[1],+p[0]+1))waterRiver++;}for(const k of rivers.wof.keys()){const p=k.split(',');if(isW(+p[1],+p[0])&&isW(+p[1]+1,+p[0]))waterRiver++;}}
-  let fourSided=0;if(rivers){const {nof,wof}=rivers;for(let gy=0;gy<H;gy++)for(let gx=0;gx<W;gx++){if(nof.has((gy-1)+','+gx)&&nof.has(gy+','+gx)&&wof.has(gy+','+gx)&&wof.has(gy+','+(gx-1)))fourSided++;}}   // rivers on all 4 sides of a tile: almost always a rasterization error
-  const rows=[['plots written = '+W+'×'+H,got===want,got+' / '+want],['land ↔ plot-type consistent',bad===0,bad?bad+' mismatched':'all '+want+' ok'],['river edges written',gotEdges===wantEdges,gotEdges+' / '+wantEdges+(wantEdges?' ('+riverN+' rivers)':'')],['no river on all-water edge',waterRiver===0,waterRiver?waterRiver+' bad':'ok'],['no tile with rivers on all 4 sides',fourSided===0,fourSided?fourSided+' tile(s)':'ok'],['starting plots on land',players.length===(parseInt(document.getElementById('np').value)||0),players.length+' placed'],['header + map block present',/BeginMap/.test(text)&&/num plots written=/.test(text),'ok']];document.getElementById('validBody').innerHTML=rows.map(r=>'<div class="vline '+(r[1]?'vok':'vwarn')+'"><span class="dot '+(r[1]?'ok':'warn')+'"></span>'+r[0]+' · <span style="color:var(--muted)">'+r[2]+'</span></div>').join('');}
+  let waterRiver=0;if(rivers){const isW=(x,y)=>(x<0||x>=W||y<0||y>=H)?true:tiles[y][x].plot===PLOT.WATER;for(const [k,e] of rivers.nof){const p=k.split(',');if(isW(+p[1],+p[0])&&isW(+p[1],+p[0]+1))waterRiver++;}for(const [k,e] of rivers.wof){const p=k.split(',');if(isW(+p[1],+p[0])&&isW(+p[1]+1,+p[0]))waterRiver++;}}
+  let bridged=0;if(rivers){for(const e of rivers.nof.values())if(e.bridge)bridged++;for(const e of rivers.wof.values())if(e.bridge)bridged++;}
+  let fourSided=0;if(rivers){const {nof,wof}=rivers;const nb=(m,k)=>!!m.get(k);for(let gy=0;gy<H;gy++)for(let gx=0;gx<W;gx++){if(nb(nof,(gy-1)+','+gx)&&nb(nof,gy+','+gx)&&nb(wof,gy+','+gx)&&nb(wof,gy+','+(gx-1)))fourSided++;}}   // rivers on all 4 sides of a tile: almost always a rasterization error
+  const rows=[['plots written = '+W+'×'+H,got===want,got+' / '+want],['land ↔ plot-type consistent',bad===0,bad?bad+' mismatched':'all '+want+' ok'],['river edges written',gotEdges===wantEdges,gotEdges+' / '+wantEdges+(wantEdges?' ('+riverN+' rivers)':'')],['no river on all-water edge',waterRiver===0,waterRiver?waterRiver+' bad':'ok'],['no tile with rivers on all 4 sides',fourSided===0,fourSided?fourSided+' tile(s)':'ok'],['estuary bridges to open ocean',true,bridged+' edge(s)'],['starting plots on land',players.length===(parseInt(document.getElementById('np').value)||0),players.length+' placed'],['header + map block present',/BeginMap/.test(text)&&/num plots written=/.test(text),'ok']];document.getElementById('validBody').innerHTML=rows.map(r=>'<div class="vline '+(r[1]?'vok':'vwarn')+'"><span class="dot '+(r[1]?'ok':'warn')+'"></span>'+r[0]+' · <span style="color:var(--muted)">'+r[2]+'</span></div>').join('');}
 
 /* ---------- stats ---------- */
 function fmtBlend(b){return b<=0.02?'raw height':b>=0.98?'roughness':(Math.round((1-b)*100)+'/'+Math.round(b*100)+' H·R');}
@@ -1158,6 +1397,7 @@ coastThrEl.addEventListener('input',()=>{coastThr=parseFloat(coastThrEl.value);l
 const riverNEl=document.getElementById('riverN');
 function updateRiverReadout(){const el=document.getElementById('vRiverN');if(!el)return;el.textContent=(riverN<=0?'off':'top '+riverN)+((RMAN&&riverN>0)?' / '+_rivMemo.inView+' in view':'');}
 riverNEl.addEventListener('input',()=>{riverN=parseInt(riverNEl.value)||0;updateRiverReadout();render();});updateRiverReadout();
+document.getElementById('riverEstuaries').addEventListener('change',e=>{riverEstuaries=e.target.checked;render();});
 document.getElementById('nudgeX').addEventListener('input',e=>{nudgeX=parseFloat(e.target.value);document.getElementById('vNudgeX').textContent=nudgeX.toFixed(2);lastTiles=null;schedule();});
 document.getElementById('nudgeY').addEventListener('input',e=>{nudgeY=parseFloat(e.target.value);document.getElementById('vNudgeY').textContent=nudgeY.toFixed(2);lastTiles=null;schedule();});
 document.getElementById('islandBias').addEventListener('input',e=>{islandBias=parseFloat(e.target.value);document.getElementById('vIsland').textContent=islandBias.toFixed(2);lastTiles=null;schedule();});
@@ -1193,10 +1433,42 @@ document.getElementById('regen').addEventListener('click',()=>{generateWorld((Ma
 document.getElementById('generate').addEventListener('click',generate);
 
 /* pan + cursor-anchored wheel zoom */
-let drag=null;
-mapBox.addEventListener('mousedown',e=>{drag={x:e.clientX,y:e.clientY};mapBox.classList.add('dragging');});
+let drag=null,dragMoved=false;
+document.getElementById('tgRivers').addEventListener('change',e=>{showRivers=e.target.checked;render();});
+/* Hit test in client pixels, so the clickable band matches the drawn line width regardless of out.W. */
+function riverHitAt(clientX,clientY){
+  if(!RMAN||riverN<=0||!showRivers)return null;
+  const tiles=(mode==='civ'&&lastTiles)?lastTiles.tiles:null;
+  let rv;try{rv=computeRiverEdges(srcRect(),out.W,out.H,riverN,tiles);}catch(_){return null;}
+  const r=mapBox.getBoundingClientRect();if(!r.width||!r.height)return null;
+  const sx=r.width/out.W,sy=r.height/out.H,mx=clientX-r.left,my=clientY-r.top;
+  const drawn=riverLineWidth()*(r.width/(cv.width||r.width));
+  let best=null,bd=Math.max(7,drawn*1.6);                                  // grab band ~ the drawn width
+  const segd=(x1,y1,x2,y2)=>{const dx=x2-x1,dy=y2-y1,L=dx*dx+dy*dy;
+    let t=L?((mx-x1)*dx+(my-y1)*dy)/L:0;t=t<0?0:t>1?1:t;
+    return Math.hypot(mx-(x1+t*dx),my-(y1+t*dy));};
+  for(const [k,ed] of rv.nof){const p=k.split(',');const gr=+p[0],gx=+p[1];
+    const d=segd(gx*sx,(gr+1)*sy,(gx+1)*sx,(gr+1)*sy);if(d<bd){bd=d;best=ed.rid;}}
+  for(const [k,ed] of rv.wof){const p=k.split(',');const gy=+p[0],gx=+p[1];
+    const d=segd((gx+1)*sx,gy*sy,(gx+1)*sx,(gy+1)*sy);if(d<bd){bd=d;best=ed.rid;}}
+  return best;
+}
+/* Click a river to deselect it: the channel turns red and is skipped when writing the output map. */
+mapBox.addEventListener('click',e=>{
+  if(dragMoved)return;
+  const rid=riverHitAt(e.clientX,e.clientY);if(rid==null)return;
+  RIVER_OFF.has(rid)?RIVER_OFF.delete(rid):RIVER_OFF.add(rid);
+  render();
+});
+let _hoverT=0;
+mapBox.addEventListener('mousemove',e=>{           // cursor hints that rivers are clickable
+  if(drag)return;const now=performance.now();if(now-_hoverT<50)return;_hoverT=now;
+  mapBox.style.cursor=riverHitAt(e.clientX,e.clientY)!=null?'pointer':'';
+});
+mapBox.addEventListener('mouseleave',()=>{mapBox.style.cursor='';});
+mapBox.addEventListener('mousedown',e=>{drag={x:e.clientX,y:e.clientY};dragMoved=false;mapBox.classList.add('dragging');});
 window.addEventListener('mouseup',()=>{drag=null;mapBox.classList.remove('dragging');});
-window.addEventListener('mousemove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY};const r=mapBox.getBoundingClientRect();view.cx-=dx*(view.spanX/r.width);view.cy-=dy*(spanY()/r.height);clampView();lastTiles=null;schedule();});
+window.addEventListener('mousemove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)>2||Math.abs(dy)>2)dragMoved=true;drag={x:e.clientX,y:e.clientY};const r=mapBox.getBoundingClientRect();view.cx-=dx*(view.spanX/r.width);view.cy-=dy*(spanY()/r.height);clampView();lastTiles=null;schedule();});
 mapBox.addEventListener('wheel',e=>{e.preventDefault();const r=mapBox.getBoundingClientRect(),R=srcRect(),ux=R.x+((e.clientX-r.left)/r.width)*R.w,uy=R.y+((e.clientY-r.top)/r.height)*R.h;view.spanX*=(e.deltaY<0?0.85:1/0.85);clampView();const R2=srcRect(),nx=R2.x+((e.clientX-r.left)/r.width)*R2.w,ny=R2.y+((e.clientY-r.top)/r.height)*R2.h;view.cx+=ux-nx;view.cy+=uy-ny;clampView();lastTiles=null;schedule();},{passive:false});
 
 /* ---------- legend (per mode) ---------- */
