@@ -1,4 +1,4 @@
-/* rivers_core.js -- centerline -> Civ4 river-edge rasterizer (corner-path + per-reach net-flow)
+/* rivers_core.js -- centerline -> Civ4 river-edge rasterizer (corner-path + per-CHANNEL net-flow)
  * + serializer fragment. Kept in sync with the inlined copy in index.html; validated by rivers_test.js.
  *
  *   view: {lonL,lonR,latT,latB} (lonL<lonR, latT>latB).  fx:0=west..W=east  fy:0=NORTH..H=south.
@@ -7,9 +7,12 @@
  *   horizontal edge = south edge of tile to its NORTH -> isNOfRiver + RiverWEDirection (E=1,W=3)
  *   vertical   edge = east  edge of tile to its WEST  -> isWOfRiver + RiverNSDirection (N=0,S=2)
  *
- * Corner-snap: snap each reach vertex to the nearest tile corner, Manhattan-connect. Net-flow is
- * accumulated PER REACH (a single reach's out-and-back U-turn cancels to nothing) then merged across
- * reaches -- so U-turns drop but a tributary is never cancelled against the river it joins.
+ * Corner-snap: snap each reach vertex to the nearest tile corner, Bresenham-connect. Net-flow is
+ * accumulated PER CHANNEL (rid): a hairpin that doubles back along the same edge cancels to nothing
+ * even when the out-leg and the back-leg are DIFFERENT REACHES of the channel (per-reach netting
+ * missed those, leaving a spurious edge with an arbitrary direction). Channels are netted
+ * independently, so a tributary (its own rid by the channel decomposition) is never cancelled
+ * against the river it joins. A reach without a rid is its own channel (old per-reach behaviour).
  */
 (function (root) {
   "use strict";
@@ -20,18 +23,23 @@
     const sx = W / (lonR - lonL), sy = H / (latT - latB);
     const FX = (lon) => (lon - lonL) * sx, FY = (lat) => (latT - lat) * sy;
     const cl = (v, hi) => v < 0 ? 0 : v > hi ? hi : v;
+    const chans = new Map(); let anon = 0;                       // rid -> per-channel signed traversal
     for (const r of reaches) {
-      const NH = new Map(), VE = new Map();
-      const accN = (gr, gx, s) => { if (gr < 0 || gr >= H || gx < 0 || gx >= W) return; const k = gr + "," + gx; NH.set(k, (NH.get(k) || 0) + s); };
-      const accW = (gy, gx, s) => { if (gy < 0 || gy >= H || gx < 0 || gx >= W) return; const k = gy + "," + gx; VE.set(k, (VE.get(k) || 0) + s); };
-      const step = (x0, y0, x1, y1) => {
-        if (y0 === y1) accN(y0 - 1, Math.min(x0, x1), x1 > x0 ? 1 : -1);
-        else accW(Math.min(y0, y1), x0 - 1, y1 > y0 ? 1 : -1);
+      const ck = r.rid != null ? r.rid : "~" + (anon++);
+      let C = chans.get(ck); if (!C) { C = { NH: new Map(), VE: new Map(), rid: r.rid }; chans.set(ck, C); }
+      const accN = (gr, gx, s) => { if (gr < 0 || gr >= H || gx < 0 || gx >= W) return; const k = gr + "," + gx; let e = C.NH.get(k); if (!e) C.NH.set(k, e = { n: 0, d: 0 }); e.n += s; if (r.d > e.d) e.d = r.d; };
+      const accW = (gy, gx, s) => { if (gy < 0 || gy >= H || gx < 0 || gx >= W) return; const k = gy + "," + gx; let e = C.VE.get(k); if (!e) C.VE.set(k, e = { n: 0, d: 0 }); e.n += s; if (r.d > e.d) e.d = r.d; };
+      const step = (x0, y0, x1, y1) => {                          // one unit lattice edge, signed (E/S=+1, W/N=-1)
+        if (y0 === y1) accN(y0 - 1, Math.min(x0, x1), x1 > x0 ? 1 : -1);   // horizontal: south edge of north tile
+        else accW(Math.min(y0, y1), x0 - 1, y1 > y0 ? 1 : -1);             // vertical: east edge of west tile (fy grows south)
       };
-      const connect = (ax, ay, bx, by) => {
-        let x = ax, y = ay; const dx = Math.sign(bx - ax), dy = Math.sign(by - ay), xFirst = Math.abs(bx - ax) >= Math.abs(by - ay);
-        if (xFirst) { while (x !== bx) { step(x, y, x + dx, y); x += dx; } while (y !== by) { step(x, y, x, y + dy); y += dy; } }
-        else { while (y !== by) { step(x, y, x, y + dy); y += dy; } while (x !== bx) { step(x, y, x + dx, y); x += dx; } }
+      const connect = (ax, ay, bx, by) => {   // Bresenham staircase, not an L: follows the true line, tile by tile
+        let x = ax, y = ay; const adx = Math.abs(bx - ax), ady = Math.abs(by - ay), sx = Math.sign(bx - ax), sy = Math.sign(by - ay);
+        let err = adx - ady;
+        while (x !== bx || y !== by) { const e2 = 2 * err; let moved = false;
+          if (e2 > -ady && x !== bx) { err -= ady; step(x, y, x + sx, y); x += sx; moved = true; }
+          if (e2 < adx && y !== by) { err += adx; step(x, y, x, y + sy); y += sy; moved = true; }
+          if (!moved) break; }
       };
       let px = null, py = null;
       for (const part of r.l) for (const pt of part) {
@@ -39,8 +47,10 @@
         if (px !== null && (cx !== px || cy !== py)) connect(px, py, cx, cy);
         px = cx; py = cy;
       }
-      for (const [k, net] of NH) { if (net > 0) { const e = nof.get(k); if (!e || r.d > e.d) nof.set(k, { dir: 1, d: r.d }); } else if (net < 0) { const e = nof.get(k); if (!e || r.d > e.d) nof.set(k, { dir: 3, d: r.d }); } }
-      for (const [k, net] of VE) { if (net > 0) { const e = wof.get(k); if (!e || r.d > e.d) wof.set(k, { dir: 2, d: r.d }); } else if (net < 0) { const e = wof.get(k); if (!e || r.d > e.d) wof.set(k, { dir: 0, d: r.d }); } }
+    }
+    for (const C of chans.values()) {                            // merge channels: higher discharge wins an edge
+      for (const [k, e] of C.NH) { if (!e.n) continue; const cur = nof.get(k); if (!cur || e.d > cur.d) nof.set(k, { dir: e.n > 0 ? 1 : 3, d: e.d, rid: C.rid }); }
+      for (const [k, e] of C.VE) { if (!e.n) continue; const cur = wof.get(k); if (!cur || e.d > cur.d) wof.set(k, { dir: e.n > 0 ? 2 : 0, d: e.d, rid: C.rid }); }
     }
     return { nof, wof };
   }

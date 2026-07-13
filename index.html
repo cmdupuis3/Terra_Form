@@ -98,6 +98,17 @@
   .genbtn{width:100%; font-family:var(--disp); font-weight:700; font-size:14px; letter-spacing:.04em; color:var(--ink); background:var(--warn); border:none; border-radius:3px; padding:12px; cursor:pointer; transition:filter .12s}
   .genbtn:hover{filter:brightness(1.08)}
   .genbtn:focus-visible{outline:2px solid var(--paper); outline-offset:2px}
+  .dest{margin-top:9px; border:1px solid var(--line2); border-radius:3px; padding:9px 10px; background:var(--ink)}
+  .dest .dt{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:7px}
+  .dest .drow{display:flex; gap:7px; align-items:center}
+  .dest .drow+.drow{margin-top:7px}
+  .destbtn{flex:0 0 auto; font-family:var(--mono); font-size:11.5px; color:var(--paper); background:var(--ink2,#12222c); border:1px solid var(--line); border-radius:2px; padding:6px 9px; cursor:pointer; white-space:nowrap; transition:border-color .12s}
+  .destbtn:hover{border-color:var(--accent)}
+  .destbtn:focus-visible{outline:none; border-color:var(--accent)}
+  .destpath{flex:1 1 auto; min-width:0; font-family:var(--mono); font-size:11px; color:var(--accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left}
+  .destname{flex:1 1 auto; min-width:0}
+  .destsuffix{flex:0 0 auto; font-family:var(--mono); font-size:11px; color:var(--dim)}
+  .desthint{font-family:var(--mono); font-size:10.5px; color:var(--dim); margin-top:7px; line-height:1.35}
   .valid{margin-top:12px; border:1px solid var(--line2); border-radius:3px; padding:11px 12px; background:var(--ink)}
   .valid .vt{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:7px}
   .vline{display:flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11px; margin:3px 0}
@@ -228,7 +239,19 @@
         <div class="row"><label for="np">Playable civs (auto-placed on land)</label></div>
         <input class="numin" id="np" type="number" min="0" max="12" value="4">
       </div>
-      <button class="genbtn" id="generate">Generate &amp; download .CivBeyondSwordWBSave</button>
+      <button class="genbtn" id="generate">Generate .CivBeyondSwordWBSave</button>
+      <div class="dest" id="destPanel">
+        <div class="dt">Save destination</div>
+        <div class="drow">
+          <button class="destbtn" id="pickFolder" type="button">Choose folder…</button>
+          <span class="destpath" id="destFolder" title="">Downloads (browser default)</span>
+        </div>
+        <div class="drow">
+          <input class="numin destname" id="saveName" type="text" value="terra_generated" spellcheck="false" aria-label="File name">
+          <span class="destsuffix">.CivBeyondSwordWBSave</span>
+        </div>
+        <div class="desthint" id="destHint"></div>
+      </div>
       <div class="valid">
         <div class="vt">Validation</div>
         <div id="validBody"><div class="vline" style="color:var(--dim)"><span>Run generate to validate the output.</span></div></div>
@@ -952,21 +975,26 @@ function drawGraticule(R){ctx.save();ctx.strokeStyle='rgba(69,193,208,0.16)';ctx
 function drawAxes(R){const latAx=document.getElementById('latAxis'),lonAx=document.getElementById('lonAxis');latAx.innerHTML='';lonAx.innerHTML='';const latT=latOf(R.y),latB=latOf(R.y+R.h),lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,frac=(sy-R.y)/R.h;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.top=(frac*100)+'%';const v=Math.round(L);el.textContent=(v>0?v+'°N':v<0?(-v)+'°S':'0°');latAx.appendChild(el);}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,frac=(sx-R.x)/R.w;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.left=(frac*100)+'%';const v=Math.round(((L+540)%360)-180);el.textContent=(v>0?v+'°E':v<0?(-v)+'°W':'0°');lonAx.appendChild(el);}}
 function updateReadout(R){const latT=latOf(R.y),latB=latOf(R.y+R.h),kmW=(R.w/WSRC)*40075*Math.max(0.05,Math.cos((latT+latB)/2*Math.PI/180));document.getElementById('readout').innerHTML='center&nbsp; <b>'+latOf(view.cy).toFixed(1)+'°, '+wrapLon(lonOf(view.cx)).toFixed(1)+'°</b><br>span&nbsp;&nbsp;&nbsp; <b>'+Math.round(kmW).toLocaleString()+' km</b> wide · '+(latT-latB).toFixed(1)+'° lat';const vs=document.getElementById('viewSource');if(vs){const vec=vectorCoastActive();vs.textContent=vec?'Vector':'Raster';vs.classList.toggle('vec',vec);}}
 
-/* ---------- WBS serializer (verified) ---------- */
+/* ---------- WBS serializer (verified; kept in sync with scripts/civ4_wbs_core.js, validated by scripts/civ4_wbs_test.js) ---------- */
 function worldSizeFor(W,H){const n=W*H;if(n<=40*24)return'WORLDSIZE_DUEL';if(n<=56*36)return'WORLDSIZE_TINY';if(n<=66*44)return'WORLDSIZE_SMALL';if(n<=84*52)return'WORLDSIZE_STANDARD';if(n<=104*64)return'WORLDSIZE_LARGE';return'WORLDSIZE_HUGE';}
-/* ---------- Rivers: centerline -> Civ4 river edges (corner-path + per-reach net-flow) ----------
-   Snap each reach vertex to the nearest tile corner and Manhattan-connect consecutive corners.
-   Net-flow is accumulated PER REACH (a single reach's out-and-back U-turn cancels to nothing),
-   then merged across reaches -- so a reach's own U-turn is dropped but a tributary is never
-   cancelled against the river it joins, keeping confluences connected. */
+/* ---------- Rivers: centerline -> Civ4 river edges (corner-path + per-CHANNEL net-flow) ----------
+   Snap each reach vertex to the nearest tile corner and Bresenham-connect consecutive corners.
+   Net-flow is accumulated PER CHANNEL (rid): a hairpin that doubles back along the same edge
+   cancels to nothing even when the out-leg and the back-leg are DIFFERENT REACHES of the channel
+   (per-reach netting missed those, leaving a spurious edge with an arbitrary direction). Channels
+   are netted independently, so a tributary (its own rid by the channel decomposition) is never
+   cancelled against the river it joins, keeping confluences connected. A reach without a rid is
+   its own channel (old per-reach behaviour). */
 function reachesToEdges(reaches,view,W,H){
   const nof=new Map(),wof=new Map(),{lonL,lonR,latT,latB}=view,sx=W/(lonR-lonL),sy=H/(latT-latB);
   const FX=lon=>(lon-lonL)*sx,FY=lat=>(latT-lat)*sy;            // fx:0=west..W=east  fy:0=NORTH..H=south
   const cl=(v,hi)=>v<0?0:v>hi?hi:v;
+  const chans=new Map();let anon=0;                             // rid -> per-channel signed traversal
   for(const r of reaches){
-    const NH=new Map(),VE=new Map();                            // per-reach signed traversal
-    const accN=(gr,gx,s)=>{if(gr<0||gr>=H||gx<0||gx>=W)return;const k=gr+','+gx;NH.set(k,(NH.get(k)||0)+s);};
-    const accW=(gy,gx,s)=>{if(gy<0||gy>=H||gx<0||gx>=W)return;const k=gy+','+gx;VE.set(k,(VE.get(k)||0)+s);};
+    const ck=r.rid!=null?r.rid:'~'+(anon++);
+    let C=chans.get(ck);if(!C){C={NH:new Map(),VE:new Map(),rid:r.rid};chans.set(ck,C);}
+    const accN=(gr,gx,s)=>{if(gr<0||gr>=H||gx<0||gx>=W)return;const k=gr+','+gx;let e=C.NH.get(k);if(!e)C.NH.set(k,e={n:0,d:0});e.n+=s;if(r.d>e.d)e.d=r.d;};
+    const accW=(gy,gx,s)=>{if(gy<0||gy>=H||gx<0||gx>=W)return;const k=gy+','+gx;let e=C.VE.get(k);if(!e)C.VE.set(k,e={n:0,d:0});e.n+=s;if(r.d>e.d)e.d=r.d;};
     const step=(x0,y0,x1,y1)=>{                                 // one unit lattice edge, signed (E/S=+1, W/N=-1)
       if(y0===y1)accN(y0-1,Math.min(x0,x1),x1>x0?1:-1);         // horizontal: south edge of north tile
       else accW(Math.min(y0,y1),x0-1,y1>y0?1:-1);              // vertical: east edge of west tile (fy grows south)
@@ -985,8 +1013,10 @@ function reachesToEdges(reaches,view,W,H){
       if(px!==null&&(cx!==px||cy!==py))connect(px,py,cx,cy);
       px=cx;py=cy;
     }
-    for(const [k,net] of NH){if(net>0){const e=nof.get(k);if(!e||r.d>e.d)nof.set(k,{dir:1,d:r.d,rid:r.rid});}else if(net<0){const e=nof.get(k);if(!e||r.d>e.d)nof.set(k,{dir:3,d:r.d,rid:r.rid});}}
-    for(const [k,net] of VE){if(net>0){const e=wof.get(k);if(!e||r.d>e.d)wof.set(k,{dir:2,d:r.d,rid:r.rid});}else if(net<0){const e=wof.get(k);if(!e||r.d>e.d)wof.set(k,{dir:0,d:r.d,rid:r.rid});}}
+  }
+  for(const C of chans.values()){                               // merge channels: higher discharge wins an edge
+    for(const [k,e] of C.NH){if(!e.n)continue;const cur=nof.get(k);if(!cur||e.d>cur.d)nof.set(k,{dir:e.n>0?1:3,d:e.d,rid:C.rid});}
+    for(const [k,e] of C.VE){if(!e.n)continue;const cur=wof.get(k);if(!cur||e.d>cur.d)wof.set(k,{dir:e.n>0?2:0,d:e.d,rid:C.rid});}
   }
   return {nof,wof};
 }
@@ -1298,9 +1328,39 @@ function drawRivers(R){
     ctx.restore();
   }catch(e){try{ctx.restore();}catch(_){}console.error('drawRivers skipped this frame:',e);}
 }
-function serialize(grid,opts){const {W,H,topLat,botLat,startYear,players,rivers}=opts;const L=[];L.push('Version=11','BeginGame','\tCalendar=CALENDAR_DEFAULT','\tGameTurn=0','\tStartYear='+startYear,'\tDescription=Generated by Terra-WBS (placeholder data)','EndGame');for(let i=0;i<players.length;i++){L.push('BeginTeam','EndTeam');}for(let i=0;i<players.length;i++){const p=players[i];L.push('BeginPlayer','\tLeaderType='+p.leader,'\tCivType='+p.civ,'\tTeam='+i,'\tPlayableCiv=1','\tStartingX='+p.x+', StartingY='+p.y,'\tHandicap=HANDICAP_NOBLE','EndPlayer');}L.push('BeginMap','\tgrid width='+W,'\tgrid height='+H,'\twrap X=1','\twrap Y=0','\ttop latitude='+Math.round(topLat),'\tbottom latitude='+Math.round(botLat),'\tworld size='+worldSizeFor(W,H),'\tclimate=CLIMATE_TEMPERATE','\tsealevel=SEALEVEL_MEDIUM','\tnum plots written='+(W*H),'EndMap','','### Plot Info ###');for(let x=0;x<W;x++)for(let y=0;y<H;y++){const t=grid[(H-1)-y][x];L.push('BeginPlot','\tx='+x+',y='+y);if(t.feature)L.push('\tFeatureType='+t.feature+', FeatureVariety='+(t.fv||0));L.push('\tTerrainType='+t.terrain,'\tPlotType='+t.plot);if(rivers){const rl=plotRiverLines(rivers.nof,rivers.wof,x,y,H);for(let q=0;q<rl.length;q++)L.push(rl[q]);}L.push('EndPlot');}return L.join('\n')+'\n';}
+function serialize(grid,opts){const {W,H,topLat,botLat,rivers}=opts;const players=opts.players||[],startYear=opts.startYear!=null?opts.startYear:-4000,wrapX=opts.wrapX?1:0,desc=opts.description!=null?opts.description:'Generated by Terra-WBS',nSeats=opts.placeholderPlayers!=null?opts.placeholderPlayers:18;const L=[];L.push('Version=11','BeginGame','\tCalendar=CALENDAR_DEFAULT','\tGameTurn=0','\tStartYear='+startYear,'\tDescription='+desc,'EndGame');if(players.length){const TOTAL=Math.max(18,players.length);/* BtS defines all 18 civ slots; if we write only the placed ones the engine reads undefined leaders/civs for the rest -> findInfoTypeNum -> CTD at start */for(let i=0;i<TOTAL;i++){L.push('BeginTeam','EndTeam');}for(let i=0;i<players.length;i++){const p=players[i];L.push('BeginPlayer','\tLeaderType='+p.leader,'\tCivType='+p.civ,'\tTeam='+i,'\tPlayableCiv=1','\tStartingX='+p.x+', StartingY='+p.y,'\tHandicap=HANDICAP_NOBLE','EndPlayer');}for(let i=players.length;i<TOTAL;i++){L.push('BeginPlayer','\tLeaderType=NONE','\tCivType=NONE','\tTeam='+i,'EndPlayer');}/* empty filler slots, as vanilla a_CivSpecificUnits/Earth_IceAge do */}else{for(let i=0;i<nSeats;i++)L.push('BeginPlayer','\tLeaderType=NONE','\tCivType=NONE','\tTeam='+i,'\tRandomStartLocation=true','EndPlayer');}/* no placed starts -> vanilla-Europe placeholder seats (RandomStartLocation, no team blocks) so any civ count can play */L.push('BeginMap','\tgrid width='+W,'\tgrid height='+H,'\twrap X='+wrapX,'\twrap Y=0','\ttop latitude='+Math.round(topLat),'\tbottom latitude='+Math.round(botLat),'\tworld size='+worldSizeFor(W,H),'\tclimate=CLIMATE_TEMPERATE','\tsealevel=SEALEVEL_MEDIUM','\tnum plots written='+(W*H));if(opts.randomizeResources!==false)L.push('\tRandomize Resources=true');/* no BonusType lines are written, so let the game scatter resources */L.push('EndMap','','### Plot Info ###');for(let x=0;x<W;x++)for(let y=0;y<H;y++){const t=grid[(H-1)-y][x];L.push('BeginPlot','\tx='+x+',y='+y);if(t.feature)L.push('\tFeatureType='+t.feature+', FeatureVariety='+(t.fv||0));L.push('\tTerrainType='+t.terrain,'\tPlotType='+t.plot);if(rivers){const rl=plotRiverLines(rivers.nof,rivers.wof,x,y,H);for(let q=0;q<rl.length;q++)L.push(rl[q]);}L.push('EndPlot');}return L.join('\r\n')+'\r\n';}/* CRLF: Civ4's WBSave parser is Windows-native and misreads LF-only files (findInfoTypeNum -> CTD) */
 function pickStarts(region,k){const {tiles,W,H}=region;const land=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(tiles[y][x].plot!==PLOT.WATER&&tiles[y][x].plot!==PLOT.PEAK)land.push([x,y]);const chosen=[];if(!land.length)return chosen;for(let i=0;i<k;i++){const idx=Math.floor((i+0.5)/k*land.length)%land.length,[tx,ty]=land[idx];chosen.push({leader:LEADERS[i%LEADERS.length][0],civ:LEADERS[i%LEADERS.length][1],x:tx,y:(H-1)-ty});}return chosen;}
-function generate(){const region=classifyRegion(out.W,out.H),R=srcRect(),k=Math.max(0,Math.min(12,parseInt(document.getElementById('np').value)||0)),players=pickStarts(region,k);const rivers=selectedOnly(computeRiverEdges(R,out.W,out.H,riverN,region.tiles));/* always written to the output map even when the view toggle is off; deselected channels dropped */const text=serialize(region.tiles,{W:out.W,H:out.H,topLat:latOf(R.y),botLat:latOf(R.y+R.h),startYear:-4000,players,rivers});const blob=new Blob([text],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='terra_generated.CivBeyondSwordWBSave';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);validate(region,text,players,rivers);}
+/* ---------- save destination (File System Access API where available, else classic download) ----------
+   showDirectoryPicker (Chromium/WebView2) lets the user pick a folder once -- e.g. Civ4's PublicMaps --
+   and every Generate writes straight into it; the handle persists across restarts via IndexedDB
+   (permission is re-confirmed inside the Generate click, which is a user gesture). Where the folder API
+   is missing (plain serve.py in Firefox) we fall back to showSaveFilePicker, then to an <a download>. */
+const FS_DIR='showDirectoryPicker' in window, FS_SAVE='showSaveFilePicker' in window;
+let saveDir=null,saveDirName='';
+function idbKV(mode,fn){return new Promise((res,rej)=>{const o=indexedDB.open('terra-wbs',1);o.onupgradeneeded=()=>o.result.createObjectStore('kv');o.onerror=()=>rej(o.error);o.onsuccess=()=>{const db=o.result,tx=db.transaction('kv',mode);const r=fn(tx.objectStore('kv'));tx.oncomplete=()=>{db.close();res(r&&r.result);};tx.onerror=()=>{db.close();rej(tx.error);};};});}
+const idbSet=(k,v)=>idbKV('readwrite',s=>s.put(v,k)),idbGet=k=>idbKV('readonly',s=>s.get(k));
+async function ensureRW(h){if(!h)return false;const o={mode:'readwrite'};if(await h.queryPermission(o)==='granted')return true;return await h.requestPermission(o)==='granted';}
+function saveBaseName(){const n=(document.getElementById('saveName').value||'').trim().replace(/\.CivBeyondSwordWBSave$/i,'').replace(/[\\/:*?"<>|]+/g,'_');return n||'terra_generated';}
+function setDestHint(m){document.getElementById('destHint').textContent=m||'';}
+function updateDestUI(){const f=document.getElementById('destFolder');if(saveDir){f.textContent=saveDirName+'\\';f.title=saveDirName;}else{f.textContent=FS_DIR?'Ask each time (folder not set)':(FS_SAVE?'Ask each time (Save As…)':'Downloads (browser default)');f.title='';}}
+async function pickFolder(){if(!FS_DIR)return;try{const dir=await window.showDirectoryPicker({id:'terra-wbs-out',mode:'readwrite'});if(!await ensureRW(dir)){setDestHint('Write permission for that folder was declined.');return;}saveDir=dir;saveDirName=dir.name;try{await idbSet('saveDir',dir);}catch(_){}updateDestUI();setDestHint('Saving into "'+saveDirName+'". (Browsers expose only the folder name, not its full path.)');}catch(e){if(e&&e.name!=='AbortError')setDestHint('Could not open the folder picker: '+e.message);}}
+function downloadBlob(text,filename){const blob=new Blob([text],{type:'application/octet-stream'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
+async function writeOut(text,filename){
+  if(saveDir){                                                   // (1) chosen folder -> silent direct write
+    if(await ensureRW(saveDir)){
+      try{const fh=await saveDir.getFileHandle(filename,{create:true}),w=await fh.createWritable();await w.write(text);await w.close();setDestHint('Saved '+filename+' → '+saveDirName+'\\');return;}
+      catch(e){downloadBlob(text,filename);setDestHint('Could not write to "'+saveDirName+'" ('+e.message+') — downloaded '+filename+' to Downloads instead.');return;}
+    }
+    downloadBlob(text,filename);setDestHint('Write permission for "'+saveDirName+'" was declined — downloaded '+filename+' to Downloads instead.');return;
+  }
+  if(FS_SAVE){                                                   // (2) no folder set -> native Save As dialog
+    try{const fh=await window.showSaveFilePicker({id:'terra-wbs-out',suggestedName:filename,types:[{description:'Civ4 WorldBuilder save',accept:{'application/octet-stream':['.CivBeyondSwordWBSave']}}]});const w=await fh.createWritable();await w.write(text);await w.close();setDestHint('Saved '+fh.name+'.');return;}
+    catch(e){if(e&&e.name==='AbortError'){setDestHint('Save cancelled.');return;}}
+  }
+  downloadBlob(text,filename);setDestHint('Downloaded '+filename+' to your browser Downloads folder.');   // (3) fallback
+}
+async function generate(){const region=classifyRegion(out.W,out.H),R=srcRect(),k=Math.max(0,Math.min(12,parseInt(document.getElementById('np').value)||0)),players=pickStarts(region,k);const rivers=selectedOnly(computeRiverEdges(R,out.W,out.H,riverN,region.tiles));/* always written to the output map even when the view toggle is off; deselected channels dropped */const text=serialize(region.tiles,{W:out.W,H:out.H,topLat:latOf(R.y),botLat:latOf(R.y+R.h),startYear:-4000,players,rivers,wrapX:R.w>=WSRC-1e-6?1:0});/* wrap X only when the frame spans the full 360 (vanilla regional maps: wrap X=0) */validate(region,text,players,rivers);await writeOut(text,saveBaseName()+'.CivBeyondSwordWBSave');}
+(async()=>{const pf=document.getElementById('pickFolder');if(!FS_DIR){pf.style.display='none';}else{pf.addEventListener('click',pickFolder);try{const h=await idbGet('saveDir');if(h){saveDir=h;saveDirName=h.name;}}catch(_){}}updateDestUI();if(!saveDir)setDestHint(FS_DIR?'Tip: choose your Civ4 “PublicMaps” (or “…\\My Games\\Beyond the Sword\\CustomMaps”) folder to save straight there.':(FS_SAVE?'A Save As dialog will let you pick the location each time.':'This browser downloads to the default folder — move the file into Civ4’s CustomMaps/PublicMaps afterward.'));})();
 function validate(region,text,players,rivers){const {tiles,W,H}=region,want=W*H,got=(text.match(/BeginPlot/g)||[]).length;let bad=0;for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x],isW=(t.terrain===TERR.OCEAN||t.terrain===TERR.COAST);if(isW!==(t.plot===PLOT.WATER))bad++;}
   const wantEdges=rivers?(rivers.nof.size+rivers.wof.size):0,gotEdges=(text.match(/isNOfRiver|isWOfRiver/g)||[]).length;
   let waterRiver=0;if(rivers){const isW=(x,y)=>(x<0||x>=W||y<0||y>=H)?true:tiles[y][x].plot===PLOT.WATER;for(const [k,e] of rivers.nof){const p=k.split(',');if(isW(+p[1],+p[0])&&isW(+p[1],+p[0]+1))waterRiver++;}for(const [k,e] of rivers.wof){const p=k.split(',');if(isW(+p[1],+p[0])&&isW(+p[1]+1,+p[0]))waterRiver++;}}

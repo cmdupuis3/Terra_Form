@@ -21,6 +21,24 @@ const V = { lonL: 0, lonR: 2, latT: 2, latB: 0 }, W = 10, H = 10;
 // U-turn cancellation: a river that pokes out (E) and back (W) along one row nets to zero -> no edge
 (() => { const { nof, wof } = reachesToEdges([{ d: 5000, l: [[[0.2, 1.05], [1.8, 1.05], [1.8, 0.95], [0.2, 0.95]]] }], { lonL: 0, lonR: 2, latT: 2, latB: 0 }, 8, 8);
   ok("U-turn: out-and-back cancels to 0 edges", nof.size + wof.size === 0, `${nof.size + wof.size} edges`); })();
+// hairpin across a REACH BOUNDARY: out-leg and back-leg are different reaches of the same channel
+(() => { const { nof, wof } = reachesToEdges([
+    { d: 100, rid: 7, l: [[[0.2, 1.0], [1.8, 1.0]]] },
+    { d: 200, rid: 7, l: [[[1.8, 1.0], [0.2, 1.0]]] }], V, W, H);
+  ok("hairpin spanning reaches (same rid) cancels to 0 edges", nof.size + wof.size === 0, `${nof.size + wof.size} edges`); })();
+// partial double-back across reaches: only the retraced span cancels; the rest keeps its flow
+(() => { const { nof, wof } = reachesToEdges([
+    { d: 100, rid: 7, l: [[[0.2, 1.0], [1.8, 1.0]]] },
+    { d: 100, rid: 7, l: [[[1.8, 1.0], [1.0, 1.0], [1.0, 0.2]]] }], V, W, H);
+  ok("partial double-back: retraced span drops, remainder flows E then S",
+    nof.size === 4 && wof.size === 4 && [...nof.values()].every(e => e.dir === 1) && [...wof.values()].every(e => e.dir === 2),
+    `${nof.size} H + ${wof.size} V edges`); })();
+// DIFFERENT channels must never cancel: tributary running opposite the main stem loses to discharge
+(() => { const { nof, wof } = reachesToEdges([
+    { d: 5000, rid: 1, l: [[[0.2, 1.0], [1.8, 1.0]]] },
+    { d: 10, rid: 2, l: [[[1.8, 1.0], [0.2, 1.0]]] }], V, W, H);
+  ok("cross-channel opposition survives; higher discharge sets direction",
+    nof.size === 8 && wof.size === 0 && [...nof.values()].every(e => e.dir === 1), `${nof.size} edges`); })();
 // S-shape (E high, W low, on different rows) must survive
 (() => { const { nof } = reachesToEdges([{ d: 5000, l: [[[0.2, 1.6], [1.8, 1.6], [1.8, 0.4], [0.2, 0.4]]] }], { lonL: 0, lonR: 2, latT: 2, latB: 0 }, 8, 8);
   ok("S-shape survives (edges on >1 row)", nof.size > 0 && new Set([...nof.keys()].map(k => k.split(",")[0])).size > 1); })();
@@ -43,8 +61,10 @@ function distinctRivers(reaches) {
   reaches.forEach((f, i) => { const a = f.l[0][0], z = f.l.at(-1).at(-1); for (const e of [a[0] + "," + a[1], z[0] + "," + z[1]]) { if (em.has(e)) { const x = find(em.get(e)), y = find(i); if (x !== y) par[x] = y; } else em.set(e, i); } });
   return new Set(reaches.map((_, i) => find(i))).size;
 }
+const RIVERS_JSON = process.env.RIVERS_JSON || "/mnt/user-data/uploads/rivers_o3.json";
 function region(name, box, W, H) {
-  const j = JSON.parse(fs.readFileSync("/mnt/user-data/uploads/rivers_o3.json", "utf8"));
+  if (!fs.existsSync(RIVERS_JSON)) { console.log(`  SKIP [${name}] (no ${RIVERS_JSON}; set RIVERS_JSON to run)`); return; }
+  const j = JSON.parse(fs.readFileSync(RIVERS_JSON, "utf8"));
   const inb = (lo, la) => lo >= box.lonL && lo <= box.lonR && la >= box.latB && la <= box.latT;
   const reaches = j.features.filter(f => f.l.some(p => p.some(([lo, la]) => inb(lo, la))));
   const { nof, wof } = reachesToEdges(reaches, box, W, H);
