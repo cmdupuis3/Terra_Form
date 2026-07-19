@@ -46,6 +46,15 @@
   ok("Randomize Resources=true by default (no bonuses written)", text.includes("\tRandomize Resources=true"));
   ok("randomizeResources:false drops it", !serialize(grid, { ...base, randomizeResources: false }).includes("Randomize Resources"));
 
+  // ---- special-tile bonus (BonusType) ----
+  const bgrid = [
+    [{ terrain: "TERRAIN_PLAINS", plot: 2, bonus: "BONUS_WHEAT" }, { terrain: "TERRAIN_DESERT", plot: 2, bonus: "BONUS_INCENSE", feature: "FEATURE_FOREST" }],
+    [{ terrain: "TERRAIN_GRASS", plot: 2 }, { terrain: "TERRAIN_OCEAN", plot: 3 }]];
+  const btext = serialize(bgrid, { W: 2, H: 2, topLat: 10, botLat: 0 });
+  ok("BonusType written for each tile with a bonus", (btext.match(/\tBonusType=BONUS_/g) || []).length === 2);
+  ok("BonusType precedes FeatureType then TerrainType", /\tBonusType=BONUS_INCENSE\n\tFeatureType=FEATURE_FOREST, FeatureVariety=0\n\tTerrainType=TERRAIN_DESERT/.test(btext));
+  ok("bonuses coexist with Randomize Resources=true", btext.includes("\tRandomize Resources=true") && /BonusType=BONUS_WHEAT/.test(btext));
+
   // ---- players: vanilla placeholder seats when none placed ----
   ok("18 placeholder players (LeaderType=NONE)", (text.match(/\tLeaderType=NONE/g) || []).length === 18);
   ok("placeholders use RandomStartLocation=true", (text.match(/\tRandomStartLocation=true/g) || []).length === 18);

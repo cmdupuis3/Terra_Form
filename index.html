@@ -179,6 +179,7 @@
         <div class="ctl"><div class="row"><label for="oh">Height</label></div><input class="numin" id="oh" type="number" min="8" max="120" value="32"></div>
         <button class="lockbtn" id="lockAR" aria-pressed="false" title="Lock aspect ratio">&#128275;</button>
       </div>
+      <label class="toggle" style="margin-top:8px"><input type="checkbox" id="hexMode"> hex grid <span class="eyebrow-n">(Civ5 import layout)</span></label>
       <div class="stat" style="margin-top:10px"><span>world size</span><b id="stWorld">—</b></div>
       <div class="stat"><span>tiles</span><b id="stTiles">—</b></div>
       <div class="stat"><span>source px / tile edge</span><b id="stPerTile">—</b></div>
@@ -198,6 +199,8 @@
         </div>
       </div>
       <div class="ctl"><div class="row"><label>Relief thresholds &mdash; hills &middot; peak</label><span class="valx" id="vRelief"></span></div><div id="reliefRange"></div></div>
+      <div class="ctl"><div class="row"><label>Mountain passes <span class="eyebrow-n">↑ demote peaks to hills</span></label><span class="val" id="vPass"></span></div><input type="range" id="mtnPass" min="0" max="1" step="0.02" value="0"></div>
+      <div class="ctl"><div class="row"><label>Flat spots <span class="eyebrow-n">↑ flats in rough terrain</span></label><span class="val" id="vFlat"></span></div><input type="range" id="flatSpots" min="0" max="1" step="0.02" value="0"></div>
       <div class="stat"><span>land</span><b id="stLand">—</b></div>
       <div class="stat"><span>hills / peaks</span><b id="stRelief">—</b></div>
     </div>
@@ -213,14 +216,20 @@
     </div>
 
     <div class="panel">
-      <h2>Features <span class="eyebrow-n">· placeholder</span></h2>
-      <p class="sub">Provisional forest/jungle overlay. Real placement (rainfall / potential vegetation) is a later stage.</p>
-      <label class="toggle" style="font-size:12.5px;color:var(--paper)"><input type="checkbox" id="feat"> emit forest &amp; jungle features</label>
+      <h2>Features</h2>
+      <p class="sub">Forest &amp; jungle from climate, relief &amp; colour (potential/pre-industrial, not present cover); flood plains on flat desert along rivers (score = colour contrast + discharge + ~20% random); oasis in wet desert spots. Re-roll varies the seeded placement.</p>
+      <label class="toggle" style="font-size:12.5px;color:var(--paper)"><input type="checkbox" id="feat"> emit features <span class="eyebrow-n">forest · jungle · flood plains · oasis</span></label>
+      <label class="toggle" style="margin-top:6px;font-size:12.5px;color:var(--paper)"><input type="checkbox" id="fpKoppen" checked> keep arid deserts <span class="eyebrow-n">Köppen — enables flood plains; off → colour gives plains/grass variety when zoomed in</span></label>
+      <div class="ctl" style="margin-top:8px"><div class="row"><label>Forest density</label><span class="val" id="vForest"></span></div><input type="range" id="forestDens" min="0" max="1" step="0.02" value="0.5"></div>
+      <div class="ctl"><div class="row"><label>Jungle density</label><span class="val" id="vJungle"></span></div><input type="range" id="jungleDens" min="0" max="1" step="0.02" value="0.5"></div>
+      <div class="ctl"><div class="row"><label>Flood-plain amount <span class="eyebrow-n">flat desert along rivers</span></label><span class="val" id="vFp"></span></div><input type="range" id="fpAmt" min="0" max="1" step="0.02" value="0.5"></div>
+      <div class="ctl"><div class="row"><label>Oasis density <span class="eyebrow-n">base oasis : flood-plain ratio · ×10 desert, ×3 steppe</span></label><span class="val" id="vOasis"></span></div><input type="range" id="oasisDens" min="0" max="0.4" step="0.02" value="0.14"></div>
+      <button class="vbtn" id="reroll" title="Re-roll the seeded forest / jungle / flood-plain / oasis placement">⟳ re-roll features</button>
     </div>
 
     <div class="panel">
       <h2>Rivers <span class="eyebrow-n">· HydroRIVERS</span></h2>
-      <p class="sub">Top channels by discharge intersecting the current view — each main stem, tributary, and distributary ranks on its own. What you see is what gets written to the save.</p>
+      <p class="sub">Top channels by discharge intersecting the current view — each main stem, tributary, and distributary ranks on its own. What you see is what gets written to the save. Click a river to cycle it: <b style="color:#e04a3a">deselected</b> (red, never written) → <b style="color:#2ec26a">selected</b> (green, kept on the map at any zoom and always written) → default.</p>
       <div class="ctl"><div class="row"><label>Show top-N rivers <span class="eyebrow-n">by discharge</span></label><span class="val" id="vRiverN"></span></div><input type="range" id="riverN" min="0" max="40" step="1" value="12">
         <label class="toggle" style="margin-top:6px"><input type="checkbox" id="riverEstuaries" checked> connect estuaries to coast <span class="eyebrow-n">(civ view)</span></label>
       </div>
@@ -236,7 +245,7 @@
 
     <div class="gen">
       <div class="ctl" style="margin-top:0">
-        <div class="row"><label for="np">Playable civs (auto-placed on land)</label></div>
+        <div class="row"><label for="np">Playable civs <span class="eyebrow-n">0 = random civs &amp; starts · else auto-placed on land</span></label></div>
         <input class="numin" id="np" type="number" min="0" max="12" value="4">
       </div>
       <button class="genbtn" id="generate">Generate .CivBeyondSwordWBSave</button>
@@ -475,7 +484,15 @@ const P={sea:0.5,blendHill:0.9,blendPeak:0.7,hill:0.55,peak:0.8,
          tempTundra:0.39,tempSnow:0.27,                        // temperature thresholds (0 cold -> 1 hot); colder than these -> tundra / snow
          latTundra:55,latIce:70,                              // poleward cold onsets (deg): tundra ramp begins at latTundra, ice ramp at latIce (higher); each climbs to full over LAT_RAMP_SPAN
          alpine:0.6,                                          // strength of the snow-cover cold tilt (satellite white-fraction -> colder)
-         clim:0.45,feat:false};
+         clim:0.45,feat:false,
+         fpKoppen:true,        // arid BW-desert Köppen stays desert so a green/dark floodplain strip isn't reclassified as plains/grass by colour (off -> colour variety when zoomed in)
+         fpThresh:0.5,oasisThresh:0.62,   // flood-plain / oasis quality thresholds on the [0,1] feature score (oasisThresh is tied to the flood-plain slider)
+         oasisRatio:0.14,      // base cap on oasis count = oasisRatio × flood-plain ("river") tile count, applied PER Köppen zone; own slider, max 0.4
+         oasisMultDesert:10,oasisMultSemiArid:3,   // per-zone multipliers on the base ratio: true desert (BWh/BWk) ×10, semi-arid steppe (BSh/BSk) ×3, everything else ×1
+         forestDens:0.5,jungleDens:0.5};   // forest / jungle density sliders (0.5 = natural rate, 0 = none, 1 = max)
+const MOIST_JIT=0.08;    // amplitude of the smooth spatial moisture field added to dryness: lets uniform-humid regions cross the grass/plains/desert thresholds as an organic directional FRONT (not a jolt, not per-tile speckle)
+const MOIST_SCALE=4.0;   // blob size (in tiles) of that moisture field — a few tiles across, so the transition reads as a smooth gradient at any zoom
+const HUMID_F=new Set([14,15,16,25,26,27,28]);   // Cfa/Cfb/Cfc + Dfa/Dfb/Dfc/Dfd: fully-humid (no dry season) — reliably green/fertile. These get a wet prior AND lean on climate over colour, so tan harvested/fallow fields in humid country (e.g. Acadiana) stay grass, and Dfa/Dfb read as green as Cfa. Semi-arid steppe (BSk) is unaffected, so real plains survive.
 const TEMP_LAPSE=0.6;    // how much land elevation above sea cools the temperature metric (altitude -> tundra/snow)
 const COLOR_WARM=0.30, COLOR_ICE=0.35;   // satellite colour: vegetation/soil warms, bright desaturated ice/snow cools
 const SALT_VAL=0.60, SALT_SAT=0.30, SALT_FRAC=0.12;   // salt-pan detector (in arid B): bright + desaturated average, OR this white-fraction
@@ -503,8 +520,23 @@ const PROX_SCALE_PX=PROX_SCALE_DEG*WSRC/360;
 /* per-class base temperature (hot 1 -> cold 0), no latitude; index 0 = ocean/nodata */
 const KOPPEN_TEMP=[0.50,0.95,0.95,0.95, 0.90,0.50,0.90,0.50, 0.72,0.58,0.44, 0.72,0.58,0.44, 0.72,0.58,0.44,
                    0.48,0.38,0.28,0.20, 0.48,0.38,0.28,0.20, 0.48,0.38,0.28,0.20, 0.26,0.04];
+/* per-Köppen-class potential-vegetation weights (index 0 = ocean/nodata). Forest is the base rate for a grass/
+   plains/tundra tile to be wooded; jungle for a grassland tile to be tropical rainforest. Note the deliberate
+   SLIGHT weights for Csa (Mediterranean, often plains) and BSh/BSk semidesert. Order matches KOPPEN_KEYS 1-30:
+   Af Am Aw | BWh BWk BSh BSk | Csa Csb Csc Cwa Cwb Cwc Cfa Cfb Cfc | Dsa Dsb Dsc Dsd Dwa Dwb Dwc Dwd Dfa Dfb Dfc Dfd | ET EF */
+const FOREST_W=[0, 0.15,0.15,0.20, 0.02,0.02,0.10,0.12, 0.22,0.45,0.40, 0.42,0.48,0.42, 0.60,0.72,0.62,
+                0.35,0.45,0.52,0.45, 0.45,0.55,0.60,0.55, 0.60,0.68,0.74,0.66, 0.18,0.00];
+const JUNGLE_W=[0, 0.90,0.85,0.45, 0.00,0.00,0.00,0.00, 0.00,0.00,0.00, 0.20,0.05,0.00, 0.15,0.02,0.00,
+                0.00,0.00,0.00,0.00, 0.00,0.00,0.00,0.00, 0.00,0.00,0.00,0.00, 0.00,0.00];
 const clamp01=v=>v<0?0:v>1?1:v;
 let out={W:52,H:32}; let lockAR=false,arRatio=52/32;
+/* hex mode: compute tiles on Civ5's hex lattice (odd-r: odd CIV rows +0.5 east, row pitch sqrt(3)/2)
+   so the Civ4 WBS export lands correctly when Civ5 imports it. App rows are north-origin and the
+   serializer flips (grid[(H-1)-y]), so the shifted set is odd in CIV space — it flips with H's parity. */
+let hexMode=false;
+const HEX_ROW=Math.sqrt(3)/2;
+function effH(){return hexMode?out.H*HEX_ROW:out.H;}   // output grid's physical height in tile-width units
+function hexShiftX(appY,H){return (hexMode&&(((H-1-appY)&1)===1))?0.5:0;}   // tile units
 let showGrid=false,showGrat=true,lastTiles=null;
 let RMAN=null;             // river tile manifest {gs, tiles:[{id,b:[bbox],n}]} (data/river_tiles/, external)
 const RTILE=new Map();     // tile id -> {features:[{d,c,l,bbox,rid}]} | 'load' | null  (terminal-tiled: whole channels per tile)
@@ -512,7 +544,8 @@ let _riverGen=0;           // bumps when a tile loads, to invalidate the edge me
 let riverN=12;            // show the top-N rivers by in-frame discharge (WYSIWYG: same set is serialized)
 let riverEstuaries=true;  // item 6: trace river mouths down the estuary to the sea (civ view / export)
 let showRivers=true;      // VIEW-ONLY: skip the river passes while panning/zooming. Export always renders them.
-const RIVER_OFF=new Set();// deselected channels (click a river to toggle): drawn red, never serialized
+const RIVER_OFF=new Set();// deselected channels (click a river to cycle): drawn red, never serialized
+const RIVER_ON=new Set(); // selected channels (click a river to cycle): drawn green, kept at any zoom regardless of the top-N cutoff
 /* coastline level-of-detail: crisp windowed vector when the view is narrower than coastThr degrees */
 let coastThr=30;
 let nudgeX=0, nudgeY=0;   // sub-tile sampling offset (in Civ-tile units) for the high-res -> Civ-tile downsample
@@ -522,8 +555,8 @@ function windowWidthDeg(){return view.spanX/WSRC*360;}
 function vectorCoastActive(){return windowWidthDeg()<=coastThr;}
 
 /* viewer aspect is locked to the output grid (W/H) */
-function maxSpanX(){return Math.min(WSRC,HSRC*(out.W/out.H));}
-function spanY(){return view.spanX*(out.H/out.W);}
+function maxSpanX(){return Math.min(WSRC,HSRC*(out.W/effH()));}
+function spanY(){return view.spanX*(effH()/out.W);}
 function clampView(){
   view.spanX=Math.max(6,Math.min(maxSpanX(),view.spanX));
   const sy=spanY();
@@ -536,7 +569,7 @@ function wrapLon(l){return ((l%360)+540)%360-180;}   // normalise a longitude in
 
 /* size the map-box to the largest W/H-aspect rectangle that fits the wrap; window resize only changes box size, never the framing */
 function fitMapBox(){
-  const availW=wrap.clientWidth-2, availH=wrap.clientHeight-2, ar=out.W/out.H;
+  const availW=wrap.clientWidth-2, availH=wrap.clientHeight-2, ar=out.W/effH();
   let w=availW,h=w/ar; if(h>availH){h=availH;w=h*ar;}
   mapBox.style.width=Math.max(40,Math.floor(w))+'px';
   mapBox.style.height=Math.max(40,Math.floor(h))+'px';
@@ -546,10 +579,11 @@ function fitMapBox(){
 }
 function relayout(){ fitMapBox(); clampView(); render(); refreshStats(); updateArNote(); }
 window.addEventListener('resize',relayout);
-function updateArNote(){document.getElementById('arNote').textContent='viewer '+out.W+':'+out.H;}
+function updateArNote(){document.getElementById('arNote').textContent='viewer '+out.W+':'+out.H+(hexMode?' · hex':'');}
 
 /* ---------- classification core ---------- */
 let islandBias=0, seawayBias=0;
+let mtnPass=0, flatSpots=0;   // relief post-pass: mountain passes (demote peaks->hills in peak-dense walls) & flat spots (flats scattered in rough terrain)
 /* halo land fraction selects the regime: mostly-water halo -> island (lower the land
    threshold so small islands survive); mostly-land halo -> seaway (raise it so channels open). */
 function landThreshold(hf){
@@ -601,7 +635,8 @@ function classifyRegion(W,H){
   const kcHist=new Uint16Array(31);                                // reused per tile: histogram over the 30 Köppen classes
   const nX=nudgeX*R.w/W, nY=nudgeY*R.h/H;                           // X/Y nudge: shift each tile sampling footprint by a fraction of a tile
   for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){
-    const x0=R.x+(tx/W)*R.w+nX,x1=R.x+((tx+1)/W)*R.w+nX,y0=R.y+(ty/H)*R.h+nY,y1=R.y+((ty+1)/H)*R.h+nY;
+    const hX=hexShiftX(ty,H)*R.w/W;   // hex mode: odd CIV rows sample half a tile east
+    const x0=R.x+(tx/W)*R.w+nX+hX,x1=R.x+((tx+1)/W)*R.w+nX+hX,y0=R.y+(ty/H)*R.h+nY,y1=R.y+((ty+1)/H)*R.h+nY;
     const sx0=Math.floor(x0),sx1=Math.ceil(x1)-1,sy0=Math.max(0,Math.floor(y0)),sy1=Math.min(HSRC-1,Math.ceil(y1)-1);   // sx may cross +/-180 (wrapped below); sy stays clamped
     const stepx=Math.max(1,Math.floor((sx1-sx0+1)/12)),stepy=Math.max(1,Math.floor((sy1-sy0+1)/12));
     let n=0,hSum=0,rS=0,gS=0,bS=0,lSum=0,wS=0,pS=0;kcHist.fill(0);
@@ -622,6 +657,10 @@ function classifyRegion(W,H){
   if(vectorCoastActive()){const vf=rasterizeVectorLandFrac(W,H,R);for(let i=0;i<N;i++)lf[i]=vf[i];}   // crisp fractional land
   const hf=haloBlur(lf,W,H,haloRadius());                                                             // halo land fraction
   const isLandA=new Uint8Array(N);for(let i=0;i<N;i++)isLandA[i]=lf[i]>=landThreshold(hf[i])?1:0;
+  if(seawayBias>0){   // seaways: carve straits through thin land necks (same chokepoint stencil as mountain passes — land flanking on two sides, sea either side); extra sweeps push the channel through
+    const isLnd=(x,y)=>x>=0&&x<W&&y>=0&&y<H&&isLandA[y*W+x]===1;
+    carveChokepoints(W,H,isLnd,(x,y)=>{isLandA[y*W+x]=0;},Math.ceil(seawayBias*4),{minArc:2});   // require real land walls (>=2) so peninsulas aren't bisected
+  }
   // surrounding-climate sample: for each tile, summarise nearby NON-white LAND tiles -> arid fraction & mean base temp
   const surrAridA=new Float32Array(N),surrTempA=new Float32Array(N);
   for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){let bC=0,tSum=0,nn=0;
@@ -637,31 +676,107 @@ function classifyRegion(W,H){
   for(let i=0;i<N;i++){const hp=pctl(hSort,hA[i]),rp=pctl(rSort,rgh[i]);metricHill[i]=(1-P.blendHill)*hp+P.blendHill*rp;metricPeak[i]=(1-P.blendPeak)*hp+P.blendPeak*rp;}
   const tiles=[];let land=0,hills=0,peaks=0;
   for(let ty=0;ty<H;ty++){const row=[];for(let tx=0;tx<W;tx++){const idx=ty*W+tx;
-    const tile=classifyTile(hA[idx],metricHill[idx],metricPeak[idx],[rA[idx],gA[idx],bA[idx]],ltA[idx],kcA[idx],isLandA[idx],wA[idx],surrAridA[idx],surrTempA[idx],proxA[idx],pA[idx]);
+    const mJit=(vnoise(tx/MOIST_SCALE+worldSeed*0.7,ty/MOIST_SCALE+worldSeed*0.3)-0.5)*2*MOIST_JIT;   // SMOOTH low-frequency spatial moisture variation (~MOIST_SCALE-tile blobs): the dryness transition advances as an organic directional front, not per-tile noise. reseed shifts the field via worldSeed
+    const tile=classifyTile(hA[idx],metricHill[idx],metricPeak[idx],[rA[idx],gA[idx],bA[idx]],ltA[idx],kcA[idx],isLandA[idx],wA[idx],surrAridA[idx],surrTempA[idx],proxA[idx],pA[idx],mJit);
     if(tile.plot!==PLOT.WATER){land++;if(tile.plot===PLOT.HILLS)hills++;if(tile.plot===PLOT.PEAK)peaks++;}
     row.push(tile);}
     tiles.push(row);}
-  coastPass(tiles,W,H);if(P.feat)featurePass(tiles,W,H);
+  if(mtnPass>0||flatSpots>0){reliefPass(tiles,metricHill,metricPeak,W,H);   // demote peaks->hills (passes) and rough->flat (flat spots); recount relief after
+    hills=0;peaks=0;for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){const p=tiles[ty][tx].plot;if(p===PLOT.HILLS)hills++;else if(p===PLOT.PEAK)peaks++;}}
+  coastPass(tiles,W,H);   // features are applied later (applyFeatures), after river edges are known, since flood plains need river adjacency
   return {tiles,W,H,land,hills,peaks};
 }
-/* colour-only aridity proxy in [0,1] (0 humid -> 1 arid): bright + desaturated reads drier */
-function colorAridity(hue,sat,val){
-  let d=clamp01(0.5+0.75*(val-sat));
-  if(hue>25&&hue<70)d=clamp01(d+0.12);                     // tan/yellow -> drier
-  else if(hue>=70&&hue<170)d=clamp01(d-0.12);              // green -> wetter
-  return d;
+/* Relief post-pass (mirrors the seaway/island-bias idea: a neighbourhood halo shifts a per-tile threshold).
+   Mountain passes: a pass is a SADDLE — a local dip in a ridge crest with higher peaks flanking it — so we
+   demote only peak tiles that sit below their peak-neighbours' crest (chokepoints), not every low peak in the
+   range (which scattered them). The slider lowers the dip a saddle needs, so more passes open. Flat spots:
+   scatter FLAT tiles through rough (hill/peak-dense) areas, preferring the lowest-relief tiles, so valleys /
+   basins / plateaus appear. Densities are read from the ORIGINAL plots so demotions don't cascade. */
+/* Chokepoint stencil, shared by mountain passes and seaways. A barrier tile is a NECK when, walking the 8-cell
+   ring around it, the barrier occupies exactly two arcs with two gaps between them (4 transitions) — i.e. barrier
+   on two opposite-ish sides, open on the other two. That's precisely a mountain saddle (peaks flanking, lower
+   ground either side) or a sea strait (land flanking, water either side). Out-of-bounds counts as open/gap.
+   Carving each neck and re-running propagates the passage across a thick barrier: this sweep's cuts become gaps
+   that expose the next necks behind them. `sweeps` (from the slider) bounds how far a passage eats in. */
+const RING8=[[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]];   // 8-neighbourhood in circular order
+/* hex 6-neighbourhood (odd-r), in circular order like RING8 so the arc-walk logic below works on either.
+   A row shifted +0.5 east reaches columns x and x+1 on the rows above/below; an unshifted row reaches x-1 and x. */
+const RING6_SHIFTED  =[[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,0]];   // NW,NE,E,SE,SW,W
+const RING6_UNSHIFTED=[[-1,-1],[0,-1],[1,0],[0,1],[-1,1],[-1,0]]; // NW,NE,E,SE,SW,W
+function gridRing(y,H){return hexMode?(hexShiftX(y,H)?RING6_SHIFTED:RING6_UNSHIFTED):RING8;}
+/* A barrier tile is a NECK when its 8-ring splits into exactly two barrier arcs and two gaps (mountains/land
+   flanking on two sides, open on the other two). We additionally require BOTH barrier arcs to span >=2 cells so
+   an isolated single neighbour (noise in a scattered peak field) isn't mistaken for a flanking wall — that keeps
+   demotions at real chokepoints, not every ragged peak. */
+function isNeck(x,y,isBarrier,minArc,H){
+  const ring=gridRing(y,H),n=ring.length;                                   // ring-length-agnostic: 8 square / 6 hex
+  const m=new Array(n);for(let k=0;k<n;k++)m[k]=isBarrier(x+ring[k][0],y+ring[k][1])?1:0;
+  let trans=0;for(let k=0;k<n;k++)if(m[k]!==m[(k+1)%n])trans++;
+  if(trans!==4)return false;                                               // exactly 2 barrier arcs + 2 gaps
+  if(minArc<=1)return true;
+  let start=0;while(m[start]===m[(start+n-1)%n])start=(start+1)%n;          // rotate to a run boundary
+  const best=[];let run=0,val=m[start];
+  for(let q=0;q<n;q++){const idx=(start+q)%n;if(m[idx]===val)run++;else{if(val)best.push(run);run=1;val=m[idx];}}
+  if(val)best.push(run);
+  return best.length===2&&best[0]>=minArc&&best[1]>=minArc;                 // both flanking walls span >=minArc cells
 }
-/* moisture biome from Köppen class + satellite colour. Specific-class overrides first, then the general dryness model. */
-function moistureBiome(kc,hue,sat,val){
+function carveChokepoints(W,H,isBarrier,carve,sweeps,opts){
+  opts=opts||{};const minArc=opts.minArc||1,ok=opts.ok||(()=>true);
+  for(let s=0;s<sweeps;s++){
+    const hits=[];
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(isBarrier(x,y)&&isNeck(x,y,isBarrier,minArc,H)&&ok(x,y))hits.push([x,y]);}
+    if(!hits.length)break;                                                  // nothing left to open
+    for(const h of hits)carve(h[0],h[1]);
+  }
+}
+function reliefPass(tiles,metricHill,metricPeak,W,H){
+  // 1) mountain passes: iteratively carve necks in the peak barrier (2 peak arcs + 2 gaps around the ring) that are
+  //    also local LOWS (saddles, not summits), so passes open at crossable low points; each extra sweep pushes the
+  //    passage deeper into the range (a carved neck becomes a gap that exposes the next saddle behind it).
+  if(mtnPass>0){
+    const isPk=(x,y)=>x>=0&&x<W&&y>=0&&y<H&&tiles[y][x].plot===PLOT.PEAK;
+    const need=0.005+(1-mtnPass)*0.08;   // slider sets how deep a saddle must sit below the local crest: low slider -> only the deepest chokepoints, high -> shallower ones too
+    const saddle=(x,y)=>{let sum=0,cnt=0;for(const o of gridRing(y,H)){const nx=x+o[0],ny=y+o[1];if(nx>=0&&nx<W&&ny>=0&&ny<H&&tiles[ny][nx].plot===PLOT.PEAK){sum+=metricPeak[ny*W+nx];cnt++;}}return cnt>=1&&metricPeak[y*W+x]<=sum/cnt-need;};
+    carveChokepoints(W,H,isPk,(x,y)=>{tiles[y][x].plot=PLOT.HILLS;},Math.ceil(mtnPass*5),{minArc:1,ok:saddle});   // up to 5 propagating sweeps
+  }
+  // 2) flat spots: scatter flats through rough (hill/peak-dense) areas, preferring the lowest-relief tiles
+  if(flatSpots>0){
+    const N=W*H,isRough=new Uint8Array(N);
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const p=tiles[y][x].plot;isRough[y*W+x]=(p===PLOT.HILLS||p===PLOT.PEAK)?1:0;}
+    const RAD=2,dens=(x,y)=>{let s=0,n=0;for(let dy=-RAD;dy<=RAD;dy++)for(let dx=-RAD;dx<=RAD;dx++){const nx=x+dx,ny=y+dy;if(nx<0||nx>=W||ny<0||ny>=H)continue;s+=isRough[ny*W+nx];n++;}return n?s/n:0;};
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x],i=y*W+x;
+      if(t.plot!==PLOT.HILLS&&t.plot!==PLOT.PEAK)continue;
+      const rd=dens(x,y),thr=(t.plot===PLOT.PEAK?P.peak:P.hill),relief=(t.plot===PLOT.PEAK?metricPeak[i]:metricHill[i]);
+      const flatness=1-clamp01((relief-thr)/0.25),p=flatSpots*rd*(0.35+0.65*flatness);   // likelier where rough, and where this tile is barely above its threshold
+      if(fhash(x,y,90210)<p*0.7)t.plot=PLOT.FLAT;
+    }
+  }
+}
+/* colour-only aridity proxy in [0,1] (0 humid -> 1 arid): bright + desaturated reads drier, green reads wetter.
+   Fertile green vegetation (forest AND yellow-green cropland) reads wet so it dries last; the per-tile moisture
+   dither in moistureBiome (not this function) is what smooths the slider transition, so croplands stay wet. */
+function colorAridity(hue,sat,val){
+  const veg=(hue<170)?clamp01((hue-47)/18):0;              // green credit reaches FULL by hue ~65, so fertile yellow-green cropland reads as wet as forest (dries last, not punished)
+  const d=0.57+0.55*(val-sat)-0.34*veg;                    // green vegetation pulled well toward wet; drier tiles keep their brightness spread. Smoothness comes from the per-tile moisture dither, not from spreading croplands.
+  return clamp01(d);
+}
+/* moisture biome from Köppen class + satellite colour. Specific-class overrides first, then the general dryness model.
+   moistJit is a small per-tile deterministic dither (+/-) added to the dryness D: it lets a uniformly-humid region
+   (where every tile shares nearly the same D) cross the grass->plains->desert thresholds as a gradual speckled band
+   instead of flipping all at once, so the dryness slider feels smooth without having to make fertile land drier. */
+function moistureBiome(kc,hue,sat,val,moistJit){
   const ca=colorAridity(hue,sat,val);
   if(kc===8) return TERR.PLAINS;                                       // Csa -> plains by default
   const z=classGroup(kc);
   if(z===2){                                                          // arid B climates
+    if(P.fpKoppen&&(kc===4||kc===5)) return TERR.DESERT;               // true desert Köppen (BWh/BWk): stay desert so a green/dark floodplain strip isn't pulled to plains/grass by colour -> floodplains land on desert
     if(hue>=RED_LO&&hue<=RED_HI&&sat>=RED_SAT) return TERR.DESERT;      // iron-red arid soil (Australia, Somalia) -> desert even when not bright
     if(kc===6||kc===7) return val>=P.dryDesert?TERR.DESERT:TERR.PLAINS; // BSh/BSk steppe: lighter -> desert, darker -> plains
   }
-  const kop=z===2?0.85:z===3?0.18:z===4?0.30:z===5?0.42:0.45;         // B arid / A trop / C temp / D cont / polar-neutral
-  const D=clamp01((1-P.clim)*ca+P.clim*kop);
+  let kop,climW=P.clim;
+  if(HUMID_F.has(kc)){kop=0.20;climW=clamp01(P.clim+0.32);}            // fully-humid temperate/continental: wet prior, and colour matters little — fine colour variation there is land-use (tan wheat vs green forest), not moisture, so it must not split fertile country into plains
+  else kop=z===2?0.85:z===3?0.18:z===4?0.30:z===5?0.42:0.45;          // B arid / A trop / C temp / D cont / polar-neutral
+  const D=clamp01((1-climW)*ca+climW*kop+(moistJit||0));
   return D>=P.dryDesert?TERR.DESERT:D>=P.dryPlains?TERR.PLAINS:TERR.GRASS;
 }
 /* temperature T in [0,1] (0 cold -> 1 hot) from Köppen class + altitude lapse + satellite colour (NO latitude) */
@@ -670,18 +785,18 @@ function temperature(h,kc,hue,sat,val){
   const colorT=COLOR_WARM-(COLOR_WARM+COLOR_ICE)*ice;            // vegetation/soil warms; ice cools
   return clamp01(KOPPEN_TEMP[kc]+colorT-Math.max(0,h-P.sea)*TEMP_LAPSE);
 }
-function classifyTile(h,metricHill,metricPeak,rgb,lat,kc,isLand,whiteFrac,surrArid,surrTemp,prox,playaFrac){
+function classifyTile(h,metricHill,metricPeak,rgb,lat,kc,isLand,whiteFrac,surrArid,surrTemp,prox,playaFrac,moistJit){
   if(!isLand)return {terrain:TERR.OCEAN,plot:PLOT.WATER,rgb};
   let plot=PLOT.FLAT;if(metricPeak>P.peak)plot=PLOT.PEAK;else if(metricHill>P.hill)plot=PLOT.HILLS;   // separate relief bases for peak vs hills; metrics normalized in classifyRegion
   const [hue,sat,val]=hsv(rgb[0],rgb[1],rgb[2]),aLat=Math.abs(lat),z=classGroup(kc),arid=(z===2),wf=whiteFrac||0;
   const kk=KOPPEN_KEYS[kc], warmSummerD=(kk&&kk[0]==='D'&&(kk[2]==='a'||kk[2]==='b'));   // Dxa/Dxb: warm/hot-summer continental — never tundra/ice
-  if(playaFrac>=PLAYA_MIN) return {terrain:TERR.DESERT,plot,rgb,z,lat};   // ground-truth playa/salt flat -> desert, never snow
+  if(playaFrac>=PLAYA_MIN) return {terrain:TERR.DESERT,plot,rgb,z,lat,kc};   // ground-truth playa/salt flat -> desert, never snow
   // salt pan: bright/white ground reads as a hot salt flat (desert, not snow) when this tile's own climate is
   // arid B, OR the surrounding non-white climate is arid and not cold (catches pans whose own tile isn't B, e.g. Etosha).
   const saltWhite=(val>=SALT_VAL&&sat<=SALT_SAT)||wf>=SALT_FRAC;
   const surrHotArid=(surrArid>=SURR_ARID_FRAC)&&(surrTemp>=SALT_SURR_WARM);
-  if(saltWhite && (arid||surrHotArid)) return {terrain:TERR.DESERT,plot,rgb,z,lat};
-  let terrain=moistureBiome(kc,hue,sat,val);                          // 1) moisture: grass / plains / desert
+  if(saltWhite && (arid||surrHotArid)) return {terrain:TERR.DESERT,plot,rgb,z,lat,kc};
+  let terrain=moistureBiome(kc,hue,sat,val,moistJit);                 // 1) moisture: grass / plains / desert (moistJit = per-tile dither for smooth slider transitions)
   let T=temperature(h,kc,hue,sat,val);                               // 2) temperature: Köppen + colour + altitude lapse
   // 3a) boreal cold tilt = latitude + altitude (no proximity; the base temperature stays latitude-free)
   const latTundra=clamp01((aLat-P.latTundra)/LAT_RAMP_SPAN), latIce=clamp01((aLat-P.latIce)/LAT_RAMP_SPAN);   // two poleward ramps: tundra (lower onset) and ice (higher onset)
@@ -697,10 +812,129 @@ function classifyTile(h,metricHill,metricPeak,rgb,lat,kc,isLand,whiteFrac,surrAr
   const cold=coldCommon+P.alpine*snowTerm;
   const Tice=clamp01(T-clamp01(LAT_TILT_W*latIce+cold)), Ttundra=clamp01(T-clamp01(LAT_TILT_W*latTundra+cold));   // each transition gets its own poleward ramp
   if(z!==4&&!warmSummerD){if(Tice<P.tempSnow)terrain=TERR.SNOW;else if(Ttundra<P.tempTundra)terrain=TERR.TUNDRA;}   // ice ramp gates snow; tundra ramp gates tundra; C (z===4) and warm-summer Dxa/Dxb never freeze
-  return {terrain,plot,rgb,z,lat};
+  return {terrain,plot,rgb,z,lat,kc};
 }
-function coastPass(tiles,W,H){for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(tiles[y][x].plot!==PLOT.WATER)continue;let adj=false;for(let dy=-1;dy<=1&&!adj;dy++)for(let dx=-1;dx<=1;dx++){const ny=y+dy,nx=x+dx;if(ny<0||ny>=H||nx<0||nx>=W)continue;if(tiles[ny][nx].plot!==PLOT.WATER){adj=true;break;}}tiles[y][x].terrain=adj?TERR.COAST:TERR.OCEAN;}}
-function featurePass(tiles,W,H){for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x];if(t.plot===PLOT.WATER||t.plot===PLOT.PEAK)continue;if(t.z===3){t.feature='FEATURE_JUNGLE';t.fv=0;}else if((t.z===4||t.z===5)&&(t.terrain===TERR.GRASS||t.terrain===TERR.PLAINS||t.terrain===TERR.TUNDRA)){t.feature='FEATURE_FOREST';t.fv=(t.z===5?1:0);}}}
+function coastPass(tiles,W,H){for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(tiles[y][x].plot!==PLOT.WATER)continue;let adj=false;for(const o of gridRing(y,H)){const ny=y+o[1],nx=x+o[0];if(ny<0||ny>=H||nx<0||nx>=W)continue;if(tiles[ny][nx].plot!==PLOT.WATER){adj=true;break;}}tiles[y][x].terrain=adj?TERR.COAST:TERR.OCEAN;}}
+/* ---------- Features: forest / jungle / flood plains / oasis ----------
+   Applied AFTER river edges are computed (flood plains need river adjacency). Placement mixes a
+   climate prior (Köppen group), relief (hills cluster forest), satellite colour contrast against the
+   local open-terrain mean, and a seeded random term; the re-roll button varies featSeed. Terrain
+   gates follow Civ4 validity: jungle -> grassland only; forest -> grass/plains/tundra; flood plains
+   & oasis -> flat desert (flood plains additionally require a river edge on the tile). */
+let featSeed=1234;
+function fhash(x,y,s){let h=(Math.imul(x+1,374761393)^Math.imul(y+1,668265263)^Math.imul((s|0)+1,1274126177))>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;h^=h>>>16;return (h>>>0)/4294967296;}   // deterministic uniform [0,1) per (tile,seed): preview and export agree
+function tileRiverDischarge(rivers,x,y){   // max discharge (m3/s) on any of the tile's 4 edges, or -1 if the tile has no river edge
+  if(!rivers)return -1;const nof=rivers.nof,wof=rivers.wof;let d=-1;
+  const chk=(m,k)=>{const e=m&&m.get(k);if(e&&e.d>d)d=e.d;};
+  chk(nof,(y-1)+','+x);chk(nof,y+','+x);chk(wof,y+','+(x-1));chk(wof,y+','+x);   // N, S, W, E edges of tile (gx,gy)
+  return d;
+}
+/* True if a river BENDS around one of this tile's 4 corner vertices — a horizontal (nof) and a vertical (wof)
+   river edge meet at that vertex. Used to turn a would-be oasis that sits diagonally outside a river's corner
+   into a flood plain instead. Incident edges at vertex (vx,vy): nof (vy-1,vx),(vy-1,vx-1); wof (vy,vx-1),(vy-1,vx-1). */
+function atRiverCorner(rivers,x,y,W,H){
+  if(!rivers)return false;const nof=rivers.nof,wof=rivers.wof;
+  const bend=(vx,vy)=>{
+    const h=nof.has((vy-1)+','+vx)||nof.has((vy-1)+','+(vx-1));
+    const v=wof.has(vy+','+(vx-1))||wof.has((vy-1)+','+(vx-1));
+    return h&&v;
+  };
+  return bend(x,y)||bend(x+1,y)||bend(x,y+1)||bend(x+1,y+1);
+}
+/* ---------- Special tiles: a game-agnostic marker + per-game specialisation ----------
+   markSpecialTile flags a tile with a category (t.special, e.g. 'river-corner') on the rectangular grid
+   (a hex mode may bring its own adjacency later). Each supported game decides what the category means; the
+   CIV4 specialisation gives a river-corner tile ONE random bonus resource, on a terrain the bonus is valid on
+   (the "plains with horses / ivory" cases set plains; incense keeps desert). The bonus is written to the WBS. */
+const CIV4_SPECIAL={'river-corner':[
+  {bonus:'BONUS_INCENSE'},                     // stays desert
+  {bonus:'BONUS_DYE'},                         // desert is fine (non-vanilla but valid, no crash)
+  {bonus:'BONUS_HORSE',terrain:TERR.PLAINS},   // "plains with horses"
+  {bonus:'BONUS_IVORY',terrain:TERR.PLAINS},   // "plains with ivory"
+  {bonus:'BONUS_WHEAT'}]};                      // desert is fine too
+function markSpecialTile(t,x,y,kind){
+  t.special=kind;t.feature=null;
+  const opts=CIV4_SPECIAL[kind];if(!opts)return;                                        // (other games branch here later)
+  const pick=opts[Math.min(opts.length-1,(fhash(x,y,featSeed+4444)*opts.length)|0)];    // seeded random bonus (varies on re-roll)
+  t.bonus=pick.bonus;if(pick.terrain)t.terrain=pick.terrain;
+}
+function applyFeatures(tiles,W,H,rivers){
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x];t.feature=null;t.fv=0;t.special=null;t.bonus=null;}   // clear any prior features / special markers
+  if(!P.feat)return;
+  const N=W*H,hueA=new Float32Array(N),satA=new Float32Array(N),valA=new Float32Array(N);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x],i=y*W+x,c=t.rgb||[128,128,128],hv=hsv(c[0],c[1],c[2]);hueA[i]=hv[0];satA[i]=hv[1];valA[i]=hv[2];}
+  const meanVal=(x,y,pred)=>{let s=0,n=0;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const nx=x+dx,ny=y+dy;if(nx<0||nx>=W||ny<0||ny>=H)continue;const t=tiles[ny][nx];if(!pred(t))continue;s+=valA[ny*W+nx];n++;}return n?s/n:-1;};   // local baseline value over same-family tiles
+  const isDesert=t=>t.terrain===TERR.DESERT;
+  const oasisZoneOf=kc=>(kc===4||kc===5)?0:(kc===6||kc===7)?1:2;   // Köppen -> oasis zone: 0 true desert (BWh/BWk), 1 semi-arid steppe (BSh/BSk), 2 other
+  const oasisGrid=new Uint8Array(N);const floodByZone=[0,0,0];const oasisCands=[];   // oases deferred + capped PER zone at (base ratio × zone multiplier × that zone's flood-plain count); see selection pass after the loop
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const t=tiles[y][x],i=y*W+x;
+    if(t.plot===PLOT.WATER||t.plot===PLOT.PEAK)continue;
+    const hue=hueA[i],sat=satA[i],val=valA[i],z=t.z,rnd=fhash(x,y,featSeed);
+    // ---- flat desert: flood plains (on a river) else oasis ----
+    if(isDesert(t)&&t.plot===PLOT.FLAT){
+      const bv=meanVal(x,y,isDesert),bref=bv>=0?bv:0.72;                  // surrounding desert brightness
+      const veg=(hue>=70&&hue<=170)?1:(hue>=52&&hue<70?0.4:0);            // green hue -> vegetated
+      const darker=clamp01((bref-val)/0.16);                             // darker than nearby desert
+      const green=clamp01(0.55*darker+0.75*veg*clamp01(0.4+darker));      // green/dark floodplain -> high
+      const salt=(val>=SALT_VAL&&sat<=SALT_SAT)?clamp01((val-bref)/0.16)*0.55+0.2:0;   // white/salt floodplain -> lower
+      const colour=Math.max(green,salt);
+      const dis=tileRiverDischarge(rivers,x,y);
+      if(dis>=0){
+        const disN=clamp01((Math.log10(1+Math.max(0,dis))-1)/3);         // ~0 at 10 m3/s, ~1 at 10^4
+        const det=clamp01(0.55*colour+0.45*disN);
+        const total=0.8*det+0.2*rnd;                                     // ~20% randomness in the score
+        if(total>=P.fpThresh){t.feature='FEATURE_FLOOD_PLAINS';floodByZone[oasisZoneOf(t.kc||0)]++;continue;}
+        continue;   // on a river but below threshold: stays plain desert, not an oasis
+      }
+      const oScore=clamp01(0.5*darker+0.9*((hue>=70&&hue<=170)?1:0)*clamp01(0.3+darker));   // wet/green desert spot (no river) -> oasis
+      const oTotal=0.8*oScore+0.2*rnd;
+      let coast=false;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=x+dx,ny=y+dy;if(nx<0||nx>=W||ny<0||ny>=H)continue;if(tiles[ny][nx].plot===PLOT.WATER)coast=true;}   // oasis coast exclusion (3×3); spacing is enforced later, in the capped selection pass (the hex 6-ring packed oases too densely)
+      if(!coast&&oTotal>=P.oasisThresh){
+        if(atRiverCorner(rivers,x,y,W,H)){markSpecialTile(t,x,y,'river-corner');}   // river-corner tile -> special (game-specialised: Civ4 gives it a random bonus), not counted against the oasis cap
+        else{oasisCands.push({i,x,y,s:oTotal,z:oasisZoneOf(t.kc||0)});}   // deferred: committed after the loop, highest score first, up to the per-zone cap
+      }
+      continue;
+    }
+    const kc=t.kc||0;   // raw Köppen class (1-30) drives the per-zone vegetation weights
+    // ---- jungle: grassland only, per-Köppen weight (tropical + a little humid-subtropical fringe) ----
+    if(t.terrain===TERR.GRASS){
+      const jw=JUNGLE_W[kc]||0;
+      if(jw>0){
+        const bv=meanVal(x,y,tt=>tt.terrain===TERR.GRASS),darker=clamp01(((bv>=0?bv:val)-val)/0.18);
+        const p=jw*(1+(t.plot===PLOT.HILLS?0.2:0)+0.4*darker);            // zone weight scaled by relief & darkness
+        if(rnd<clamp01(p*2*P.jungleDens)){t.feature='FEATURE_JUNGLE';continue;}   // slider scales density (0.5 = natural)
+      }
+    }
+    // ---- forest: grass / plains / tundra, per-Köppen weight (Csa & semidesert keep a slight chance) ----
+    if(t.terrain===TERR.GRASS||t.terrain===TERR.PLAINS||t.terrain===TERR.TUNDRA){
+      const fw=FOREST_W[kc]||0;
+      if(fw>0){
+        const tundra=(t.terrain===TERR.TUNDRA);
+        let p=fw*(1+(t.plot===PLOT.HILLS?0.35:0));                        // forests cluster on rough ground
+        if(tundra){p*=(0.5+clamp01((hue-TUNDRA_HUE)/(TAIGA_HUE-TUNDRA_HUE)));}   // greener -> taiga (open tundra browner)
+        else{const bv=meanVal(x,y,tt=>tt.terrain===t.terrain);p*=(1+0.5*clamp01(((bv>=0?bv:val)-val)/0.2));}   // darker than open land -> forest
+        if(fhash(x,y,featSeed+7)<clamp01(p*2*P.forestDens)){t.feature='FEATURE_FOREST';t.fv=(tundra||z===5)?1:0;}   // separate seed from jungle; slider scales density (0.5 = natural)
+      }
+      continue;
+    }
+  }
+  // Cap oases PER Köppen zone at (base ratio × zone multiplier × that zone's flood-plain "river" count):
+  // keep the highest-scoring candidates, enforcing the 3×3 spacing exclusion as they're placed.
+  // A zone with no flood plains gets no oases (ratio is relative to river tiles).
+  if(oasisCands.length){
+    oasisCands.sort((a,b)=>b.s-a.s);
+    const mult=[P.oasisMultDesert,P.oasisMultSemiArid,1];
+    const cap=[0,1,2].map(z=>Math.round(P.oasisRatio*mult[z]*floodByZone[z]));
+    const placed=[0,0,0];
+    for(let c=0;c<oasisCands.length;c++){
+      const o=oasisCands[c];if(placed[o.z]>=cap[o.z])continue;let adj=false;
+      for(let dy=-1;dy<=1&&!adj;dy++)for(let dx=-1;dx<=1;dx++){const nx=o.x+dx,ny=o.y+dy;if(nx<0||nx>=W||ny<0||ny>=H)continue;if(oasisGrid[ny*W+nx]){adj=true;break;}}
+      if(adj)continue;
+      tiles[o.y][o.x].feature='FEATURE_OASIS';oasisGrid[o.i]=1;placed[o.z]++;
+    }
+  }
+}
 
 /* ---------- coastline (windowed vector) ---------- */
 let COAST_HI=null;   // hires land polygons (data/coast_hires.json); used in the windowed pass when loaded. Coarse land mask keeps the embedded reduced COAST.
@@ -796,7 +1030,7 @@ function drawSatTile(g,img,id,R){
 function buildHypsLUT(){HYPS_LUT=[new Uint8Array(256),new Uint8Array(256),new Uint8Array(256)];for(let k=0;k<256;k++){const c=rampLerp(HYPS_LAND,k/255);HYPS_LUT[0][k]=c[0];HYPS_LUT[1][k]=c[1];HYPS_LUT[2][k]=c[2];}}
 function jitElevCanvas(R){
   const F=buildFineHeightForView(R); if(!F) return null;
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w);
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h);
   if(key===_jeKey&&_jeCanvas) return _jeCanvas;
   if(!HYPS_LUT) buildHypsLUT();
   const hd=F.data,fw=F.fw,fh=F.fh;
@@ -809,7 +1043,7 @@ function jitElevCanvas(R){
 function buildRoughLUT(){ROUGH_LUT=[new Uint8Array(256),new Uint8Array(256),new Uint8Array(256)];for(let k=0;k<256;k++){const c=heatColor(Math.pow(k/255,0.7));ROUGH_LUT[0][k]=c[0];ROUGH_LUT[1][k]=c[1];ROUGH_LUT[2][k]=c[2];}}   // gamma folded into index -> colour is a table lookup
 function jitRoughCanvas(R){
   const F=buildFineHeightForView(R); if(!F) return null;                             // needs the fine height buffer (zoomed in, tiles loaded, not wrapped)
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+'|'+roughHalo;
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+'|'+roughHalo;
   if(key===_jrKey&&_jrCanvas) return _jrCanvas;
   if(!ROUGH_LUT) buildRoughLUT();
   const hd=F.data,fw=F.fw,fh=F.fh,g=new Float32Array(fw*fh),inv=1/RGH_REF;
@@ -819,20 +1053,20 @@ function jitRoughCanvas(R){
   for(let i=0;i<fw*fh;i++){let idx=(g[i]*255)|0;if(idx>255)idx=255;const p=i*4;o[p]=LR[idx];o[p+1]=LG[idx];o[p+2]=LB[idx];o[p+3]=255;}
   c2.putImageData(img,0,0);_jrKey=key;_jrCanvas=cvs;return cvs;
 }
-let HTILE_META=null; const HTILE=new Map();   // grayscale raw-height tiles: fine elevation for the Civ classification when zoomed in
+let HTILE_META=null, HTILE_SET=null; const HTILE=new Map();   // grayscale raw-height tiles: fine elevation for the Civ classification when zoomed in. HTILE_SET = Set of existing "col_row" ids (null -> dense/legacy, every tile assumed present)
 let _fineHKey=null,_fineH=null;
 let _fineKopKey=null,_fineKop=null;
 let _fineCKey=null,_fineC=null;
 function loadHgtIndex(done){
   fetch('data/hgt_tiles/index.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();})
-    .then(j=>{HTILE_META=j;done();})
+    .then(j=>{HTILE_META=j;HTILE_SET=j.tiles?new Set(j.tiles):null;done();})
     .catch(e=>{HTILE_META=null;console.warn('hgt_tiles/index.json not loaded ('+e+') -- Civ classification uses the base elevation. Serve over http(s).');done();});
 }
 function hgtTileIdsForView(R){
   const D=HTILE_META.deg,lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h);
   const c0=Math.max(0,Math.floor((lonMin+180)/D)),c1=Math.min(HTILE_META.cols-1,Math.floor((lonMax+180)/D));
   const r0=Math.max(0,Math.floor((90-latMax)/D)),r1=Math.min(HTILE_META.rows-1,Math.floor((90-latMin)/D));
-  const ids=[];for(let c=c0;c<=c1;c++)for(let r=r0;r<=r1;r++)ids.push(c+'_'+r);return ids;
+  const ids=[];for(let c=c0;c<=c1;c++)for(let r=r0;r<=r1;r++){const k=c+'_'+r;if(!HTILE_SET||HTILE_SET.has(k))ids.push(k);}return ids;   // skip dropped ocean tiles (not in manifest)
 }
 function ensureHgtTiles(ids){
   for(const id of ids){ if(HTILE.has(id))continue; HTILE.set(id,'load');
@@ -846,7 +1080,7 @@ function ensureHgtTiles(ids){
 function buildFineHeightForView(R){
   if(!HTILE_META||windowWidthDeg()>coastThr) return null;
   if(R.x<0||R.x+R.w>WSRC) return null;                              // antimeridian-crossing view -> base grid
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w);
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h);
   if(key===_fineHKey&&_fineH) return _fineH;
   const fullW=HTILE_META.cols*HTILE_META.tileW, fullH=HTILE_META.rows*HTILE_META.tileH, CAP=2400;
   let fw=Math.round(R.w/WSRC*fullW), fh=Math.round(R.h/HSRC*fullH);
@@ -874,7 +1108,7 @@ function buildFineKoppenForView(R,W,H){
   if(R.x<0||R.x+R.w>WSRC) return null;                              // antimeridian-crossing view -> raster koppenArr
   const ids=tileIdsForView(R); ensureTiles(ids);
   for(const k of ids){const t=KTILE.get(k); if(t==='load'||t===undefined) return null;}   // not fully loaded -> raster this pass
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+W+'x'+H;
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+','+W+'x'+H;
   if(key===_fineKopKey&&_fineKop) return _fineKop;
   const fw=Math.min(2000,Math.max(2,W*6)), fh=Math.min(2000,Math.max(2,H*6));   // ~6 px per Civ tile -> stable dominant-class histogram
   const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const g=cvs.getContext('2d');
@@ -891,7 +1125,7 @@ function buildFineKoppenForView(R,W,H){
 function buildFineColorForView(R){
   if(!STILE_META||windowWidthDeg()>coastThr) return null;
   if(R.x<0||R.x+R.w>WSRC) return null;                              // antimeridian-crossing view -> raster colorArr
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w);
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h);
   if(key===_fineCKey&&_fineC) return _fineC;
   const fullW=STILE_META.cols*STILE_META.tileW, fullH=STILE_META.rows*STILE_META.tileH, CAP=2000;
   let fw=Math.round(R.w/WSRC*fullW), fh=Math.round(R.h/HSRC*fullH);
@@ -938,7 +1172,7 @@ function drawLayerWithCoast(R){
   ctx.drawImage(wcCanvas,0,0);
 }
 function rasterizeVectorLandFrac(W,H,R){
-  const ss=3,sw=W*ss,sh=H*ss;
+  const ss=hexMode?4:3,sw=W*ss,sh=H*ss;   // hex: ss=4 so the half-tile row shift is a whole number of subpixels (2)
   if(lgCanvas.width!==sw||lgCanvas.height!==sh){lgCanvas.width=sw;lgCanvas.height=sh;}
   lgctx.fillStyle='#000';lgctx.fillRect(0,0,sw,sh);
   for(const off of wrapOffsets(R)){const Rk={x:R.x-off,y:R.y,w:R.w,h:R.h};
@@ -946,7 +1180,7 @@ function rasterizeVectorLandFrac(W,H,R){
     lgctx.fillStyle='#000';fillPolysWindowed(lgctx,lakePathCull(Rk).vis,Rk,sw,sh,false);   // lakes -> water
   }
   const d=lgctx.getImageData(0,0,sw,sh).data,frac=new Float32Array(W*H);
-  for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){let s=0;for(let j=0;j<ss;j++)for(let i=0;i<ss;i++){if(d[((ty*ss+j)*sw+(tx*ss+i))*4]>127)s++;}frac[ty*W+tx]=s/(ss*ss);}
+  for(let ty=0;ty<H;ty++){const ox=Math.round(hexShiftX(ty,H)*ss);for(let tx=0;tx<W;tx++){let s=0;for(let j=0;j<ss;j++)for(let i=0;i<ss;i++){if(d[((ty*ss+j)*sw+Math.min(sw-1,tx*ss+i+ox))*4]>127)s++;}frac[ty*W+tx]=s/(ss*ss);}}   // shifted rows read half a tile east (clamped at the frame edge; vector regime never wraps)
   return frac;
 }
 
@@ -959,17 +1193,70 @@ function render(){
   if(STILE_META&&windowWidthDeg()<=coastThr&&R.x>=0&&R.x+R.w<=WSRC)ensureSatTiles(satTileIdsForView(R));   // warm the satellite tiles for classification colour (any mode)
   if(RMAN&&riverN>0)ensureRiverTiles(riverTileIdsForView(R));   // warm the river tiles (whole channels) overlapping the view
   if(mode==='civ'){
-    lastTiles=classifyRegion(out.W,out.H);const tw=cv.width/out.W,th=cv.height/out.H;
-    for(let y=0;y<out.H;y++)for(let x=0;x<out.W;x++){const t=lastTiles.tiles[y][x];let c=TCOLOR[t.terrain].slice();
-      if(t.plot===PLOT.HILLS)c=c.map(v=>v*0.8);else if(t.plot===PLOT.PEAK)c=c.map(v=>v*0.55+54);
-      if(t.feature==='FEATURE_FOREST')c=[c[0]*0.5+20,c[1]*0.5+40,c[2]*0.5+22];
-      if(t.feature==='FEATURE_JUNGLE')c=[c[0]*0.4+27,c[1]*0.4+57,c[2]*0.4+24];
-      ctx.fillStyle='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';ctx.fillRect(Math.floor(x*tw),Math.floor(y*th),Math.ceil(tw)+1,Math.ceil(th)+1);}
+    lastTiles=classifyRegion(out.W,out.H);
+    if(P.feat){let rv=null;try{rv=selectedOnly(computeRiverEdges(R,out.W,out.H,riverN,lastTiles.tiles));}catch(_){}applyFeatures(lastTiles.tiles,out.W,out.H,rv);}   // river-aware feature pass (same selected edges that get serialized)
+    const tw=cv.width/out.W,th=cv.height/out.H;
+    if(hexMode){
+      const HL=hexLayout();   // real tiles only, at their true ragged positions — the letterbox shows through the border notches
+      for(let y=0;y<out.H;y++){const sh=hexShiftX(y,out.H)*HL.tw,cy=HL.oy+HL.s+y*HL.th;
+        for(let x=0;x<out.W;x++){const c=civTileColor(lastTiles.tiles[y][x]),col='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';
+          hexPathPointy(HL.ox+(x+0.5)*HL.tw+sh,cy,HL.tw,HL.s);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.stroke();}}   // stroke in the fill colour closes hairline seams between hexes
+      for(let y=0;y<out.H;y++){const sh=hexShiftX(y,out.H)*HL.tw,py=HL.oy+HL.s+y*HL.th-HL.th/2;for(let x=0;x<out.W;x++){const t=lastTiles.tiles[y][x],px=HL.ox+x*HL.tw+sh;   // glyphs centred in the hex's tw×th box
+        if(t.feature==='FEATURE_OASIS')drawPalmGlyph(px,py,HL.tw,HL.th);
+        if(t.special)drawBonusGlyph(px,py,HL.tw,HL.th);
+        if(t.plot===PLOT.HILLS)drawHillGlyph(px,py,HL.tw,HL.th);else if(t.plot===PLOT.PEAK)drawPeakGlyph(px,py,HL.tw,HL.th,t.terrain===TERR.SNOW||t.terrain===TERR.TUNDRA);}}
+    }else{
+      for(let y=0;y<out.H;y++)for(let x=0;x<out.W;x++){const t=lastTiles.tiles[y][x],c=civTileColor(t);
+        ctx.fillStyle='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';ctx.fillRect(Math.floor(x*tw),Math.floor(y*th),Math.ceil(tw)+1,Math.ceil(th)+1);}
+      for(let y=0;y<out.H;y++)for(let x=0;x<out.W;x++){const t=lastTiles.tiles[y][x],px=x*tw,py=y*th;   // relief + oasis + special-bonus glyphs, drawn on top
+        if(t.feature==='FEATURE_OASIS')drawPalmGlyph(px,py,tw,th);
+        if(t.special)drawBonusGlyph(px,py,tw,th);
+        if(t.plot===PLOT.HILLS)drawHillGlyph(px,py,tw,th);else if(t.plot===PLOT.PEAK)drawPeakGlyph(px,py,tw,th,t.terrain===TERR.SNOW||t.terrain===TERR.TUNDRA);}
+    }
   }else{drawLayerWithCoast(R);if(showGrid)drawTileGrid();}
   drawRivers(R);
   if(showGrat)drawGraticule(R);drawAxes(R);updateReadout(R);
 }
-function drawTileGrid(){ctx.save();ctx.strokeStyle='rgba(233,227,211,0.18)';ctx.lineWidth=1;for(let x=0;x<=out.W;x++){const px=Math.round(x/out.W*cv.width)+0.5;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,cv.height);ctx.stroke();}for(let y=0;y<=out.H;y++){const py=Math.round(y/out.H*cv.height)+0.5;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(cv.width,py);ctx.stroke();}ctx.restore();}
+/* ---------- Civ-preview relief & feature glyphs (drawn per tile over the terrain fill) ---------- */
+function drawHillGlyph(px,py,w,h){   // rounded hill: a smooth hump, drawn as a neutral shadow so the terrain hue underneath still reads (desert hills stay sandy)
+  ctx.fillStyle='rgba(18,14,8,0.30)';
+  ctx.beginPath();ctx.moveTo(px+0.14*w,py+0.74*h);ctx.quadraticCurveTo(px+0.5*w,py+0.30*h,px+0.86*w,py+0.74*h);ctx.closePath();ctx.fill();
+}
+function drawPeakGlyph(px,py,w,h,snowy){   // mountain: a capital-lambda (Λ); snow cap only on cold terrain, else a rocky cap
+  ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.strokeStyle='rgba(38,30,22,0.9)';ctx.lineWidth=Math.max(1,w*0.14);
+  ctx.beginPath();ctx.moveTo(px+0.22*w,py+0.80*h);ctx.lineTo(px+0.5*w,py+0.20*h);ctx.lineTo(px+0.78*w,py+0.80*h);ctx.stroke();
+  ctx.strokeStyle=snowy?'rgba(242,246,250,0.92)':'rgba(150,140,126,0.85)';ctx.lineWidth=Math.max(1,w*0.09);   // white snow cap vs bare rock cap
+  ctx.beginPath();ctx.moveTo(px+0.40*w,py+0.40*h);ctx.lineTo(px+0.5*w,py+0.20*h);ctx.lineTo(px+0.60*w,py+0.40*h);ctx.stroke();
+}
+function drawBonusGlyph(px,py,w,h){   // special (bonus) tile: a small gold resource diamond
+  const cx=px+0.5*w,cy=py+0.5*h,r=Math.max(2,w*0.16);
+  ctx.beginPath();ctx.moveTo(cx,cy-r);ctx.lineTo(cx+r,cy);ctx.lineTo(cx,cy+r);ctx.lineTo(cx-r,cy);ctx.closePath();
+  ctx.fillStyle='rgba(240,205,70,0.95)';ctx.fill();
+  ctx.lineWidth=Math.max(1,w*0.03);ctx.strokeStyle='rgba(90,60,10,0.9)';ctx.stroke();
+}
+function drawPalmGlyph(px,py,w,h){   // oasis: a little palm tree over a pool
+  const cx=px+0.5*w,base=py+0.80*h,topY=py+0.34*h;
+  ctx.lineCap='round';
+  ctx.fillStyle='rgba(58,140,190,0.85)';ctx.beginPath();ctx.ellipse(cx,base+0.06*h,0.20*w,0.07*h,0,0,7);ctx.fill();   // pool
+  ctx.strokeStyle='rgba(74,52,28,0.95)';ctx.lineWidth=Math.max(1,w*0.09);
+  ctx.beginPath();ctx.moveTo(cx,base);ctx.lineTo(cx,topY);ctx.stroke();   // trunk
+  ctx.strokeStyle='rgba(24,116,48,0.95)';ctx.lineWidth=Math.max(1,w*0.08);
+  const fr=0.30*w,fronds=[[-1,-0.15],[1,-0.15],[-0.75,-0.7],[0.75,-0.7],[0,-1]];
+  for(const f of fronds){ctx.beginPath();ctx.moveTo(cx,topY);ctx.quadraticCurveTo(cx+f[0]*fr*0.5,topY+f[1]*fr*0.3,cx+f[0]*fr,topY+f[1]*fr);ctx.stroke();}   // fronds
+}
+function hexPathPointy(cx,cy,w,s){ctx.beginPath();ctx.moveTo(cx,cy-s);ctx.lineTo(cx+w/2,cy-s/2);ctx.lineTo(cx+w/2,cy+s/2);ctx.lineTo(cx,cy+s);ctx.lineTo(cx-w/2,cy+s/2);ctx.lineTo(cx-w/2,cy-s/2);ctx.closePath();}   // pointy-top hex: full width w, centre->top-point s (=w/√3); row pitch = 1.5s
+function hexLayout(){   // fit the FULL ragged hex block inside the canvas, centred: odd rows indent ½ tile and hexes overhang their row band, so the block is (W+0.5) tiles wide × (H+1/3) rows tall — the leftover margin lets every border show authentic jagged hex teeth
+  const tw=Math.min(cv.width/(out.W+0.5),(cv.height/(out.H+1/3))/HEX_ROW),th=tw*HEX_ROW,s=tw/Math.sqrt(3);
+  return {tw,th,s,ox:(cv.width-(out.W+0.5)*tw)/2,oy:(cv.height-((out.H-1)*th+2*s))/2};   // ox/oy centre the block; hex(x,y) centre = ox+(x+0.5)tw+shift, oy+s+y*th
+}
+function civTileColor(t){let c=TCOLOR[t.terrain].slice();if(t.plot===PLOT.HILLS)c=c.map(v=>v*0.93);else if(t.plot===PLOT.PEAK)c=c.map(v=>v*0.84+12);if(t.feature==='FEATURE_FOREST')c=[34,95,42];else if(t.feature==='FEATURE_JUNGLE')c=[18,64,26];else if(t.feature==='FEATURE_FLOOD_PLAINS')c=[154,182,66];else if(t.feature==='FEATURE_OASIS')c=[200,188,120];return c;}
+function drawTileGrid(){ctx.save();ctx.strokeStyle='rgba(233,227,211,0.18)';ctx.lineWidth=1;
+  if(hexMode){const HL=hexLayout();   // hex outlines matching the civ preview's ragged block
+    for(let y=0;y<out.H;y++){const sh=hexShiftX(y,out.H)*HL.tw,cy=HL.oy+HL.s+y*HL.th;for(let x=0;x<out.W;x++){hexPathPointy(HL.ox+(x+0.5)*HL.tw+sh,cy,HL.tw,HL.s);ctx.stroke();}}
+    ctx.restore();return;}
+  for(let x=0;x<=out.W;x++){const px=Math.round(x/out.W*cv.width)+0.5;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,cv.height);ctx.stroke();}
+  for(let y=0;y<=out.H;y++){const py=Math.round(y/out.H*cv.height)+0.5;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(cv.width,py);ctx.stroke();}ctx.restore();}
 function niceStep(range){const raw=range/6,p=Math.pow(10,Math.floor(Math.log10(Math.max(1e-6,raw)))),m=raw/p;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*p;}
 function drawGraticule(R){ctx.save();ctx.strokeStyle='rgba(69,193,208,0.16)';ctx.lineWidth=1;const latT=latOf(R.y),latB=latOf(R.y+R.h),lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,py=(sy-R.y)/R.h*cv.height;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(cv.width,py);ctx.stroke();}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,px=(sx-R.x)/R.w*cv.width;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,cv.height);ctx.stroke();}ctx.restore();}
 function drawAxes(R){const latAx=document.getElementById('latAxis'),lonAx=document.getElementById('lonAxis');latAx.innerHTML='';lonAx.innerHTML='';const latT=latOf(R.y),latB=latOf(R.y+R.h),lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,frac=(sy-R.y)/R.h;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.top=(frac*100)+'%';const v=Math.round(L);el.textContent=(v>0?v+'°N':v<0?(-v)+'°S':'0°');latAx.appendChild(el);}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,frac=(sx-R.x)/R.w;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.left=(frac*100)+'%';const v=Math.round(((L+540)%360)-180);el.textContent=(v>0?v+'°E':v<0?(-v)+'°W':'0°');lonAx.appendChild(el);}}
@@ -1212,41 +1499,135 @@ function bridgeEstuaries(nof,wof,tiles,W,H,R,mouths){
     for(const [k,v] of be.nof)if(!nof.has(k)){v.bridge=true;nof.set(k,v);}
     for(const [k,v] of be.wof)if(!wof.has(k)){v.bridge=true;wof.set(k,v);}}
 }
-/* ---------- hairpin sanitize (final pass) ----------
-   A tight bend can rasterize into a single channel wrapping a tile (rivers on all 4 sides, one
-   rid) -- a hairpin that resolves into a normal bend when zoomed in. Straighten it: keep the arc
-   of the perimeter between the channel's two entry/exit corners and drop the pure-detour arc
-   (whose corners have no edges leaving the tile), so connectivity is preserved. Only touches
-   single-channel wraps -- a genuine two-river crossing (different rids on the 4 sides) is left
-   for the reach-nudging step. */
-function sanitizeHairpins(nof,wof){
-  const deg=new Map(),bump=(cx,cy)=>{const k=cx+','+cy;deg.set(k,(deg.get(k)||0)+1);};
-  for(const k of nof.keys()){const p=k.split(',').map(Number);bump(p[1],p[0]+1);bump(p[1]+1,p[0]+1);}
-  for(const k of wof.keys()){const p=k.split(',').map(Number);bump(p[1]+1,p[0]);bump(p[1]+1,p[0]+1);}
-  const D=(cx,cy)=>deg.get(cx+','+cy)||0,toDel=[],seen=new Set();
-  for(const k of nof.keys()){const p=k.split(',').map(Number),gy=p[0],gx=p[1];const tk=gx+','+gy;if(seen.has(tk))continue;seen.add(tk);
-    const N=nof.get((gy-1)+','+gx),S=nof.get(gy+','+gx),E=wof.get(gy+','+gx),Wd=wof.get(gy+','+(gx-1));
-    if(!(N&&S&&E&&Wd))continue;
-    const rid=N.rid;if(rid==null||S.rid!==rid||E.rid!==rid||Wd.rid!==rid)continue;   // single channel only
-    const corners=[[gx,gy],[gx+1,gy],[gx+1,gy+1],[gx,gy+1]];   // NW,NE,SE,SW (cycle)
-    const ek=[['nof',(gy-1)+','+gx],['wof',gy+','+gx],['nof',gy+','+gx],['wof',gy+','+(gx-1)]];   // edge i joins corner i,(i+1)
-    const ext=corners.map(c=>D(c[0],c[1])-2);const io=[];for(let i=0;i<4;i++)if(ext[i]>0)io.push(i);
-    if(io.length===0){for(const e of ek)toDel.push(e);continue;}   // isolated loop -> drop
-    if(io.length!==2)continue;
-    const a=io[0],b=io[1],fwdE=[],fwdI=[],bwdE=[],bwdI=[];
-    for(let i=a;i<b;i++)fwdE.push(ek[i]);for(let i=a+1;i<b;i++)fwdI.push(i);
-    for(let i=b;i<a+4;i++)bwdE.push(ek[i%4]);for(let i=b+1;i<a+4;i++)bwdI.push(i%4);
-    const fp=fwdI.every(i=>ext[i]===0),bp=bwdI.every(i=>ext[i]===0);
-    let rem=null;if(fp&&bp)rem=fwdE.length>=bwdE.length?fwdE:bwdE;else if(fp)rem=fwdE;else if(bp)rem=bwdE;
-    if(rem)for(const e of rem)toDel.push(e);
+/* ---------- river nudge (final pass) ----------
+   nudgeRiverEdges: clear every four-sided tile (river on all 4 sides -- invalid in Civ) and straighten
+   single-channel hairpin wraps (river on 3 sides of one tile), preserving PER-CHANNEL connectivity.
+   Phase 1 (deletion only; one sweep reaches the fixpoint):
+     single channel: the 4 edges are a same-channel cycle. Junctions J = corners with external edges.
+       |J|<=1 -> drop the whole zero-net-displacement loop; |J|==2 -> drop the junction-free longer arc;
+       |J|>=3 -> drop one edge (cycle => channel stays connected), preferring no new tips, then low d.
+     multi channel: prefer deleting the WEAKEST channel's whole edge-group when clean (every corner it
+       fully owns carries nothing external) -- each severed end lands on a corner shared with the
+       surviving channel, so the tributary braids into the bigger river for one tile: no stub, no
+       leftover wrap. Otherwise delete the single edge that hurts its own channel least
+       (redundant > tip-trim > mid-course split), ties by discharge, stubs, side order.
+   Phase 2 (the actual nudge, to a fixpoint): a tile with river on exactly 3 sides, all one channel,
+     interior corners bare, is a one-tile detour: replace the 3-edge arc with the missing-side chord
+     (identical endpoints -> exact connectivity; flow direction carried over). Guarded: chord in-grid,
+     edgeOk (rivers may not touch coast/water), and the neighbour tile may not exceed 2 edges unless
+     all its edges are the same channel (the wrap merely moves and a later sweep collapses it too).
+   (Kept in sync with scripts/rivers_core.js; validated by scripts/rivers_test.js.) */
+function nudgeRiverEdges(nof,wof,W,H,edgeOk){
+  const ok=edgeOk||(()=>true),M=(m)=>(m==='nof'?nof:wof);
+  const deg=new Map(),bump=(cx,cy,s)=>{const k=cx+','+cy,v=(deg.get(k)||0)+s;if(v)deg.set(k,v);else deg.delete(k);};
+  const cornersOf=(m,key)=>{const p=key.split(',').map(Number),a=p[0],b=p[1];
+    return m==='nof'?[[b,a+1],[b+1,a+1]]:[[b+1,a],[b+1,a+1]];};
+  const applyDeg=(m,key,s)=>{for(const c of cornersOf(m,key))bump(c[0],c[1],s);};
+  for(const k of nof.keys())applyDeg('nof',k,1);for(const k of wof.keys())applyDeg('wof',k,1);
+  const D=(c)=>deg.get(c[0]+','+c[1])||0;
+  const delE=(m,key)=>{M(m).delete(key);applyDeg(m,key,-1);};
+  const setE=(m,key,v)=>{M(m).set(key,v);applyDeg(m,key,1);};
+  const tileC=(gx,gy)=>[[gx,gy],[gx+1,gy],[gx+1,gy+1],[gx,gy+1]];   // NW,NE,SE,SW; edge i joins corner i,(i+1)%4
+  const tileE=(gx,gy)=>[{s:'N',m:'nof',key:(gy-1)+','+gx},{s:'E',m:'wof',key:gy+','+gx},{s:'S',m:'nof',key:gy+','+gx},{s:'W',m:'wof',key:gy+','+(gx-1)}];
+  const ord={N:0,E:1,S:2,W:3};
+  const chanAt=(rid,cx,cy)=>{let n=0;   // per-channel probes: channels are tiny subgraphs, scans only run on violations
+    for(const m of ['nof','wof'])for(const [k,e] of M(m).entries()){if(e.rid!==rid)continue;
+      for(const c of cornersOf(m,k))if(c[0]===cx&&c[1]===cy){n++;break;}}
+    return n;};
+  const chanComps=(rid,skipM,skipKey)=>{
+    const adj=new Map(),link=(a,b)=>{(adj.get(a)||adj.set(a,new Set()).get(a)).add(b);(adj.get(b)||adj.set(b,new Set()).get(b)).add(a);};
+    for(const m of ['nof','wof'])for(const [k,e] of M(m).entries()){if(e.rid!==rid||(m===skipM&&k===skipKey))continue;
+      const cs=cornersOf(m,k);link(cs[0].join(','),cs[1].join(','));}
+    let c=0;const seen=new Set();
+    for(const s of adj.keys()){if(seen.has(s))continue;c++;const st=[s];
+      while(st.length){const v=st.pop();if(seen.has(v))continue;seen.add(v);for(const w of adj.get(v))if(!seen.has(w))st.push(w);}}
+    return c;};
+  // phase 1: four-sided tiles (every such tile has both horizontal edges, so nof keys find them all)
+  const seenT=new Set();
+  for(const k0 of [...nof.keys()]){
+    const p0=k0.split(',').map(Number);
+    for(const gy of [p0[0],p0[0]+1]){                   // k0 = S edge of (gx,gy0) and N edge of (gx,gy0+1)
+      const gx=p0[1],tk=gx+','+gy;if(seenT.has(tk))continue;seenT.add(tk);
+      const E4=tileE(gx,gy),V4=E4.map(e=>M(e.m).get(e.key));
+      if(V4.some(v=>!v))continue;
+      const C4=tileC(gx,gy),rid0=V4[0].rid;
+      if(rid0!=null&&V4.every(v=>v.rid===rid0)){
+        const J=[];for(let i=0;i<4;i++)if(D(C4[i])>2)J.push(i);
+        if(J.length<=1){for(const e of E4)delE(e.m,e.key);continue;}
+        if(J.length===2){
+          const a=J[0],fl=J[1]-a,from=fl>=4-fl?a:J[1],n=Math.max(fl,4-fl);
+          for(let i=0;i<n;i++){const e=E4[(from+i)%4];delE(e.m,e.key);}
+          continue;}
+        let pick=null;
+        for(let i=0;i<4;i++){const stubs=(D(C4[i])<=2?1:0)+(D(C4[(i+1)%4])<=2?1:0),d=V4[i].d||0;
+          if(!pick||stubs<pick.stubs||(stubs===pick.stubs&&d<pick.d))pick={i,stubs,d};}
+        delE(E4[pick.i].m,E4[pick.i].key);continue;
+      }
+      const groups=new Map();                           // corner c touches edges c and (c+3)%4
+      for(let i=0;i<4;i++){const gk=V4[i].rid==null?('~'+i):('r'+V4[i].rid);
+        let g=groups.get(gk);if(!g)groups.set(gk,g={idx:[],maxd:0});g.idx.push(i);if((V4[i].d||0)>g.maxd)g.maxd=V4[i].d||0;}
+      let minMaxd=Infinity;for(const g of groups.values())if(g.maxd<minMaxd)minMaxd=g.maxd;
+      let sac=null;                                     // clean whole-group deletion of the WEAKEST channel: braid, not split
+      for(const g of groups.values()){
+        if(g.maxd>minMaxd)continue;                     // never sacrifice a dominant channel's line
+        let clean=true;
+        for(let c=0;c<4&&clean;c++)if(g.idx.includes(c)&&g.idx.includes((c+3)%4)&&D(C4[c])>2)clean=false;
+        if(clean&&(!sac||g.idx.length<sac.idx.length||(g.idx.length===sac.idx.length&&Math.min(...g.idx)<Math.min(...sac.idx))))sac=g;
+      }
+      if(sac){for(const i of sac.idx)delE(E4[i].m,E4[i].key);continue;}
+      let pick=null;
+      for(let i=0;i<4;i++){const v=V4[i],e=E4[i];let cls;
+        if(v.rid==null)cls=1;
+        else if(chanAt(v.rid,C4[i][0],C4[i][1])===1||chanAt(v.rid,C4[(i+1)%4][0],C4[(i+1)%4][1])===1)cls=1;
+        else cls=(chanComps(v.rid,e.m,e.key)===chanComps(v.rid,null,null))?0:2;
+        const stubs=(D(C4[i])<=2?1:0)+(D(C4[(i+1)%4])<=2?1:0),d=v.d||0;
+        if(!pick||cls<pick.cls||(cls===pick.cls&&(d<pick.d||(d===pick.d&&(stubs<pick.stubs||(stubs===pick.stubs&&ord[e.s]<ord[pick.e.s]))))))pick={e,cls,d,stubs};
+      }
+      delE(pick.e.m,pick.e.key);
+    }
   }
-  for(const [m,key] of toDel)(m==='nof'?nof:wof).delete(key);
-  return toDel.length;
+  // phase 2: collapse single-channel 3-edge wraps onto the missing-side chord (fixpoint)
+  let guard=0;
+  for(let changed=true;changed&&guard++<10000;){
+    changed=false;
+    for(const k0 of [...nof.keys()]){
+      if(!nof.has(k0))continue;                         // consumed by an earlier collapse this sweep
+      const p0=k0.split(',').map(Number);
+      for(const gy of [p0[0],p0[0]+1]){
+        const gx=p0[1],E4=tileE(gx,gy),V4=E4.map(e=>M(e.m).get(e.key));
+        if(V4.filter(Boolean).length!==3)continue;
+        const mi=V4.findIndex(v=>!v),ch=E4[mi];
+        const kp=ch.key.split(',').map(Number);
+        if(kp[0]<0||kp[0]>=H||kp[1]<0||kp[1]>=W)continue;   // chord not representable
+        const C4=tileC(gx,gy),arcI=[(mi+1)%4,(mi+2)%4,(mi+3)%4];
+        const rid=V4[arcI[0]].rid;
+        if(rid==null||arcI.some(i=>V4[i].rid!==rid))continue;
+        if(D(C4[(mi+2)%4])!==2||D(C4[(mi+3)%4])!==2)continue;   // interior corners must carry nothing else
+        if(!ok(ch.m,ch.key))continue;
+        const nb=mi===0?[gx,gy-1]:mi===1?[gx+1,gy]:mi===2?[gx,gy+1]:[gx-1,gy];
+        const nbV=tileE(nb[0],nb[1]).map(e=>M(e.m).get(e.key)).filter(Boolean);
+        if(nbV.length>2||(nbV.length===2&&!nbV.every(v=>v.rid===rid)))continue;
+        let vote=0,cur=C4[(mi+1)%4];                    // flow orientation along the arc path C[mi+1] -> C[mi]
+        for(const i of arcI){const nxt=C4[(i+1)%4],v=V4[i];
+          vote+=(E4[i].m==='nof'?(nxt[0]>cur[0]?v.dir===1:v.dir===3):(nxt[1]>cur[1]?v.dir===2:v.dir===0))?1:-1;
+          cur=nxt;}
+        const A=vote>=0?C4[(mi+1)%4]:C4[mi],B=vote>=0?C4[mi]:C4[(mi+1)%4];
+        const dir=ch.m==='nof'?(B[0]>A[0]?1:3):(B[1]>A[1]?2:0);
+        let d=0,br=false;
+        for(const i of arcI){if((V4[i].d||0)>d)d=V4[i].d||0;if(V4[i].bridge)br=true;}
+        for(const i of arcI)delE(E4[i].m,E4[i].key);
+        const entc={dir,d,rid};if(br)entc.bridge=true;
+        setE(ch.m,ch.key,entc);
+        changed=true;break;                             // this tile's other flank no longer applies
+      }
+    }
+  }
 }
 function computeRiverEdges(R,W,H,N,tiles){
   const empty={nof:new Map(),wof:new Map()};
   if(!RMAN||N<=0)return empty;
-  const key=_riverGen+'|'+R.x.toFixed(3)+'_'+R.y.toFixed(3)+'_'+R.w.toFixed(3)+'_'+R.h.toFixed(3)+'_'+W+'_'+H+'_'+N;
+  const onSig=[...RIVER_ON].sort().join(',');   // selected rivers alter `keep`, so they must be part of the memo key
+  const key=_riverGen+'|'+R.x.toFixed(3)+'_'+R.y.toFixed(3)+'_'+R.w.toFixed(3)+'_'+R.h.toFixed(3)+'_'+W+'_'+H+'_'+N+'_'+onSig;
   let raw;
   if(_rivMemo.key===key){raw=_rivMemo.raw;}
   else{
@@ -1256,6 +1637,7 @@ function computeRiverEdges(R,W,H,N,tiles){
     else{
       const best=new Map();for(const f of inv){const c=best.get(f.rid);if(c==null||f.d>c)best.set(f.rid,f.d);}
       const keep=new Set([...best.entries()].sort((a,b)=>b[1]-a[1]).slice(0,N).map(e=>e[0]));
+      for(const rid of RIVER_ON)if(best.has(rid))keep.add(rid);   // selected rivers stay in view even below the top-N discharge cutoff
       const sel=inv.filter(f=>keep.has(f.rid));
       raw=reachesToEdges(sel,{lonL,lonR,latT,latB},W,H);
       // per-channel mouths for estuary bridging. A channel's downstream terminal is only a real
@@ -1288,7 +1670,13 @@ function computeRiverEdges(R,W,H,N,tiles){
     cleanupRiverEdges(nof,wof,tiles,W,H);
     if(riverEstuaries)bridgeEstuaries(nof,wof,tiles,W,H,R,mouths);   // item 6: trace mouths down the estuary, through lakes, to the sea
     cleanupRiverEdges(nof,wof,tiles,W,H);   // bridges obey the same rule: no river edge may border a sea tile
-    sanitizeHairpins(nof,wof);              // final pass: straighten single-channel hairpin wraps
+    // final pass: clear four-sided tiles + straighten hairpin wraps. A nudged-in chord edge must obey
+    // the same land rule as cleanupRiverEdges, so pass it in as the edgeOk predicate.
+    const isWt=(x,y)=>(x<0||x>=W||y<0||y>=H)?true:tiles[y][x].plot===PLOT.WATER;
+    const isCt=(x,y)=>(x<0||x>=W||y<0||y>=H)?false:tiles[y][x].terrain===TERR.COAST;
+    nudgeRiverEdges(nof,wof,W,H,(m,key)=>{const p=key.split(',').map(Number);
+      if(m==='nof'){const gr=p[0],gx=p[1];return !isCt(gx,gr)&&!isCt(gx,gr+1)&&!(isWt(gx,gr)&&isWt(gx,gr+1));}
+      const gy=p[0],gx=p[1];return !isCt(gx,gy)&&!isCt(gx+1,gy)&&!(isWt(gx,gy)&&isWt(gx+1,gy));});
   }
   const out2={nof,wof};_cleanMemo={ck,tiles,out:out2};
   return out2;
@@ -1319,16 +1707,18 @@ function drawRivers(R){
     if(!nof.size&&!wof.size)return;
     const tw=cv.width/out.W,th=cv.height/out.H;
     ctx.save();ctx.lineWidth=riverLineWidth();ctx.lineCap='round';ctx.lineJoin='round';
-    for(const off of [false,true]){                    // pass 1: live rivers (blue) · pass 2: deselected (red)
-      ctx.strokeStyle=off?'#e04a3a':'#3aa0e0';ctx.beginPath();
-      for(const [k,e] of nof){if(RIVER_OFF.has(e.rid)!==off)continue;const p=k.split(',');const gr=+p[0],gx=+p[1];const y=(gr+1)*th;ctx.moveTo(gx*tw,y);ctx.lineTo((gx+1)*tw,y);}
-      for(const [k,e] of wof){if(RIVER_OFF.has(e.rid)!==off)continue;const p=k.split(',');const gy=+p[0],gx=+p[1];const x=(gx+1)*tw;ctx.moveTo(x,gy*th);ctx.lineTo(x,(gy+1)*th);}
+    const stateOf=rid=>RIVER_OFF.has(rid)?'off':RIVER_ON.has(rid)?'on':'def';
+    // pass order (default -> selected -> deselected) so highlighted edges paint over neighbours at crossings
+    for(const st of ['def','on','off']){               // default (blue) · selected (green, kept at any zoom) · deselected (red)
+      ctx.strokeStyle=st==='off'?'#e04a3a':st==='on'?'#2ec26a':'#3aa0e0';ctx.beginPath();
+      for(const [k,e] of nof){if(stateOf(e.rid)!==st)continue;const p=k.split(',');const gr=+p[0],gx=+p[1];const y=(gr+1)*th;ctx.moveTo(gx*tw,y);ctx.lineTo((gx+1)*tw,y);}
+      for(const [k,e] of wof){if(stateOf(e.rid)!==st)continue;const p=k.split(',');const gy=+p[0],gx=+p[1];const x=(gx+1)*tw;ctx.moveTo(x,gy*th);ctx.lineTo(x,(gy+1)*th);}
       ctx.stroke();
     }
     ctx.restore();
   }catch(e){try{ctx.restore();}catch(_){}console.error('drawRivers skipped this frame:',e);}
 }
-function serialize(grid,opts){const {W,H,topLat,botLat,rivers}=opts;const players=opts.players||[],startYear=opts.startYear!=null?opts.startYear:-4000,wrapX=opts.wrapX?1:0,desc=opts.description!=null?opts.description:'Generated by Terra-WBS',nSeats=opts.placeholderPlayers!=null?opts.placeholderPlayers:18;const L=[];L.push('Version=11','BeginGame','\tCalendar=CALENDAR_DEFAULT','\tGameTurn=0','\tStartYear='+startYear,'\tDescription='+desc,'EndGame');if(players.length){const TOTAL=Math.max(18,players.length);/* BtS defines all 18 civ slots; if we write only the placed ones the engine reads undefined leaders/civs for the rest -> findInfoTypeNum -> CTD at start */for(let i=0;i<TOTAL;i++){L.push('BeginTeam','EndTeam');}for(let i=0;i<players.length;i++){const p=players[i];L.push('BeginPlayer','\tLeaderType='+p.leader,'\tCivType='+p.civ,'\tTeam='+i,'\tPlayableCiv=1','\tStartingX='+p.x+', StartingY='+p.y,'\tHandicap=HANDICAP_NOBLE','EndPlayer');}for(let i=players.length;i<TOTAL;i++){L.push('BeginPlayer','\tLeaderType=NONE','\tCivType=NONE','\tTeam='+i,'EndPlayer');}/* empty filler slots, as vanilla a_CivSpecificUnits/Earth_IceAge do */}else{for(let i=0;i<nSeats;i++)L.push('BeginPlayer','\tLeaderType=NONE','\tCivType=NONE','\tTeam='+i,'\tRandomStartLocation=true','EndPlayer');}/* no placed starts -> vanilla-Europe placeholder seats (RandomStartLocation, no team blocks) so any civ count can play */L.push('BeginMap','\tgrid width='+W,'\tgrid height='+H,'\twrap X='+wrapX,'\twrap Y=0','\ttop latitude='+Math.round(topLat),'\tbottom latitude='+Math.round(botLat),'\tworld size='+worldSizeFor(W,H),'\tclimate=CLIMATE_TEMPERATE','\tsealevel=SEALEVEL_MEDIUM','\tnum plots written='+(W*H));if(opts.randomizeResources!==false)L.push('\tRandomize Resources=true');/* no BonusType lines are written, so let the game scatter resources */L.push('EndMap','','### Plot Info ###');for(let x=0;x<W;x++)for(let y=0;y<H;y++){const t=grid[(H-1)-y][x];L.push('BeginPlot','\tx='+x+',y='+y);if(t.feature)L.push('\tFeatureType='+t.feature+', FeatureVariety='+(t.fv||0));L.push('\tTerrainType='+t.terrain,'\tPlotType='+t.plot);if(rivers){const rl=plotRiverLines(rivers.nof,rivers.wof,x,y,H);for(let q=0;q<rl.length;q++)L.push(rl[q]);}L.push('EndPlot');}return L.join('\r\n')+'\r\n';}/* CRLF: Civ4's WBSave parser is Windows-native and misreads LF-only files (findInfoTypeNum -> CTD) */
+function serialize(grid,opts){const {W,H,topLat,botLat,rivers}=opts;const players=opts.players||[],startYear=opts.startYear!=null?opts.startYear:-4000,wrapX=opts.wrapX?1:0,desc=opts.description!=null?opts.description:'Generated by Terra-WBS',nSeats=opts.placeholderPlayers!=null?opts.placeholderPlayers:18;const L=[];L.push('Version=11','BeginGame','\tCalendar=CALENDAR_DEFAULT','\tGameTurn=0','\tStartYear='+startYear,'\tDescription='+desc,'EndGame');if(players.length){const TOTAL=Math.max(18,players.length);/* BtS defines all 18 civ slots; if we write only the placed ones the engine reads undefined leaders/civs for the rest -> findInfoTypeNum -> CTD at start */for(let i=0;i<TOTAL;i++){L.push('BeginTeam','EndTeam');}for(let i=0;i<players.length;i++){const p=players[i];L.push('BeginPlayer','\tLeaderType='+p.leader,'\tCivType='+p.civ,'\tTeam='+i,'\tPlayableCiv=1','\tStartingX='+p.x+', StartingY='+p.y,'\tHandicap=HANDICAP_NOBLE','EndPlayer');}for(let i=players.length;i<TOTAL;i++){L.push('BeginPlayer','\tLeaderType=NONE','\tCivType=NONE','\tTeam='+i,'EndPlayer');}/* empty filler slots, as vanilla a_CivSpecificUnits/Earth_IceAge do */}else{for(let i=0;i<nSeats;i++)L.push('BeginPlayer','\tLeaderType=NONE','\tCivType=NONE','\tTeam='+i,'\tRandomStartLocation=true','EndPlayer');}/* no placed starts -> vanilla-Europe placeholder seats (RandomStartLocation, no team blocks) so any civ count can play */L.push('BeginMap','\tgrid width='+W,'\tgrid height='+H,'\twrap X='+wrapX,'\twrap Y=0','\ttop latitude='+Math.round(topLat),'\tbottom latitude='+Math.round(botLat),'\tworld size='+worldSizeFor(W,H),'\tclimate=CLIMATE_TEMPERATE','\tsealevel=SEALEVEL_MEDIUM','\tnum plots written='+(W*H));if(opts.randomizeResources!==false)L.push('\tRandomize Resources=true');/* keeps our placed special-tile BonusType lines (Civ4's addBonuses skips plots that already have a bonus) AND scatters the rest */L.push('EndMap','','### Plot Info ###');for(let x=0;x<W;x++)for(let y=0;y<H;y++){const t=grid[(H-1)-y][x];L.push('BeginPlot','\tx='+x+',y='+y);if(t.bonus)L.push('\tBonusType='+t.bonus);if(t.feature)L.push('\tFeatureType='+t.feature+', FeatureVariety='+(t.fv||0));L.push('\tTerrainType='+t.terrain,'\tPlotType='+t.plot);if(rivers){const rl=plotRiverLines(rivers.nof,rivers.wof,x,y,H);for(let q=0;q<rl.length;q++)L.push(rl[q]);}L.push('EndPlot');}return L.join('\r\n')+'\r\n';}/* CRLF: Civ4's WBSave parser is Windows-native and misreads LF-only files (findInfoTypeNum -> CTD) */
 function pickStarts(region,k){const {tiles,W,H}=region;const land=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(tiles[y][x].plot!==PLOT.WATER&&tiles[y][x].plot!==PLOT.PEAK)land.push([x,y]);const chosen=[];if(!land.length)return chosen;for(let i=0;i<k;i++){const idx=Math.floor((i+0.5)/k*land.length)%land.length,[tx,ty]=land[idx];chosen.push({leader:LEADERS[i%LEADERS.length][0],civ:LEADERS[i%LEADERS.length][1],x:tx,y:(H-1)-ty});}return chosen;}
 /* ---------- save destination (File System Access API where available, else classic download) ----------
    showDirectoryPicker (Chromium/WebView2) lets the user pick a folder once -- e.g. Civ4's PublicMaps --
@@ -1359,7 +1749,7 @@ async function writeOut(text,filename){
   }
   downloadBlob(text,filename);setDestHint('Downloaded '+filename+' to your browser Downloads folder.');   // (3) fallback
 }
-async function generate(){const region=classifyRegion(out.W,out.H),R=srcRect(),k=Math.max(0,Math.min(12,parseInt(document.getElementById('np').value)||0)),players=pickStarts(region,k);const rivers=selectedOnly(computeRiverEdges(R,out.W,out.H,riverN,region.tiles));/* always written to the output map even when the view toggle is off; deselected channels dropped */const text=serialize(region.tiles,{W:out.W,H:out.H,topLat:latOf(R.y),botLat:latOf(R.y+R.h),startYear:-4000,players,rivers,wrapX:R.w>=WSRC-1e-6?1:0});/* wrap X only when the frame spans the full 360 (vanilla regional maps: wrap X=0) */validate(region,text,players,rivers);await writeOut(text,saveBaseName()+'.CivBeyondSwordWBSave');}
+async function generate(){const region=classifyRegion(out.W,out.H),R=srcRect(),k=Math.max(0,Math.min(12,parseInt(document.getElementById('np').value)||0)),players=pickStarts(region,k);const rivers=selectedOnly(computeRiverEdges(R,out.W,out.H,riverN,region.tiles));/* always written to the output map even when the view toggle is off; deselected channels dropped */applyFeatures(region.tiles,out.W,out.H,rivers);/* river-aware features (flood plains along these rivers) — same seed as the preview */const text=serialize(region.tiles,{W:out.W,H:out.H,topLat:latOf(R.y),botLat:latOf(R.y+R.h),startYear:-4000,players,rivers,wrapX:R.w>=WSRC-1e-6?1:0,description:'Generated by Terra-WBS'+(hexMode?' (hex layout for Civ5 import)':'')});/* wrap X only when the frame spans the full 360 (vanilla regional maps: wrap X=0) */validate(region,text,players,rivers);await writeOut(text,saveBaseName()+'.CivBeyondSwordWBSave');}
 (async()=>{const pf=document.getElementById('pickFolder');if(!FS_DIR){pf.style.display='none';}else{pf.addEventListener('click',pickFolder);try{const h=await idbGet('saveDir');if(h){saveDir=h;saveDirName=h.name;}}catch(_){}}updateDestUI();if(!saveDir)setDestHint(FS_DIR?'Tip: choose your Civ4 “PublicMaps” (or “…\\My Games\\Beyond the Sword\\CustomMaps”) folder to save straight there.':(FS_SAVE?'A Save As dialog will let you pick the location each time.':'This browser downloads to the default folder — move the file into Civ4’s CustomMaps/PublicMaps afterward.'));})();
 function validate(region,text,players,rivers){const {tiles,W,H}=region,want=W*H,got=(text.match(/BeginPlot/g)||[]).length;let bad=0;for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x],isW=(t.terrain===TERR.OCEAN||t.terrain===TERR.COAST);if(isW!==(t.plot===PLOT.WATER))bad++;}
   const wantEdges=rivers?(rivers.nof.size+rivers.wof.size):0,gotEdges=(text.match(/isNOfRiver|isWOfRiver/g)||[]).length;
@@ -1374,6 +1764,10 @@ function refreshStats(){
   if(typeof updateRiverReadout==='function')updateRiverReadout();
   document.getElementById('vClim').textContent=P.clim.toFixed(2);
   document.getElementById('vAlpine').textContent=P.alpine.toFixed(2);
+  {const fp=document.getElementById('vFp'),fa=document.getElementById('fpAmt');if(fp&&fa&&!fp.textContent){const a=+fa.value;P.fpThresh=0.25+0.5*Math.pow(1-a,2.2);P.oasisThresh=0.42-0.18*a;fp.textContent=Math.round(a*100)+'%';}}
+  {const vf=document.getElementById('vForest');if(vf&&!vf.textContent)vf.textContent=Math.round(P.forestDens*100)+'%';}
+  {const vj=document.getElementById('vJungle');if(vj&&!vj.textContent)vj.textContent=Math.round(P.jungleDens*100)+'%';}
+  {const vo=document.getElementById('vOasis');if(vo&&!vo.textContent)vo.textContent=P.oasisRatio.toFixed(2)+'×';}
   if(typeof updateMultiReadouts==='function')updateMultiReadouts();
   document.getElementById('stWorld').textContent=worldSizeFor(out.W,out.H).replace('WORLDSIZE_','');document.getElementById('stTiles').textContent=(out.W*out.H).toLocaleString()+'  ('+out.W+'×'+out.H+')';
   const R=srcRect();document.getElementById('stPerTile').textContent=(R.w/out.W).toFixed(1)+' × '+(R.h/out.H).toFixed(1);
@@ -1381,6 +1775,7 @@ function refreshStats(){
   const reg=lastTiles||classifyRegion(out.W,out.H),tot=out.W*out.H;document.getElementById('stLand').textContent=Math.round(reg.land/tot*100)+'%';document.getElementById('stRelief').textContent=Math.round(reg.hills/tot*100)+'% / '+Math.round(reg.peaks/tot*100)+'%';
   document.getElementById('vCoast').textContent=coastThr.toFixed(0)+'° wide';document.getElementById('vNudgeX').textContent=nudgeX.toFixed(2);document.getElementById('vNudgeY').textContent=nudgeY.toFixed(2);
   document.getElementById('vIsland').textContent=islandBias.toFixed(2);document.getElementById('vSeaway').textContent=seawayBias.toFixed(2);document.getElementById('vExpand').textContent=islandExpand.toFixed(2);document.getElementById('vRough').textContent=roughHalo.toFixed(2);
+  document.getElementById('vPass').textContent=mtnPass.toFixed(2);document.getElementById('vFlat').textContent=flatSpots.toFixed(2);
 }
 
 /* ---------- interactions ---------- */
@@ -1452,16 +1847,25 @@ makeMultiSlider(document.getElementById('borealRange'),{min:35,max:95,step:1,val
 document.getElementById('alpine').addEventListener('input',e=>{P.alpine=parseFloat(e.target.value);document.getElementById('vAlpine').textContent=P.alpine.toFixed(2);lastTiles=null;schedule();});
 updateMultiReadouts();
 document.getElementById('feat').addEventListener('change',e=>{P.feat=e.target.checked;lastTiles=null;schedule();});
+document.getElementById('fpKoppen').addEventListener('change',e=>{P.fpKoppen=e.target.checked;lastTiles=null;schedule();});
+document.getElementById('fpAmt').addEventListener('input',e=>{const a=+e.target.value;P.fpThresh=0.25+0.5*Math.pow(1-a,2.2);P.oasisThresh=0.42-0.18*a;document.getElementById('vFp').textContent=Math.round(a*100)+'%';lastTiles=null;schedule();});   // curved flood-plain threshold; oasis density tied to the same slider (more floodplains -> more oases)
+document.getElementById('forestDens').addEventListener('input',e=>{P.forestDens=+e.target.value;document.getElementById('vForest').textContent=Math.round(P.forestDens*100)+'%';lastTiles=null;schedule();});
+document.getElementById('jungleDens').addEventListener('input',e=>{P.jungleDens=+e.target.value;document.getElementById('vJungle').textContent=Math.round(P.jungleDens*100)+'%';lastTiles=null;schedule();});
+document.getElementById('oasisDens').addEventListener('input',e=>{P.oasisRatio=+e.target.value;document.getElementById('vOasis').textContent=P.oasisRatio.toFixed(2)+'×';lastTiles=null;schedule();});   // oasis count capped at ratio × flood-plain tiles
+document.getElementById('reroll').addEventListener('click',()=>{featSeed=(Math.random()*1e9)|0;lastTiles=null;render();});
 const coastThrEl=document.getElementById('coastThr');
 coastThrEl.addEventListener('input',()=>{coastThr=parseFloat(coastThrEl.value);lastTiles=null;schedule();});
 const riverNEl=document.getElementById('riverN');
 function updateRiverReadout(){const el=document.getElementById('vRiverN');if(!el)return;el.textContent=(riverN<=0?'off':'top '+riverN)+((RMAN&&riverN>0)?' / '+_rivMemo.inView+' in view':'');}
 riverNEl.addEventListener('input',()=>{riverN=parseInt(riverNEl.value)||0;updateRiverReadout();render();});updateRiverReadout();
 document.getElementById('riverEstuaries').addEventListener('change',e=>{riverEstuaries=e.target.checked;render();});
+document.getElementById('hexMode').addEventListener('change',e=>{hexMode=e.target.checked;lastTiles=null;relayout();});   // aspect changes -> full relayout, not just render
 document.getElementById('nudgeX').addEventListener('input',e=>{nudgeX=parseFloat(e.target.value);document.getElementById('vNudgeX').textContent=nudgeX.toFixed(2);lastTiles=null;schedule();});
 document.getElementById('nudgeY').addEventListener('input',e=>{nudgeY=parseFloat(e.target.value);document.getElementById('vNudgeY').textContent=nudgeY.toFixed(2);lastTiles=null;schedule();});
 document.getElementById('islandBias').addEventListener('input',e=>{islandBias=parseFloat(e.target.value);document.getElementById('vIsland').textContent=islandBias.toFixed(2);lastTiles=null;schedule();});
 document.getElementById('seawayBias').addEventListener('input',e=>{seawayBias=parseFloat(e.target.value);document.getElementById('vSeaway').textContent=seawayBias.toFixed(2);lastTiles=null;schedule();});
+document.getElementById('mtnPass').addEventListener('input',e=>{mtnPass=parseFloat(e.target.value);document.getElementById('vPass').textContent=mtnPass.toFixed(2);lastTiles=null;schedule();});
+document.getElementById('flatSpots').addEventListener('input',e=>{flatSpots=parseFloat(e.target.value);document.getElementById('vFlat').textContent=flatSpots.toFixed(2);lastTiles=null;schedule();});
 document.getElementById('islandExpand').addEventListener('input',e=>{islandExpand=parseFloat(e.target.value);document.getElementById('vExpand').textContent=islandExpand.toFixed(2);lastTiles=null;schedule();});
 const expandSteepEl=document.getElementById('expandSteep');
 expandSteepEl.addEventListener('input',()=>{expandSteep=Math.max(0.2,Math.min(8,parseFloat(expandSteepEl.value)||1));lastTiles=null;schedule();});
@@ -1513,11 +1917,14 @@ function riverHitAt(clientX,clientY){
     const d=segd((gx+1)*sx,gy*sy,(gx+1)*sx,(gy+1)*sy);if(d<bd){bd=d;best=ed.rid;}}
   return best;
 }
-/* Click a river to deselect it: the channel turns red and is skipped when writing the output map. */
+/* Click a river to cycle its state: default (blue, WYSIWYG top-N) -> deselected (red, never written)
+   -> selected (green, kept on the map at any zoom and always written) -> default. */
 mapBox.addEventListener('click',e=>{
   if(dragMoved)return;
   const rid=riverHitAt(e.clientX,e.clientY);if(rid==null)return;
-  RIVER_OFF.has(rid)?RIVER_OFF.delete(rid):RIVER_OFF.add(rid);
+  if(RIVER_OFF.has(rid)){RIVER_OFF.delete(rid);RIVER_ON.add(rid);}      // deselected -> selected
+  else if(RIVER_ON.has(rid)){RIVER_ON.delete(rid);}                     // selected -> default
+  else{RIVER_OFF.add(rid);}                                             // default -> deselected
   render();
 });
 let _hoverT=0;
@@ -1534,7 +1941,7 @@ mapBox.addEventListener('wheel',e=>{e.preventDefault();const r=mapBox.getBoundin
 /* ---------- legend (per mode) ---------- */
 function rampCSS(stops){return 'linear-gradient(90deg,'+stops.map(s=>'rgb('+s[1].map(v=>v|0).join(',')+') '+(s[0]*100).toFixed(0)+'%').join(',')+')';}
 function drawLegend(){const el=document.getElementById('legend');
-  if(mode==='civ'){const items=[['Ocean',TERR.OCEAN],['Coast',TERR.COAST],['Grass',TERR.GRASS],['Plains',TERR.PLAINS],['Desert',TERR.DESERT],['Tundra',TERR.TUNDRA],['Snow',TERR.SNOW]];el.innerHTML=items.map(([n,t])=>{const c=TCOLOR[t];return '<div class="lg"><span class="sw" style="background:rgb('+c.join(',')+')"></span>'+n+'</div>';}).join('')+'<div class="lg"><span class="sw" style="background:#2f5d38"></span>Forest</div>';}
+  if(mode==='civ'){const items=[['Ocean',TERR.OCEAN],['Coast',TERR.COAST],['Grass',TERR.GRASS],['Plains',TERR.PLAINS],['Desert',TERR.DESERT],['Tundra',TERR.TUNDRA],['Snow',TERR.SNOW]];el.innerHTML=items.map(([n,t])=>{const c=TCOLOR[t];return '<div class="lg"><span class="sw" style="background:rgb('+c.join(',')+')"></span>'+n+'</div>';}).join('')+(P.feat?'<div class="lg"><span class="sw" style="background:rgb(34,95,42)"></span>Forest</div><div class="lg"><span class="sw" style="background:rgb(18,64,26)"></span>Jungle</div><div class="lg"><span class="sw" style="background:rgb(154,182,66)"></span>Flood plains</div><div class="lg"><span class="sw" style="background:rgb(200,188,120)"></span>Oasis <span class="eyebrow-n">🌴</span></div>':'')+'<div class="lg"><span class="sw" style="background:transparent;text-align:center;line-height:12px">⌢</span>Hills</div><div class="lg"><span class="sw" style="background:transparent;text-align:center;line-height:12px">Λ</span>Mountain</div>';}
   else if(mode==='roughness'){el.innerHTML='<div class="lg"><span class="ramp" style="background:'+rampCSS(HEAT)+'"></span>low &rarr; high relief</div>';}
   else if(mode==='elevation'){el.innerHTML='<div class="lg"><span class="ramp" style="background:'+rampCSS(HYPS_SEA)+'"></span>bathymetry</div><div class="lg"><span class="ramp" style="background:'+rampCSS(HYPS_LAND)+'"></span>elevation</div>';}
   else if(mode==='climate'){const keys=['Af','BWh','Cfb','Dfb','ET','EF'];el.innerHTML=keys.map(k=>'<div class="lg"><span class="sw" style="background:rgb('+BECK2018[k].join(',')+')"></span>'+k+'</div>').join('')+'<div class="lg"><span class="sw" style="background:#fff"></span>ocean</div><div class="lg" style="color:var(--dim)">Beck et al. 2023</div>';}
@@ -1543,6 +1950,24 @@ function drawLegend(){const el=document.getElementById('legend');
 
 /* ---------- boot ---------- */
 drawLegend();updateArNote();
+/* Data-health probe: after the load chain, confirm each raster layer actually has pixels. This catches the
+   "coastline only" failure (raster interiors blank) regardless of cause — a caught taint, a silent decode
+   failure, or an empty array — and names the offending layer so it's diagnosable without opening DevTools. */
+function checkDataHealth(){
+  const nonzero=(arr,stride,n)=>{let c=0;for(let i=0;i<n;i+=1000){if(arr[i*stride])c++;}return c;};
+  const N=WSRC*HSRC, bad=[];
+  if(nonzero(heightArr,1,N)===0) bad.push('elevation');
+  if(nonzero(koppenArr,1,N)===0) bad.push('Köppen');
+  if(nonzero(colorArr,3,N)===0) bad.push('satellite/colour');
+  if(!bad.length) return;
+  const b=document.createElement('div');
+  b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px 16px;font:12px/1.4 var(--mono),ui-monospace,monospace;color:#111;background:#ffd24a;border-bottom:1px solid #c9982a;box-shadow:0 2px 8px rgba(0,0,0,.35)';
+  b.innerHTML='Raster layer(s) empty after load: <b>'+bad.join(', ')+'</b> — the coastline still draws but land interiors are blank. '
+    +(imgReadBlocked?'A pixel read was blocked (canvas taint). ':'')+(baseDataMissing?'A base file returned 404. ':'')
+    +'If this is the Terra-WBS.exe, press <b>Ctrl+F5</b> to reload past any cached page. If it persists, open <b>F12</b> and send the red console errors.'
+    +'<span style="float:right;cursor:pointer;font-weight:700;padding-left:12px" onclick="this.parentNode.remove()">✕</span>';
+  document.body.appendChild(b);
+}
 function maybeWarnMissingData(){
   if(!baseDataMissing) return;
   const b=document.createElement('div');
@@ -1560,7 +1985,7 @@ function maybeWarnFileProtocol(){
 function loadCoast(done){fetch('data/coast_10m.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{COAST=(j&&j.polys)?j:{polys:[]};done();}).catch(e=>{baseDataMissing=true;COAST={polys:[]};console.warn('coast_10m.json not loaded ('+e+') -- serve over http(s).');done();});}
 function loadLakes(done){fetch('data/lakes_10m.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{LAKES=(j&&j.polys)?j:{polys:[]};done();}).catch(e=>{LAKES={polys:[]};console.warn('lakes_10m.json not loaded ('+e+').');done();});}
 function loadRivers(done){fetch('data/river_tiles/manifest.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{RMAN=j;updateRiverReadout();done();}).catch(e=>{RMAN=null;console.warn('river tiles manifest not loaded ('+e+') -- serve over http(s).');done();});}
-loadElevation(()=>loadKoppen(()=>loadColor(()=>loadCoast(()=>loadLakes(()=>{landMask=buildLandMask();landAlphaCanvas=buildLandAlpha();generateWorld(1);repaintLayers();relayout();maybeWarnFileProtocol();maybeWarnMissingData();loadKoppenIndex(()=>render());loadLakesHires(()=>render());loadCoastHires(()=>render());loadPlayas(()=>render());loadSatIndex(()=>render());loadHgtIndex(()=>render());loadRivers(()=>render());})))));
+loadElevation(()=>loadKoppen(()=>loadColor(()=>loadCoast(()=>loadLakes(()=>{landMask=buildLandMask();landAlphaCanvas=buildLandAlpha();generateWorld(1);repaintLayers();relayout();maybeWarnFileProtocol();maybeWarnMissingData();checkDataHealth();loadKoppenIndex(()=>render());loadLakesHires(()=>render());loadCoastHires(()=>render());loadPlayas(()=>render());loadSatIndex(()=>render());loadHgtIndex(()=>render());loadRivers(()=>render());})))));
 </script>
 </body>
 </html>

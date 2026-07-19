@@ -5,7 +5,7 @@
  *
  * Input is the game-agnostic viewer representation (north-origin, same as the classifier):
  *   grid[gy][gx], gy=0 NORTH: { terrain:'TERRAIN_*', plot:0|1|2|3 (peak/hills/flat/water),
- *                               feature?:'FEATURE_*', fv?:int }
+ *                               feature?:'FEATURE_*', fv?:int, bonus?:'BONUS_*' (special tiles) }
  *   rivers: {nof,wof} from rivers_core.reachesToEdges, keyed 'gr,gx' with gr=0 NORTH.
  * Civ4 is south-origin; the flip grid[(H-1)-civY][gx] happens only here, at serialize time.
  *
@@ -16,8 +16,9 @@
  *     RandomStartLocation=true) and NO team blocks -- the game then seats any civ count.
  *   - a map WITH placed starts must still define all 18 civ slots (real ones first, the rest
  *     LeaderType=NONE) plus 18 teams -- BtS reads every slot at init, and undefined ones crash it.
- *   - no BonusType lines are written, so 'Randomize Resources=true' lets the game scatter
- *     resources at load.
+ *   - a tile may carry an optional bonus (t.bonus='BONUS_*') from a special-tile rule; it is written
+ *     as a BonusType line. 'Randomize Resources=true' still scatters the rest and keeps ours, because
+ *     Civ4's addBonuses() skips plots that already have a bonus.
  *   - regional maps do not wrap (Europe: wrap X=0); pass wrapX:1 only for full-360 windows.
  *   - output uses CRLF line endings: Civ4's parser is Windows-native and CTDs on LF-only files.
  */
@@ -92,6 +93,7 @@
     for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
       const t = grid[(H - 1) - y][x];
       L.push("BeginPlot", "\tx=" + x + ",y=" + y);
+      if (t.bonus) L.push("\tBonusType=" + t.bonus);   // special-tile resources; kept even with Randomize Resources (addBonuses skips plots that already have one)
       if (t.feature) L.push("\tFeatureType=" + t.feature + ", FeatureVariety=" + (t.fv || 0));
       L.push("\tTerrainType=" + t.terrain, "\tPlotType=" + t.plot);
       if (rivers) { const rl = plotRiverLines(rivers.nof, rivers.wof, x, y, H); for (let q = 0; q < rl.length; q++) L.push(rl[q]); }
