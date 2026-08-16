@@ -12,7 +12,7 @@
     --ink:#0c1820; --ink2:#0f1f29; --panel:#142732; --panel2:#10222c;
     --line:#22414f; --line2:#1a323d;
     --paper:#e9e3d3; --muted:#8ba3ad; --dim:#5f7c88;
-    --accent:#45c1d0; --warn:#e0913f;
+    --accent:#45c1d0; --warn:#e0913f; --sel:#b06fe0;
     --t-ocean:#123a51; --t-coast:#2f6d8c; --t-grass:#5c8a4a; --t-plains:#a7a44e;
     --t-desert:#cbb56f; --t-tundra:#808a72; --t-snow:#e9ece0;
     --disp:'Space Grotesk',system-ui,sans-serif;
@@ -115,6 +115,27 @@
   .vok{color:var(--accent)} .vwarn{color:var(--warn)}
   .dot{width:6px; height:6px; border-radius:50%; flex:0 0 auto}
   .dot.ok{background:var(--accent)} .dot.warn{background:var(--warn)}
+  .selbtn[aria-pressed="true"]{color:var(--ink); background:var(--sel); border-color:var(--sel); font-weight:600}
+  .vbtn:disabled{opacity:.45; cursor:default}
+  /* snapshot shelf — reuses .panel/.vbtn/.note/.numin/.seg; only the thumbnail-list structure is new */
+  .shelf-list{display:flex; flex-direction:column; gap:10px; margin-top:2px}
+  .shelf-empty{margin:0}
+  .shelf-item{display:flex; gap:10px; padding:9px; background:var(--panel); border:1px solid var(--line2); border-radius:3px}
+  .shelf-thumb{flex:0 0 auto; width:64px; height:64px; object-fit:contain; background:var(--ink); border:1px solid var(--line2); border-radius:2px}
+  .shelf-meta{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:4px; justify-content:center}
+  .shelf-name-row{display:flex; align-items:center; gap:6px}
+  .shelf-name{font-size:12.5px; color:var(--paper); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1 1 auto; min-width:0}
+  .shelf-icon-btn{flex:0 0 auto; font-size:11px; line-height:1; color:var(--muted); background:transparent; border:1px solid transparent; border-radius:2px; padding:3px 5px; cursor:pointer}
+  .shelf-icon-btn:hover{color:var(--paper); border-color:var(--line2)}
+  .shelf-icon-btn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+  .shelf-rename-input{font-size:12px; padding:3px 6px; flex:1 1 auto; min-width:0}
+  .shelf-dims{font-family:var(--mono); font-size:10.5px; color:var(--dim)}
+  .shelf-btns{display:flex; gap:6px; margin-top:2px}
+  .shelf-btns .vbtn{flex:1 1 auto; padding:4px 6px; font-size:11px; text-align:center}
+  .shelf-confirm{color:var(--warn); border-color:var(--warn)}
+  .shelf-paste{margin-top:10px}
+  .shelf-textarea{width:100%; min-height:90px; font-family:var(--mono); font-size:11px; color:var(--paper); background:var(--ink); border:1px solid var(--line); border-radius:2px; padding:7px 8px; resize:vertical}
+  .shelf-textarea:focus{outline:none; border-color:var(--accent)}
   @media (max-width:820px){ main{flex-direction:column} .rail{flex-basis:auto; border-left:none; border-top:1px solid var(--line)} .stage{height:60vh} }
 </style>
 </head>
@@ -133,6 +154,7 @@
       <button class="tab" data-mode="roughness" aria-pressed="false">Roughness</button>
       <button class="tab" data-mode="climate"   aria-pressed="false">Köppen climate</button>
       <button class="tab" data-mode="civ"       aria-pressed="false">Civ preview</button>
+      <button class="tab" data-mode="compose"   aria-pressed="false" title="Arrange captured snapshots on a blank map">Compose</button>
       <span class="tabind" id="viewSource" title="Coastline & Köppen render source at this zoom">Raster</span>
     </div>
 
@@ -158,11 +180,22 @@
       <span class="toggle" style="color:var(--dim)" id="arNote"></span>
     </div>
 
+    <div class="vtools">
+      <div class="grp" id="selTools" role="group" aria-label="Selection mask">
+        <button class="vbtn selbtn" data-sel="rect" aria-pressed="false" title="Box mask — press and drag a rectangle">&#9647; box</button>
+        <button class="vbtn selbtn" data-sel="lasso" aria-pressed="false" title="Lasso mask — click point by point, or press and drag to draw freehand">&#8943; lasso</button>
+      </div>
+      <button class="vbtn" id="selClear" disabled title="Discard the mask">clear mask</button>
+      <button class="vbtn" id="snapshot" title="Freeze the framed region as a snapshot — the evaluated tiles exactly as Generate would write them, cropped to the mask if one is drawn — and add it to the shelf"><span id="snapLabel">&#128247; snapshot</span><span class="eyebrow-n" id="shelfCount"></span></button>
+      <label class="toggle" title="What a mask leaves behind: the margin around a cropped capture, and what Delete fills with on the compose canvas"><input type="checkbox" id="tgMtnDefault"> mountain fill <span class="eyebrow-n">(else ocean)</span></label>
+      <span class="toggle" style="color:var(--sel)" id="selNote"></span>
+    </div>
+
     <div class="legend" id="legend"></div>
   </section>
 
   <aside class="rail">
-    <div class="panel">
+    <div class="panel" data-rail="tune">
       <h2>Coast &amp; Seas <span class="eyebrow-n">· real data</span></h2>
       <p class="sub">Land/water from the Natural Earth coastline. Crisp windowed vector inside the cutoff; coarse baked coast outside it.</p>
       <div class="ctl"><div class="row"><label>Island bias <span class="eyebrow-n">↑ more islands</span></label><span class="val" id="vIsland"></span></div><input type="range" id="islandBias" min="0" max="1" step="0.02" value="0"></div>
@@ -171,7 +204,7 @@
       <div class="ctl"><div class="row"><label for="expandSteep">Expander steepness <span class="eyebrow-n">1 = linear ramp</span></label></div><input class="numin" id="expandSteep" type="number" min="0.2" max="8" step="0.1" value="1.0"></div>
       <div class="ctl"><div class="row"><label for="expandMaxMult">Expander max × <span class="eyebrow-n">largest scaled isle</span></label></div><input class="numin" id="expandMaxMult" type="number" min="1" max="5" step="0.1" value="1.5"></div>
     </div>
-    <div class="panel">
+    <div class="panel" data-rail="tune">
       <h2>Output grid</h2>
       <p class="sub">The framed region becomes this many tiles — the viewer matches this shape. Scroll a box to nudge; lock to keep the ratio.</p>
       <div class="grid2">
@@ -186,7 +219,52 @@
       <div class="note" id="perTileNote"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="composePanel" data-rail="compose" hidden>
+      <h2>Compose canvas</h2>
+      <p class="sub">A blank ocean map you arrange snapshots on. Click a snapshot in the shelf to attach it to the cursor, click the map to drop it, then drag to move. Arrows nudge · <b>[</b> / <b>]</b> re-stack · Del removes.</p>
+      <div class="grid2">
+        <div class="ctl"><div class="row"><label for="cw">Width</label></div><input class="numin" id="cw" type="number" min="8" max="160" value="60"></div>
+        <div class="ctl"><div class="row"><label for="chh">Height</label></div><input class="numin" id="chh" type="number" min="8" max="120" value="40"></div>
+      </div>
+      <div class="ctl" id="patchCtl" hidden>
+        <div class="row"><label>Selected patch</label><span class="valx" id="vPatch"></span></div>
+        <label class="toggle" style="margin-top:4px" title="Ocean tiles in this snapshot don't paint over what's underneath — lets two coastal snapshots sit close without erasing each other"><input type="checkbox" id="patchLandOnly" checked> land only</label>
+        <div class="seg" role="group" aria-label="Patch order">
+          <button type="button" id="patchLower">send back</button>
+          <button type="button" id="patchRaise">bring front</button>
+          <button type="button" id="patchDel">remove</button>
+        </div>
+      </div>
+      <div class="note" id="composeWarn" style="color:var(--warn)" hidden></div>
+      <div class="stat" style="margin-top:10px"><span>patches</span><b id="stPatches">0</b></div>
+      <div class="stat"><span>land / water</span><b id="stCompLand">—</b></div>
+      <div class="stat"><span>erased tiles</span><b id="stErased">0</b></div>
+      <div class="seg" style="margin-top:9px">
+        <button type="button" id="compUnerase" disabled title="Undo every mask-and-Delete fill on this canvas">restore erased</button>
+        <button type="button" id="compClear">clear canvas</button>
+      </div>
+      <div class="note">Generate writes the composite, not the framed region, while this tab is active. Latitudes are meaningless for a collage, so a plain span is written to the save.</div>
+    </div>
+
+    <div class="panel" id="shelfPanel" data-rail="compose" hidden>
+      <h2>Snapshot Shelf</h2>
+      <p class="sub">Frozen copies of framed regions, each tuned however the sliders were set when captured (&#128247; snapshot, above the map). Click <b>place</b> to drop one onto the Compose canvas.</p>
+      <div class="shelf-list" id="shelfList"></div>
+      <div class="shelf-paste" id="shelfPasteWrap" hidden>
+        <textarea class="shelf-textarea" id="shelfPasteArea" placeholder="Paste snapshot JSON here…" spellcheck="false"></textarea>
+        <div class="seg">
+          <button type="button" id="shelfPasteCommit">Add from JSON</button>
+          <button type="button" id="shelfPasteCancel">Cancel</button>
+        </div>
+        <div class="note" id="shelfPasteErr"></div>
+      </div>
+      <div class="seg" style="margin-top:10px">
+        <button type="button" id="shelfPasteToggle">Paste JSON…</button>
+        <button type="button" id="shelfClearAll">Clear all</button>
+      </div>
+    </div>
+
+    <div class="panel" data-rail="tune">
       <h2>Elevation</h2>
       <p class="sub">Relief sets flat / hills / peak. Land/water comes from the coastline, not a sea-level cut.</p>
       <div class="ctl"><div class="row"><label>Roughness smoothing halo <span class="eyebrow-n">feeds relief</span></label><span class="val" id="vRough"></span></div><input type="range" id="roughHalo" min="0" max="1" step="0.01" value="0"></div>
@@ -205,7 +283,7 @@
       <div class="stat"><span>hills / peaks</span><b id="stRelief">—</b></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-rail="tune">
       <h2>Base Terrain</h2>
       <p class="sub">Moisture picks grass / plains / desert (steppe on brightness, iron-red arid soil on hue); bright white is read as salt or snow by the surrounding non-white climate (arid&rarr;salt, cold&rarr;snow). Temperature (Köppen zone, altitude, colour) plus a boreal cold tilt (latitude + tundra/taiga colour) and an alpine snow-cover tilt swap in tundra / snow.</p>
       <div class="ctl"><div class="row"><label>Dryness &mdash; grass &middot; plains &middot; desert</label><span class="valx" id="vDry"></span></div><div id="drynessRange"></div></div>
@@ -215,7 +293,7 @@
       <div class="ctl"><div class="row"><label>Climate prior weight <span class="eyebrow-n">Köppen</span></label><span class="val" id="vClim"></span></div><input type="range" id="clim" min="0" max="1" step="0.02" value="0.45"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-rail="tune">
       <h2>Features</h2>
       <p class="sub">Forest &amp; jungle from climate, relief &amp; colour (potential/pre-industrial, not present cover); flood plains on flat desert along rivers (score = colour contrast + discharge + ~20% random); oasis in wet desert spots. Re-roll varies the seeded placement.</p>
       <label class="toggle" style="font-size:12.5px;color:var(--paper)"><input type="checkbox" id="feat"> emit features <span class="eyebrow-n">forest · jungle · flood plains · oasis</span></label>
@@ -227,7 +305,7 @@
       <button class="vbtn" id="reroll" title="Re-roll the seeded forest / jungle / flood-plain / oasis placement">⟳ re-roll features</button>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-rail="tune">
       <h2>Rivers <span class="eyebrow-n">· HydroRIVERS</span></h2>
       <p class="sub">Top channels by discharge intersecting the current view — each main stem, tributary, and distributary ranks on its own. What you see is what gets written to the save. Click a river to cycle it: <b style="color:#e04a3a">deselected</b> (red, never written) → <b style="color:#2ec26a">selected</b> (green, kept on the map at any zoom and always written) → default.</p>
       <div class="ctl"><div class="row"><label>Show top-N rivers <span class="eyebrow-n">by discharge</span></label><span class="val" id="vRiverN"></span></div><input type="range" id="riverN" min="0" max="40" step="1" value="12">
@@ -235,7 +313,7 @@
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-rail="tune">
       <h2>General Options</h2>
       <p class="sub">Window width (degrees) at which the coastline &amp; Köppen switch from coarse raster to crisp windowed vector.</p>
       <div class="ctl"><div class="row"><label>Vector cutoff (window width)</label><span class="val" id="vCoast"></span></div><input type="range" id="coastThr" min="4" max="120" step="1" value="30"></div>
@@ -246,7 +324,7 @@
     <div class="gen">
       <div class="ctl" style="margin-top:0">
         <div class="row"><label for="np">Playable civs <span class="eyebrow-n">0 = random civs &amp; starts · else auto-placed on land</span></label></div>
-        <input class="numin" id="np" type="number" min="0" max="12" value="4">
+        <input class="numin" id="np" type="number" min="0" max="12" value="0">
       </div>
       <button class="genbtn" id="generate">Generate .CivBeyondSwordWBSave</button>
       <div class="dest" id="destPanel">
@@ -567,9 +645,13 @@ function srcRect(){const sy=spanY();return {x:view.cx-view.spanX/2,y:view.cy-sy/
 function wrapOffsets(R){const k0=Math.floor(R.x/WSRC),k1=Math.floor((R.x+R.w-1e-6)/WSRC),o=[];for(let k=k0;k<=k1;k++)o.push(k*WSRC);return o;}   // world copies the view spans (x*WSRC), [0] unless it straddles +/-180
 function wrapLon(l){return ((l%360)+540)%360-180;}   // normalise a longitude into [-180,180) for display
 
+/* The grid the viewer is currently showing: the output frame in every geographic mode, the collage
+   canvas in compose mode (which has its own size, independent of the output grid). */
+function activeGrid(){return mode==='compose'?{W:comp.W,H:comp.H}:{W:out.W,H:out.H};}
+function activeEffH(){const g=activeGrid();return hexMode?g.H*HEX_ROW:g.H;}
 /* size the map-box to the largest W/H-aspect rectangle that fits the wrap; window resize only changes box size, never the framing */
 function fitMapBox(){
-  const availW=wrap.clientWidth-2, availH=wrap.clientHeight-2, ar=out.W/effH();
+  const availW=wrap.clientWidth-2, availH=wrap.clientHeight-2, ar=activeGrid().W/activeEffH();
   let w=availW,h=w/ar; if(h>availH){h=availH;w=h*ar;}
   mapBox.style.width=Math.max(40,Math.floor(w))+'px';
   mapBox.style.height=Math.max(40,Math.floor(h))+'px';
@@ -1192,68 +1274,195 @@ function render(){
   if(KTILE_INDEX&&windowWidthDeg()<=coastThr&&R.x>=0&&R.x+R.w<=WSRC)ensureTiles(tileIdsForView(R));   // warm the koppen vector tiles for classification (any mode)
   if(STILE_META&&windowWidthDeg()<=coastThr&&R.x>=0&&R.x+R.w<=WSRC)ensureSatTiles(satTileIdsForView(R));   // warm the satellite tiles for classification colour (any mode)
   if(RMAN&&riverN>0)ensureRiverTiles(riverTileIdsForView(R));   // warm the river tiles (whole channels) overlapping the view
+  if(mode==='compose'){renderCompose();return;}   // compose mode has no geographic frame: no layers, rivers-in-view, graticule or axes
   if(mode==='civ'){
-    lastTiles=classifyRegion(out.W,out.H);
-    if(P.feat){let rv=null;try{rv=selectedOnly(computeRiverEdges(R,out.W,out.H,riverN,lastTiles.tiles));}catch(_){}applyFeatures(lastTiles.tiles,out.W,out.H,rv);}   // river-aware feature pass (same selected edges that get serialized)
-    const tw=cv.width/out.W,th=cv.height/out.H;
-    if(hexMode){
-      const HL=hexLayout();   // real tiles only, at their true ragged positions — the letterbox shows through the border notches
-      for(let y=0;y<out.H;y++){const sh=hexShiftX(y,out.H)*HL.tw,cy=HL.oy+HL.s+y*HL.th;
-        for(let x=0;x<out.W;x++){const c=civTileColor(lastTiles.tiles[y][x]),col='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';
-          hexPathPointy(HL.ox+(x+0.5)*HL.tw+sh,cy,HL.tw,HL.s);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.stroke();}}   // stroke in the fill colour closes hairline seams between hexes
-      for(let y=0;y<out.H;y++){const sh=hexShiftX(y,out.H)*HL.tw,py=HL.oy+HL.s+y*HL.th-HL.th/2;for(let x=0;x<out.W;x++){const t=lastTiles.tiles[y][x],px=HL.ox+x*HL.tw+sh;   // glyphs centred in the hex's tw×th box
-        if(t.feature==='FEATURE_OASIS')drawPalmGlyph(px,py,HL.tw,HL.th);
-        if(t.special)drawBonusGlyph(px,py,HL.tw,HL.th);
-        if(t.plot===PLOT.HILLS)drawHillGlyph(px,py,HL.tw,HL.th);else if(t.plot===PLOT.PEAK)drawPeakGlyph(px,py,HL.tw,HL.th,t.terrain===TERR.SNOW||t.terrain===TERR.TUNDRA);}}
-    }else{
-      for(let y=0;y<out.H;y++)for(let x=0;x<out.W;x++){const t=lastTiles.tiles[y][x],c=civTileColor(t);
-        ctx.fillStyle='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';ctx.fillRect(Math.floor(x*tw),Math.floor(y*th),Math.ceil(tw)+1,Math.ceil(th)+1);}
-      for(let y=0;y<out.H;y++)for(let x=0;x<out.W;x++){const t=lastTiles.tiles[y][x],px=x*tw,py=y*th;   // relief + oasis + special-bonus glyphs, drawn on top
-        if(t.feature==='FEATURE_OASIS')drawPalmGlyph(px,py,tw,th);
-        if(t.special)drawBonusGlyph(px,py,tw,th);
-        if(t.plot===PLOT.HILLS)drawHillGlyph(px,py,tw,th);else if(t.plot===PLOT.PEAK)drawPeakGlyph(px,py,tw,th,t.terrain===TERR.SNOW||t.terrain===TERR.TUNDRA);}
-    }
+    lastTiles=evaluateFrame();   // classify + river-aware features, exactly as the export does — the preview IS the snapshot
+    drawCivGrid(ctx,lastTiles.tiles,out.W,out.H,{hex:hexMode,cw:cv.width,ch:cv.height,glyphs:true});
   }else{drawLayerWithCoast(R);if(showGrid)drawTileGrid();}
   drawRivers(R);
   if(showGrat)drawGraticule(R);drawAxes(R);updateReadout(R);
+  drawWorldSelection(R);   // last, so the mask outline sits over every layer
 }
-/* ---------- Civ-preview relief & feature glyphs (drawn per tile over the terrain fill) ---------- */
-function drawHillGlyph(px,py,w,h){   // rounded hill: a smooth hump, drawn as a neutral shadow so the terrain hue underneath still reads (desert hills stay sandy)
-  ctx.fillStyle='rgba(18,14,8,0.30)';
-  ctx.beginPath();ctx.moveTo(px+0.14*w,py+0.74*h);ctx.quadraticCurveTo(px+0.5*w,py+0.30*h,px+0.86*w,py+0.74*h);ctx.closePath();ctx.fill();
+/* Source px -> canvas px for the current frame; the mask is stored in source px so it stays pinned
+   to the world as you pan and zoom. */
+function worldToCanvas(R){return (sx,sy)=>[(sx-R.x)/R.w*cv.width,(sy-R.y)/R.h*cv.height];}
+function canvasToWorld(R,px,py){return [R.x+(px/cv.width)*R.w, R.y+(py/cv.height)*R.h];}
+function drawWorldSelection(R){
+  const live=_selDraw&&mode!=='compose'?_selDraw:null;
+  const s=live||worldSel;
+  if(s)drawSelection(ctx,s,worldToCanvas(R),!!(live&&live.open));
 }
-function drawPeakGlyph(px,py,w,h,snowy){   // mountain: a capital-lambda (Λ); snow cap only on cold terrain, else a rocky cap
-  ctx.lineJoin='round';ctx.lineCap='round';
-  ctx.strokeStyle='rgba(38,30,22,0.9)';ctx.lineWidth=Math.max(1,w*0.14);
-  ctx.beginPath();ctx.moveTo(px+0.22*w,py+0.80*h);ctx.lineTo(px+0.5*w,py+0.20*h);ctx.lineTo(px+0.78*w,py+0.80*h);ctx.stroke();
-  ctx.strokeStyle=snowy?'rgba(242,246,250,0.92)':'rgba(150,140,126,0.85)';ctx.lineWidth=Math.max(1,w*0.09);   // white snow cap vs bare rock cap
-  ctx.beginPath();ctx.moveTo(px+0.40*w,py+0.40*h);ctx.lineTo(px+0.5*w,py+0.20*h);ctx.lineTo(px+0.60*w,py+0.40*h);ctx.stroke();
+/* One evaluated frame = everything the exporter writes, in a position-independent form: classified
+   tiles, the river edges actually selected for serialization, and the frame metadata. render(),
+   generate() and captureSnapshot() all go through this, so a snapshot is by construction identical
+   to what Generate would have produced for that view with those slider settings. */
+function evaluateFrame(){
+  const R=srcRect(),region=classifyRegion(out.W,out.H);
+  let rivers={nof:new Map(),wof:new Map()};
+  try{rivers=selectedOnly(computeRiverEdges(R,out.W,out.H,riverN,region.tiles));}   // deselected channels dropped here, so features and export agree
+  catch(e){console.error('evaluateFrame: river pass failed; continuing with no rivers this frame:',e);}
+  applyFeatures(region.tiles,out.W,out.H,rivers);   // flood plains need the river edges, so features come last
+  region.rivers=rivers;region.topLat=latOf(R.y);region.botLat=latOf(R.y+R.h);
+  region.hex=hexMode;region.frame={cx:view.cx,cy:view.cy,spanX:view.spanX};region.wrapX=R.w>=WSRC-1e-6?1:0;
+  return region;
 }
-function drawBonusGlyph(px,py,w,h){   // special (bonus) tile: a small gold resource diamond
+/* ---------- Selection masks: box & lasso ----------
+   A mask limits what a capture takes and what an erase clears. It lives in TWO different coordinate
+   spaces because the two modes anchor differently: in the geographic viewers a mask is pinned to the
+   WORLD (source-raster px), so panning or zooming leaves it around the same coastline you drew it
+   around; on the compose canvas there is no geography, so its mask is pinned to TILE coordinates.
+   Same shape maths either way — only the transform to canvas pixels differs. */
+const SEL_LINE='#b06fe0', SEL_FILL='rgba(176,111,224,0.13)';   // purple: unused by any data layer, so it reads as UI rather than terrain
+let selTool='none';        // 'none' | 'rect' | 'lasso' — while not 'none' the pointer draws instead of panning/dragging
+let worldSel=null;         // geographic viewers: {kind:'rect'|'lasso', pts:[[sx,sy],...]} in source px
+let compSel=null;          // compose canvas: same shape, in tile coords
+let _selDraw=null;         // in-progress stroke: {kind,pts,anchor,moved,freehand}
+let _selCursor=null;       // live cursor point, for the rubber-band segment of an open lasso
+function activeSel(){return mode==='compose'?compSel:worldSel;}
+function setActiveSel(s){if(mode==='compose')compSel=s;else worldSel=s;}
+/* Rect is stored as its two corners so the same point list serves both kinds; a lasso keeps every
+   vertex. Both normalise to a polygon for the inside test, which keeps one code path. */
+function selPolygon(s){
+  if(!s)return null;
+  if(s.kind==='rect'){const [a,b]=s.pts,x0=Math.min(a[0],b[0]),x1=Math.max(a[0],b[0]),y0=Math.min(a[1],b[1]),y1=Math.max(a[1],b[1]);
+    return [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];}
+  return s.pts;
+}
+/* Even-odd ray cast. Points exactly on an edge are not worth special-casing: a tile is tested at its
+   CENTRE, so a boundary hit needs the centre to land precisely on the edge. */
+function selContains(s,x,y){
+  const p=selPolygon(s);if(!p||p.length<3)return false;
+  let inside=false;
+  for(let i=0,j=p.length-1;i<p.length;j=i++){
+    const xi=p[i][0],yi=p[i][1],xj=p[j][0],yj=p[j][1];
+    if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)inside=!inside;
+  }
+  return inside;
+}
+function selBounds(s){
+  const p=selPolygon(s);if(!p||!p.length)return null;
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(const q of p){if(q[0]<x0)x0=q[0];if(q[0]>x1)x1=q[0];if(q[1]<y0)y0=q[1];if(q[1]>y1)y1=q[1];}
+  return {x0,y0,x1,y1};
+}
+function selIsUsable(s){const p=selPolygon(s);return !!(p&&p.length>=3);}
+/* Draw the shape in purple. `tf` maps a point from the selection's own space to canvas px; an open
+   lasso additionally rubber-bands from its last vertex to the cursor so the next segment is visible. */
+function drawSelection(g,s,tf,open){
+  if(!s||!s.pts.length)return;
+  const p=selPolygon(s),pts=p.map(q=>tf(q[0],q[1]));
+  g.save();
+  g.lineJoin='round';g.lineCap='round';g.lineWidth=Math.max(1.5,cv.width*0.0022);
+  if(pts.length>=3&&!open){
+    g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();
+    g.fillStyle=SEL_FILL;g.fill();
+  }
+  g.strokeStyle=SEL_LINE;
+  g.beginPath();g.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);
+  if(!open&&pts.length>=3)g.closePath();
+  else if(_selCursor){const c=tf(_selCursor[0],_selCursor[1]);g.lineTo(c[0],c[1]);}   // rubber band to the cursor
+  g.stroke();
+  if(open){   // vertex handles, so a click-by-click polygon shows where its corners landed
+    g.fillStyle=SEL_LINE;
+    const r=Math.max(2.5,cv.width*0.0032);
+    for(const q of pts){g.beginPath();g.arc(q[0],q[1],r,0,7);g.fill();}
+  }
+  g.restore();
+}
+/* ---------- Default tile: what a mask leaves behind ----------
+   Ocean is the usual filler. Mountains are the alternative when you want the masked-out margin (or an
+   erased area) to be impassable land rather than sea — a wall around a region instead of an island. */
+let defaultTileKind='ocean';   // 'ocean' | 'peak'
+function defaultTile(){
+  return defaultTileKind==='peak'
+    ? {terrain:TERR.GRASS,plot:PLOT.PEAK,rgb:[96,110,86],z:5,lat:0,kc:0,feature:null,fv:0,special:null,bonus:null}
+    : {terrain:TERR.OCEAN,plot:PLOT.WATER,rgb:[18,58,81],z:5,lat:0,kc:0,feature:null,fv:0,special:null,bonus:null};
+}
+
+/* ---------- Civ-preview relief & feature glyphs (drawn per tile over the terrain fill) ----------
+   Every glyph takes its target context `g` rather than closing over the viewer's `ctx`: the same
+   grid is drawn to the live canvas, to offscreen snapshot thumbnails, and to the compose canvas. */
+function drawHillGlyph(g,px,py,w,h){   // rounded hill: a smooth hump, drawn as a neutral shadow so the terrain hue underneath still reads (desert hills stay sandy)
+  g.fillStyle='rgba(18,14,8,0.30)';
+  g.beginPath();g.moveTo(px+0.14*w,py+0.74*h);g.quadraticCurveTo(px+0.5*w,py+0.30*h,px+0.86*w,py+0.74*h);g.closePath();g.fill();
+}
+function drawPeakGlyph(g,px,py,w,h,snowy){   // mountain: a capital-lambda (Λ); snow cap only on cold terrain, else a rocky cap
+  g.lineJoin='round';g.lineCap='round';
+  g.strokeStyle='rgba(38,30,22,0.9)';g.lineWidth=Math.max(1,w*0.14);
+  g.beginPath();g.moveTo(px+0.22*w,py+0.80*h);g.lineTo(px+0.5*w,py+0.20*h);g.lineTo(px+0.78*w,py+0.80*h);g.stroke();
+  g.strokeStyle=snowy?'rgba(242,246,250,0.92)':'rgba(150,140,126,0.85)';g.lineWidth=Math.max(1,w*0.09);   // white snow cap vs bare rock cap
+  g.beginPath();g.moveTo(px+0.40*w,py+0.40*h);g.lineTo(px+0.5*w,py+0.20*h);g.lineTo(px+0.60*w,py+0.40*h);g.stroke();
+}
+function drawBonusGlyph(g,px,py,w,h){   // special (bonus) tile: a small gold resource diamond
   const cx=px+0.5*w,cy=py+0.5*h,r=Math.max(2,w*0.16);
-  ctx.beginPath();ctx.moveTo(cx,cy-r);ctx.lineTo(cx+r,cy);ctx.lineTo(cx,cy+r);ctx.lineTo(cx-r,cy);ctx.closePath();
-  ctx.fillStyle='rgba(240,205,70,0.95)';ctx.fill();
-  ctx.lineWidth=Math.max(1,w*0.03);ctx.strokeStyle='rgba(90,60,10,0.9)';ctx.stroke();
+  g.beginPath();g.moveTo(cx,cy-r);g.lineTo(cx+r,cy);g.lineTo(cx,cy+r);g.lineTo(cx-r,cy);g.closePath();
+  g.fillStyle='rgba(240,205,70,0.95)';g.fill();
+  g.lineWidth=Math.max(1,w*0.03);g.strokeStyle='rgba(90,60,10,0.9)';g.stroke();
 }
-function drawPalmGlyph(px,py,w,h){   // oasis: a little palm tree over a pool
+function drawPalmGlyph(g,px,py,w,h){   // oasis: a little palm tree over a pool
   const cx=px+0.5*w,base=py+0.80*h,topY=py+0.34*h;
-  ctx.lineCap='round';
-  ctx.fillStyle='rgba(58,140,190,0.85)';ctx.beginPath();ctx.ellipse(cx,base+0.06*h,0.20*w,0.07*h,0,0,7);ctx.fill();   // pool
-  ctx.strokeStyle='rgba(74,52,28,0.95)';ctx.lineWidth=Math.max(1,w*0.09);
-  ctx.beginPath();ctx.moveTo(cx,base);ctx.lineTo(cx,topY);ctx.stroke();   // trunk
-  ctx.strokeStyle='rgba(24,116,48,0.95)';ctx.lineWidth=Math.max(1,w*0.08);
+  g.lineCap='round';
+  g.fillStyle='rgba(58,140,190,0.85)';g.beginPath();g.ellipse(cx,base+0.06*h,0.20*w,0.07*h,0,0,7);g.fill();   // pool
+  g.strokeStyle='rgba(74,52,28,0.95)';g.lineWidth=Math.max(1,w*0.09);
+  g.beginPath();g.moveTo(cx,base);g.lineTo(cx,topY);g.stroke();   // trunk
+  g.strokeStyle='rgba(24,116,48,0.95)';g.lineWidth=Math.max(1,w*0.08);
   const fr=0.30*w,fronds=[[-1,-0.15],[1,-0.15],[-0.75,-0.7],[0.75,-0.7],[0,-1]];
-  for(const f of fronds){ctx.beginPath();ctx.moveTo(cx,topY);ctx.quadraticCurveTo(cx+f[0]*fr*0.5,topY+f[1]*fr*0.3,cx+f[0]*fr,topY+f[1]*fr);ctx.stroke();}   // fronds
+  for(const f of fronds){g.beginPath();g.moveTo(cx,topY);g.quadraticCurveTo(cx+f[0]*fr*0.5,topY+f[1]*fr*0.3,cx+f[0]*fr,topY+f[1]*fr);g.stroke();}   // fronds
 }
-function hexPathPointy(cx,cy,w,s){ctx.beginPath();ctx.moveTo(cx,cy-s);ctx.lineTo(cx+w/2,cy-s/2);ctx.lineTo(cx+w/2,cy+s/2);ctx.lineTo(cx,cy+s);ctx.lineTo(cx-w/2,cy+s/2);ctx.lineTo(cx-w/2,cy-s/2);ctx.closePath();}   // pointy-top hex: full width w, centre->top-point s (=w/√3); row pitch = 1.5s
-function hexLayout(){   // fit the FULL ragged hex block inside the canvas, centred: odd rows indent ½ tile and hexes overhang their row band, so the block is (W+0.5) tiles wide × (H+1/3) rows tall — the leftover margin lets every border show authentic jagged hex teeth
-  const tw=Math.min(cv.width/(out.W+0.5),(cv.height/(out.H+1/3))/HEX_ROW),th=tw*HEX_ROW,s=tw/Math.sqrt(3);
-  return {tw,th,s,ox:(cv.width-(out.W+0.5)*tw)/2,oy:(cv.height-((out.H-1)*th+2*s))/2};   // ox/oy centre the block; hex(x,y) centre = ox+(x+0.5)tw+shift, oy+s+y*th
+function hexPathPointy(g,cx,cy,w,s){g.beginPath();g.moveTo(cx,cy-s);g.lineTo(cx+w/2,cy-s/2);g.lineTo(cx+w/2,cy+s/2);g.lineTo(cx,cy+s);g.lineTo(cx-w/2,cy+s/2);g.lineTo(cx-w/2,cy-s/2);g.closePath();}   // pointy-top hex: full width w, centre->top-point s (=w/√3); row pitch = 1.5s
+function hexLayout(W,H,cw,ch){   // fit the FULL ragged hex block inside the canvas, centred: odd rows indent ½ tile and hexes overhang their row band, so the block is (W+0.5) tiles wide × (H+1/3) rows tall — the leftover margin lets every border show authentic jagged hex teeth
+  const tw=Math.min(cw/(W+0.5),(ch/(H+1/3))/HEX_ROW),th=tw*HEX_ROW,s=tw/Math.sqrt(3);
+  return {tw,th,s,ox:(cw-(W+0.5)*tw)/2,oy:(ch-((H-1)*th+2*s))/2};   // ox/oy centre the block; hex(x,y) centre = ox+(x+0.5)tw+shift, oy+s+y*th
+}
+/* ---------- Civ tile grid: geometry, drawing, and the pixel->tile inverse ----------
+   Split out of render() so the identical grid can be painted to the viewer, to a snapshot thumbnail,
+   and to the compose canvas. `geo` is the single source of truth for tile<->pixel mapping; every
+   caller (drawing, hit-testing, patch outlines) goes through it rather than re-deriving tw/th. */
+function civGridGeometry(W,H,opts){
+  if(opts.hex){const HL=hexLayout(W,H,opts.cw,opts.ch);return {hex:true,tw:HL.tw,th:HL.th,s:HL.s,ox:HL.ox,oy:HL.oy};}
+  return {hex:false,tw:opts.cw/W,th:opts.ch/H,ox:0,oy:0};
+}
+function drawCivGrid(g,tiles,W,H,opts){
+  const geo=civGridGeometry(W,H,opts),glyphs=opts.glyphs!==false;
+  if(geo.hex){
+    for(let y=0;y<H;y++){const sh=hexShiftX(y,H)*geo.tw,cy=geo.oy+geo.s+y*geo.th;
+      for(let x=0;x<W;x++){const c=civTileColor(tiles[y][x]),col='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';
+        hexPathPointy(g,geo.ox+(x+0.5)*geo.tw+sh,cy,geo.tw,geo.s);g.fillStyle=col;g.fill();g.strokeStyle=col;g.lineWidth=1;g.stroke();}}   // stroke in the fill colour closes hairline seams between hexes
+    if(glyphs)for(let y=0;y<H;y++){const sh=hexShiftX(y,H)*geo.tw,py=geo.oy+geo.s+y*geo.th-geo.th/2;for(let x=0;x<W;x++){const t=tiles[y][x],px=geo.ox+x*geo.tw+sh;   // glyphs centred in the hex's tw×th box
+      if(t.feature==='FEATURE_OASIS')drawPalmGlyph(g,px,py,geo.tw,geo.th);
+      if(t.special)drawBonusGlyph(g,px,py,geo.tw,geo.th);
+      if(t.plot===PLOT.HILLS)drawHillGlyph(g,px,py,geo.tw,geo.th);else if(t.plot===PLOT.PEAK)drawPeakGlyph(g,px,py,geo.tw,geo.th,t.terrain===TERR.SNOW||t.terrain===TERR.TUNDRA);}}
+  }else{
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=civTileColor(tiles[y][x]);
+      g.fillStyle='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';g.fillRect(Math.floor(x*geo.tw),Math.floor(y*geo.th),Math.ceil(geo.tw)+1,Math.ceil(geo.th)+1);}
+    if(glyphs)for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x],px=x*geo.tw,py=y*geo.th;   // relief + oasis + special-bonus glyphs, drawn on top
+      if(t.feature==='FEATURE_OASIS')drawPalmGlyph(g,px,py,geo.tw,geo.th);
+      if(t.special)drawBonusGlyph(g,px,py,geo.tw,geo.th);
+      if(t.plot===PLOT.HILLS)drawHillGlyph(g,px,py,geo.tw,geo.th);else if(t.plot===PLOT.PEAK)drawPeakGlyph(g,px,py,geo.tw,geo.th,t.terrain===TERR.SNOW||t.terrain===TERR.TUNDRA);}
+  }
+  return geo;
+}
+/* Canvas pixel -> tile. On the hex lattice the hexes ARE the Voronoi cells of their centres, so
+   "nearest centre among the neighbouring rows/columns" is exact, not an approximation. */
+function tileAtPixel(geo,px,py,W,H){
+  if(!geo.hex){const x=Math.floor((px-geo.ox)/geo.tw),y=Math.floor((py-geo.oy)/geo.th);return (x<0||x>=W||y<0||y>=H)?null:{x,y};}
+  const ry=Math.floor((py-geo.oy-geo.s)/geo.th);let best=null,bd=Infinity;
+  for(let y=ry-1;y<=ry+2;y++){
+    if(y<0||y>=H)continue;
+    const sh=hexShiftX(y,H)*geo.tw,cy=geo.oy+geo.s+y*geo.th,rx=Math.floor((px-geo.ox-sh)/geo.tw-0.5);
+    for(let x=rx;x<=rx+1;x++){
+      if(x<0||x>=W)continue;
+      const cx=geo.ox+(x+0.5)*geo.tw+sh,d=(px-cx)*(px-cx)+(py-cy)*(py-cy);
+      if(d<bd){bd=d;best={x,y};}
+    }
+  }
+  return best;
 }
 function civTileColor(t){let c=TCOLOR[t.terrain].slice();if(t.plot===PLOT.HILLS)c=c.map(v=>v*0.93);else if(t.plot===PLOT.PEAK)c=c.map(v=>v*0.84+12);if(t.feature==='FEATURE_FOREST')c=[34,95,42];else if(t.feature==='FEATURE_JUNGLE')c=[18,64,26];else if(t.feature==='FEATURE_FLOOD_PLAINS')c=[154,182,66];else if(t.feature==='FEATURE_OASIS')c=[200,188,120];return c;}
 function drawTileGrid(){ctx.save();ctx.strokeStyle='rgba(233,227,211,0.18)';ctx.lineWidth=1;
-  if(hexMode){const HL=hexLayout();   // hex outlines matching the civ preview's ragged block
-    for(let y=0;y<out.H;y++){const sh=hexShiftX(y,out.H)*HL.tw,cy=HL.oy+HL.s+y*HL.th;for(let x=0;x<out.W;x++){hexPathPointy(HL.ox+(x+0.5)*HL.tw+sh,cy,HL.tw,HL.s);ctx.stroke();}}
+  if(hexMode){const HL=hexLayout(out.W,out.H,cv.width,cv.height);   // hex outlines matching the civ preview's ragged block
+    for(let y=0;y<out.H;y++){const sh=hexShiftX(y,out.H)*HL.tw,cy=HL.oy+HL.s+y*HL.th;for(let x=0;x<out.W;x++){hexPathPointy(ctx,HL.ox+(x+0.5)*HL.tw+sh,cy,HL.tw,HL.s);ctx.stroke();}}
     ctx.restore();return;}
   for(let x=0;x<=out.W;x++){const px=Math.round(x/out.W*cv.width)+0.5;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,cv.height);ctx.stroke();}
   for(let y=0;y<=out.H;y++){const py=Math.round(y/out.H*cv.height)+0.5;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(cv.width,py);ctx.stroke();}ctx.restore();}
@@ -1749,7 +1958,17 @@ async function writeOut(text,filename){
   }
   downloadBlob(text,filename);setDestHint('Downloaded '+filename+' to your browser Downloads folder.');   // (3) fallback
 }
-async function generate(){const region=classifyRegion(out.W,out.H),R=srcRect(),k=Math.max(0,Math.min(12,parseInt(document.getElementById('np').value)||0)),players=pickStarts(region,k);const rivers=selectedOnly(computeRiverEdges(R,out.W,out.H,riverN,region.tiles));/* always written to the output map even when the view toggle is off; deselected channels dropped */applyFeatures(region.tiles,out.W,out.H,rivers);/* river-aware features (flood plains along these rivers) — same seed as the preview */const text=serialize(region.tiles,{W:out.W,H:out.H,topLat:latOf(R.y),botLat:latOf(R.y+R.h),startYear:-4000,players,rivers,wrapX:R.w>=WSRC-1e-6?1:0,description:'Generated by Terra-WBS'+(hexMode?' (hex layout for Civ5 import)':'')});/* wrap X only when the frame spans the full 360 (vanilla regional maps: wrap X=0) */validate(region,text,players,rivers);await writeOut(text,saveBaseName()+'.CivBeyondSwordWBSave');}
+async function generate(){
+  /* Compose mode exports the collage instead of the framed region: the composite is already a grid of
+     evaluated tiles + merged river edges, so it drops straight into the same serializer. Its latitudes
+     are meaningless (patches come from all over the world), so COMPOSE_LAT is written as a plain span. */
+  const region=(mode==='compose')?composeRegion():evaluateFrame();
+  const k=Math.max(0,Math.min(12,parseInt(document.getElementById('np').value)||0)),players=pickStarts(region,k);
+  const rivers=region.rivers;/* always written to the output map even when the view toggle is off; deselected channels dropped */
+  const text=serialize(region.tiles,{W:region.W,H:region.H,topLat:region.topLat,botLat:region.botLat,startYear:-4000,players,rivers,wrapX:region.wrapX||0,description:'Generated by Terra-WBS'+(mode==='compose'?' (composed from '+comp.patches.length+' snapshot'+(comp.patches.length===1?'':'s')+')':'')+(hexMode?' (hex layout for Civ5 import)':'')});/* wrap X only when the frame spans the full 360 (vanilla regional maps: wrap X=0) */
+  validate(region,text,players,rivers);
+  await writeOut(text,saveBaseName()+'.CivBeyondSwordWBSave');
+}
 (async()=>{const pf=document.getElementById('pickFolder');if(!FS_DIR){pf.style.display='none';}else{pf.addEventListener('click',pickFolder);try{const h=await idbGet('saveDir');if(h){saveDir=h;saveDirName=h.name;}}catch(_){}}updateDestUI();if(!saveDir)setDestHint(FS_DIR?'Tip: choose your Civ4 “PublicMaps” (or “…\\My Games\\Beyond the Sword\\CustomMaps”) folder to save straight there.':(FS_SAVE?'A Save As dialog will let you pick the location each time.':'This browser downloads to the default folder — move the file into Civ4’s CustomMaps/PublicMaps afterward.'));})();
 function validate(region,text,players,rivers){const {tiles,W,H}=region,want=W*H,got=(text.match(/BeginPlot/g)||[]).length;let bad=0;for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=tiles[y][x],isW=(t.terrain===TERR.OCEAN||t.terrain===TERR.COAST);if(isW!==(t.plot===PLOT.WATER))bad++;}
   const wantEdges=rivers?(rivers.nof.size+rivers.wof.size):0,gotEdges=(text.match(/isNOfRiver|isWOfRiver/g)||[]).length;
@@ -1772,7 +1991,9 @@ function refreshStats(){
   document.getElementById('stWorld').textContent=worldSizeFor(out.W,out.H).replace('WORLDSIZE_','');document.getElementById('stTiles').textContent=(out.W*out.H).toLocaleString()+'  ('+out.W+'×'+out.H+')';
   const R=srcRect();document.getElementById('stPerTile').textContent=(R.w/out.W).toFixed(1)+' × '+(R.h/out.H).toFixed(1);
   const minEdge=Math.min(R.w/out.W,R.h/out.H);document.getElementById('perTileNote').textContent=minEdge<2?'⚠ under ~2 source px/tile — upsampling; averages are noisy at this zoom.':'healthy averaging regime.';
-  const reg=lastTiles||classifyRegion(out.W,out.H),tot=out.W*out.H;document.getElementById('stLand').textContent=Math.round(reg.land/tot*100)+'%';document.getElementById('stRelief').textContent=Math.round(reg.hills/tot*100)+'% / '+Math.round(reg.peaks/tot*100)+'%';
+  /* compose mode never populates lastTiles, so classifying here would run a full region pass on every
+     drag frame just to fill two labels the collage doesn't describe — leave them at their last values. */
+  if(mode!=='compose'){const reg=lastTiles||classifyRegion(out.W,out.H),tot=out.W*out.H;document.getElementById('stLand').textContent=Math.round(reg.land/tot*100)+'%';document.getElementById('stRelief').textContent=Math.round(reg.hills/tot*100)+'% / '+Math.round(reg.peaks/tot*100)+'%';}
   document.getElementById('vCoast').textContent=coastThr.toFixed(0)+'° wide';document.getElementById('vNudgeX').textContent=nudgeX.toFixed(2);document.getElementById('vNudgeY').textContent=nudgeY.toFixed(2);
   document.getElementById('vIsland').textContent=islandBias.toFixed(2);document.getElementById('vSeaway').textContent=seawayBias.toFixed(2);document.getElementById('vExpand').textContent=islandExpand.toFixed(2);document.getElementById('vRough').textContent=roughHalo.toFixed(2);
   document.getElementById('vPass').textContent=mtnPass.toFixed(2);document.getElementById('vFlat').textContent=flatSpots.toFixed(2);
@@ -1780,7 +2001,7 @@ function refreshStats(){
 
 /* ---------- interactions ---------- */
 let raf=null;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=null;render();refreshStats();});}
-document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-pressed','false'));t.setAttribute('aria-pressed','true');mode=t.dataset.mode;lastTiles=null;drawLegend();schedule();}));
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-pressed','false'));t.setAttribute('aria-pressed','true');mode=t.dataset.mode;lastTiles=null;_selDraw=null;_selCursor=null;drawLegend();syncComposeUI();syncSelUI();relayout();}));   // relayout, not schedule: compose has its own grid size, so the map-box aspect changes with the mode. An in-progress stroke is abandoned: the two modes' masks live in different coordinate spaces.
 function bindRange(id,key,after){const el=document.getElementById(id);el.addEventListener('input',()=>{P[key]=parseFloat(el.value);lastTiles=null;if(after)after();schedule();});}
 bindRange('clim','clim');   // relief-basis is now a dual-knob slider (see reliefBasisRange below); sea-level slider removed, P.sea fixed at 0.5
 
@@ -1859,7 +2080,12 @@ const riverNEl=document.getElementById('riverN');
 function updateRiverReadout(){const el=document.getElementById('vRiverN');if(!el)return;el.textContent=(riverN<=0?'off':'top '+riverN)+((RMAN&&riverN>0)?' / '+_rivMemo.inView+' in view':'');}
 riverNEl.addEventListener('input',()=>{riverN=parseInt(riverNEl.value)||0;updateRiverReadout();render();});updateRiverReadout();
 document.getElementById('riverEstuaries').addEventListener('change',e=>{riverEstuaries=e.target.checked;render();});
-document.getElementById('hexMode').addEventListener('change',e=>{hexMode=e.target.checked;lastTiles=null;relayout();});   // aspect changes -> full relayout, not just render
+/* aspect changes -> full relayout, not just render. Toggling hex also re-snaps every placed patch:
+   patches parked on odd rows while square would land their shifted rows on unshifted ones and mirror
+   the hex adjacency inside them (see composeSnapY). */
+document.getElementById('hexMode').addEventListener('change',e=>{hexMode=e.target.checked;lastTiles=null;
+  for(const p of comp.patches)p.y=composeSnapY(p.y);
+  composeInvalidate();relayout();syncComposeUI();});
 document.getElementById('nudgeX').addEventListener('input',e=>{nudgeX=parseFloat(e.target.value);document.getElementById('vNudgeX').textContent=nudgeX.toFixed(2);lastTiles=null;schedule();});
 document.getElementById('nudgeY').addEventListener('input',e=>{nudgeY=parseFloat(e.target.value);document.getElementById('vNudgeY').textContent=nudgeY.toFixed(2);lastTiles=null;schedule();});
 document.getElementById('islandBias').addEventListener('input',e=>{islandBias=parseFloat(e.target.value);document.getElementById('vIsland').textContent=islandBias.toFixed(2);lastTiles=null;schedule();});
@@ -1921,6 +2147,8 @@ function riverHitAt(clientX,clientY){
    -> selected (green, kept on the map at any zoom and always written) -> default. */
 mapBox.addEventListener('click',e=>{
   if(dragMoved)return;
+  if(mode==='compose')return;   // compose owns the pointer in its own mode (place / select / drag patches)
+  if(selTool!=='none')return;   // a selection tool owns the pointer too: a click is a lasso vertex, not a river toggle
   const rid=riverHitAt(e.clientX,e.clientY);if(rid==null)return;
   if(RIVER_OFF.has(rid)){RIVER_OFF.delete(rid);RIVER_ON.add(rid);}      // deselected -> selected
   else if(RIVER_ON.has(rid)){RIVER_ON.delete(rid);}                     // selected -> default
@@ -1929,27 +2157,874 @@ mapBox.addEventListener('click',e=>{
 });
 let _hoverT=0;
 mapBox.addEventListener('mousemove',e=>{           // cursor hints that rivers are clickable
-  if(drag)return;const now=performance.now();if(now-_hoverT<50)return;_hoverT=now;
+  if(drag||mode==='compose'||selTool!=='none')return;const now=performance.now();if(now-_hoverT<50)return;_hoverT=now;
   mapBox.style.cursor=riverHitAt(e.clientX,e.clientY)!=null?'pointer':'';
 });
-mapBox.addEventListener('mouseleave',()=>{mapBox.style.cursor='';});
-mapBox.addEventListener('mousedown',e=>{drag={x:e.clientX,y:e.clientY};dragMoved=false;mapBox.classList.add('dragging');});
+mapBox.addEventListener('mouseleave',()=>{if(selTool==='none')mapBox.style.cursor='';});
+mapBox.addEventListener('mousedown',e=>{if(mode==='compose'||selTool!=='none')return;drag={x:e.clientX,y:e.clientY};dragMoved=false;mapBox.classList.add('dragging');});   // no view panning in compose (no geographic frame) or while a selection tool is armed (the drag draws the mask)
 window.addEventListener('mouseup',()=>{drag=null;mapBox.classList.remove('dragging');});
 window.addEventListener('mousemove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)>2||Math.abs(dy)>2)dragMoved=true;drag={x:e.clientX,y:e.clientY};const r=mapBox.getBoundingClientRect();view.cx-=dx*(view.spanX/r.width);view.cy-=dy*(spanY()/r.height);clampView();lastTiles=null;schedule();});
-mapBox.addEventListener('wheel',e=>{e.preventDefault();const r=mapBox.getBoundingClientRect(),R=srcRect(),ux=R.x+((e.clientX-r.left)/r.width)*R.w,uy=R.y+((e.clientY-r.top)/r.height)*R.h;view.spanX*=(e.deltaY<0?0.85:1/0.85);clampView();const R2=srcRect(),nx=R2.x+((e.clientX-r.left)/r.width)*R2.w,ny=R2.y+((e.clientY-r.top)/r.height)*R2.h;view.cx+=ux-nx;view.cy+=uy-ny;clampView();lastTiles=null;schedule();},{passive:false});
+mapBox.addEventListener('wheel',e=>{if(mode==='compose')return;e.preventDefault();const r=mapBox.getBoundingClientRect(),R=srcRect(),ux=R.x+((e.clientX-r.left)/r.width)*R.w,uy=R.y+((e.clientY-r.top)/r.height)*R.h;view.spanX*=(e.deltaY<0?0.85:1/0.85);clampView();const R2=srcRect(),nx=R2.x+((e.clientX-r.left)/r.width)*R2.w,ny=R2.y+((e.clientY-r.top)/r.height)*R2.h;view.cx+=ux-nx;view.cy+=uy-ny;clampView();lastTiles=null;schedule();},{passive:false});
+
+/* ---------- selection input (shared by the geographic viewers and the compose canvas) ----------
+   One gesture vocabulary in both places:
+     box    — press, drag, release.
+     lasso  — click, click, click… lays down vertices; click the first vertex again (or Enter /
+              double-click) to close. Press-and-DRAG instead lays down a continuous freehand outline
+              and closes it on release.
+   Click-vs-drag is decided by how far the pointer travelled before release (SEL_DRAG_PX), so the two
+   lasso styles share one mousedown without a modifier key. Listeners are capture-phase on window for
+   the same reason the compose drag ones are: a stroke must survive the pointer leaving the map. */
+const SEL_DRAG_PX=4;         // travel (canvas px) past which a press counts as a drag, not a click
+const selClosePx=()=>Math.max(10,cv.width*0.012);   // click within this of the first vertex closes an open lasso; scales with the backing store so the target stays the same size on screen at any DPR
+const SEL_FREEHAND_PX=3;     // minimum spacing between sampled freehand points, to keep polygons light
+/* The selection's own space differs per mode, so every gesture converts through here. */
+function selSpacePoint(e){
+  const r=mapBox.getBoundingClientRect();if(!r.width||!r.height)return null;
+  const px=(e.clientX-r.left)*(cv.width/r.width),py=(e.clientY-r.top)*(cv.height/r.height);
+  if(mode==='compose'){const geo=composeGeo();
+    return [(px-geo.ox)/geo.tw, geo.hex?((py-geo.oy-geo.s)/geo.th+0.5):((py-geo.oy)/geo.th)];}   // fractional tile coords
+  return canvasToWorld(srcRect(),px,py);
+}
+function selCanvasPoint(e){
+  const r=mapBox.getBoundingClientRect();if(!r.width||!r.height)return null;
+  return [(e.clientX-r.left)*(cv.width/r.width),(e.clientY-r.top)*(cv.height/r.height)];
+}
+function selRepaint(){if(mode==='compose'){if(_compDeps&&_compDeps.rerender)_compDeps.rerender();else render();}else schedule();}
+function selCommit(s){setActiveSel(selIsUsable(s)?s:null);_selDraw=null;_selCursor=null;syncSelUI();selRepaint();}
+function selCancel(){_selDraw=null;_selCursor=null;syncSelUI();selRepaint();}
+function selOnDown(e){
+  if(selTool==='none'||e.button!==0)return;
+  const p=selSpacePoint(e),c=selCanvasPoint(e);if(!p||!c)return;
+  e.stopPropagation();if(e.cancelable)e.preventDefault();
+  if(selTool==='rect'){_selDraw={kind:'rect',pts:[p,p],anchor:c,moved:false,open:false};return;}
+  if(_selDraw&&_selDraw.open){                       // continuing a click-by-click polygon
+    const first=_selDraw.pts[0],fc=selToCanvas(first);
+    if(_selDraw.pts.length>=3&&fc&&Math.hypot(c[0]-fc[0],c[1]-fc[1])<=selClosePx()){selCommit({kind:'lasso',pts:_selDraw.pts.slice()});return;}
+    _selDraw.pts.push(p);_selDraw.anchor=c;_selDraw.moved=false;selRepaint();return;
+  }
+  _selDraw={kind:'lasso',pts:[p],anchor:c,moved:false,open:true};   // stays open until we learn it is a drag
+  selRepaint();
+}
+function selToCanvas(p){
+  if(mode==='compose'){const geo=composeGeo();return [geo.ox+p[0]*geo.tw, geo.hex?(geo.oy+geo.s+(p[1]-0.5)*geo.th):(geo.oy+p[1]*geo.th)];}
+  const R=srcRect();return worldToCanvas(R)(p[0],p[1]);
+}
+/* The button state is what separates the two lasso styles, and it must be checked on every move:
+   between the clicks of a click-by-click polygon the pointer travels just as far as it does during a
+   freehand drag, so distance alone cannot tell them apart. With the button UP a move only slides the
+   rubber band; the stroke itself is extended (or converted to freehand) solely while it is HELD. */
+function selOnMove(e){
+  if(selTool==='none')return;
+  const p=selSpacePoint(e),c=selCanvasPoint(e);if(!p||!c)return;
+  _selCursor=p;
+  if(!_selDraw)return;
+  const held=(e.buttons&1)===1;
+  const far=_selDraw.anchor&&Math.hypot(c[0]-_selDraw.anchor[0],c[1]-_selDraw.anchor[1])>SEL_DRAG_PX;
+  if(_selDraw.kind==='rect'){if(held){if(far)_selDraw.moved=true;_selDraw.pts[1]=p;}selRepaint();return;}
+  if(!held){selRepaint();return;}                                                            // open polygon awaiting its next vertex
+  if(far&&!_selDraw.moved){_selDraw.moved=true;_selDraw.open=false;_selDraw.freehand=true;}   // a HELD press that travels is a freehand stroke
+  if(_selDraw.freehand){
+    const last=_selDraw.pts[_selDraw.pts.length-1],lc=selToCanvas(last);
+    if(!lc||Math.hypot(c[0]-lc[0],c[1]-lc[1])>=SEL_FREEHAND_PX)_selDraw.pts.push(p);
+  }
+  selRepaint();
+}
+function selOnUp(e){
+  if(selTool==='none'||!_selDraw)return;
+  if(_selDraw.kind==='rect'){const s=_selDraw;_selDraw=null;selCommit(s.moved?{kind:'rect',pts:s.pts.slice()}:null);return;}
+  if(_selDraw.freehand){const s=_selDraw;_selDraw=null;selCommit({kind:'lasso',pts:s.pts.slice()});return;}
+  selRepaint();   // a plain click: the polygon stays open, waiting for the next vertex
+}
+function selOnDblClick(e){if(selTool==='lasso'&&_selDraw&&_selDraw.open&&_selDraw.pts.length>=3){e.stopPropagation();selCommit({kind:'lasso',pts:_selDraw.pts.slice()});}}
+function selOnKey(e){
+  const ae=document.activeElement,tn=ae?(ae.tagName||'').toLowerCase():'';
+  if(tn==='input'||tn==='textarea'||tn==='select'||(ae&&ae.isContentEditable))return;
+  if(e.key==='Escape'&&_selDraw){e.preventDefault();selCancel();return;}
+  if(e.key==='Enter'&&_selDraw&&_selDraw.open&&_selDraw.pts.length>=3){e.preventDefault();selCommit({kind:'lasso',pts:_selDraw.pts.slice()});return;}
+}
+mapBox.addEventListener('mousedown',selOnDown,true);
+mapBox.addEventListener('dblclick',selOnDblClick,true);
+window.addEventListener('mousemove',selOnMove,true);
+window.addEventListener('mouseup',selOnUp,true);
+window.addEventListener('keydown',selOnKey);
+
+/* ---------- selection toolbar ---------- */
+function setSelTool(t){
+  if(selTool===t)t='none';                                  // clicking the armed tool disarms it
+  selTool=t;_selDraw=null;_selCursor=null;
+  mapBox.style.cursor=selTool==='none'?'':'crosshair';
+  syncSelUI();selRepaint();
+}
+function clearSelection(){setActiveSel(null);_selDraw=null;_selCursor=null;syncSelUI();selRepaint();}
+function syncSelUI(){
+  document.querySelectorAll('#selTools [data-sel]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sel===selTool?'true':'false'));
+  const s=activeSel(),n=document.getElementById('selNote');
+  document.getElementById('selClear').disabled=!s;
+  if(!n)return;
+  if(_selDraw&&_selDraw.open)n.textContent='lasso: click to add points · click the first point, Enter or double-click to close · Esc cancels';
+  else if(!s)n.textContent=selTool==='none'?'':(selTool==='rect'?'box: drag a rectangle over the map':'lasso: click points, or press and drag to draw freehand');
+  else{const b=selBounds(s);n.textContent=(mode==='compose'?'mask · ':'capture mask · ')+(s.kind==='rect'?'box':'lasso '+s.pts.length+' pts')
+    +(mode==='compose'?' · Del fills with '+(defaultTileKind==='peak'?'mountains':'ocean'):' · capture crops to it');}
+}
 
 /* ---------- legend (per mode) ---------- */
 function rampCSS(stops){return 'linear-gradient(90deg,'+stops.map(s=>'rgb('+s[1].map(v=>v|0).join(',')+') '+(s[0]*100).toFixed(0)+'%').join(',')+')';}
 function drawLegend(){const el=document.getElementById('legend');
-  if(mode==='civ'){const items=[['Ocean',TERR.OCEAN],['Coast',TERR.COAST],['Grass',TERR.GRASS],['Plains',TERR.PLAINS],['Desert',TERR.DESERT],['Tundra',TERR.TUNDRA],['Snow',TERR.SNOW]];el.innerHTML=items.map(([n,t])=>{const c=TCOLOR[t];return '<div class="lg"><span class="sw" style="background:rgb('+c.join(',')+')"></span>'+n+'</div>';}).join('')+(P.feat?'<div class="lg"><span class="sw" style="background:rgb(34,95,42)"></span>Forest</div><div class="lg"><span class="sw" style="background:rgb(18,64,26)"></span>Jungle</div><div class="lg"><span class="sw" style="background:rgb(154,182,66)"></span>Flood plains</div><div class="lg"><span class="sw" style="background:rgb(200,188,120)"></span>Oasis <span class="eyebrow-n">🌴</span></div>':'')+'<div class="lg"><span class="sw" style="background:transparent;text-align:center;line-height:12px">⌢</span>Hills</div><div class="lg"><span class="sw" style="background:transparent;text-align:center;line-height:12px">Λ</span>Mountain</div>';}
+  if(mode==='civ'||mode==='compose'){const items=[['Ocean',TERR.OCEAN],['Coast',TERR.COAST],['Grass',TERR.GRASS],['Plains',TERR.PLAINS],['Desert',TERR.DESERT],['Tundra',TERR.TUNDRA],['Snow',TERR.SNOW]];el.innerHTML=items.map(([n,t])=>{const c=TCOLOR[t];return '<div class="lg"><span class="sw" style="background:rgb('+c.join(',')+')"></span>'+n+'</div>';}).join('')+(P.feat?'<div class="lg"><span class="sw" style="background:rgb(34,95,42)"></span>Forest</div><div class="lg"><span class="sw" style="background:rgb(18,64,26)"></span>Jungle</div><div class="lg"><span class="sw" style="background:rgb(154,182,66)"></span>Flood plains</div><div class="lg"><span class="sw" style="background:rgb(200,188,120)"></span>Oasis <span class="eyebrow-n">🌴</span></div>':'')+'<div class="lg"><span class="sw" style="background:transparent;text-align:center;line-height:12px">⌢</span>Hills</div><div class="lg"><span class="sw" style="background:transparent;text-align:center;line-height:12px">Λ</span>Mountain</div>';}
   else if(mode==='roughness'){el.innerHTML='<div class="lg"><span class="ramp" style="background:'+rampCSS(HEAT)+'"></span>low &rarr; high relief</div>';}
   else if(mode==='elevation'){el.innerHTML='<div class="lg"><span class="ramp" style="background:'+rampCSS(HYPS_SEA)+'"></span>bathymetry</div><div class="lg"><span class="ramp" style="background:'+rampCSS(HYPS_LAND)+'"></span>elevation</div>';}
   else if(mode==='climate'){const keys=['Af','BWh','Cfb','Dfb','ET','EF'];el.innerHTML=keys.map(k=>'<div class="lg"><span class="sw" style="background:rgb('+BECK2018[k].join(',')+')"></span>'+k+'</div>').join('')+'<div class="lg"><span class="sw" style="background:#fff"></span>ocean</div><div class="lg" style="color:var(--dim)">Beck et al. 2023</div>';}
   else{el.innerHTML='<div class="lg" style="color:var(--dim)">real elevation, coastline &amp; '+(satLoaded?'satellite colour (Blue Marble)':'procedural climate colour')+'</div>';}
 }
 
+/* ---------- COMPOSE MODE: collage a world out of frozen snapshots ----------
+   A snapshot is an already-evaluated tile grid (its own sliders, its own frame) that the user
+   parks on a blank canvas map. Compose owns nothing geographic: no lat/lon, no rasters, no
+   classify pass. It is pure grid arithmetic — stamp tiles, re-key river edges, heal the seams.
+   The composite is what gets serialized, so it must obey the same invariants classifyRegion
+   produces (coast ring around every landmass, no river on a water edge); hence the two repair
+   passes at the end of compositeCompose. */
+/* patch = {id,snap,x,y,landOnly}; array order IS z-order (later = on top).
+   `erased` is a sparse "y,x" set painted by mask+Delete and applied AFTER every patch is stamped, so
+   an erasure survives moving the patches underneath it — it is a property of the canvas, not of a patch. */
+let comp={W:60,H:40,patches:[],sel:null,nextId:1,erased:new Set(),eraseGen:0};
+let _compMemo=null;          // {sig,out} — the composite is rebuilt on every drag mousemove, so memoise it
+let _compDeps=null,_compBound=false;
+let _compPending=null;       // snapshot picked in the shelf, following the cursor, not yet placed
+let _compGhost=null;         // {snap,x,y} tile-space position of whatever is being previewed (pending or dragged)
+let _compDrag=null;          // {id,tx,ty,x0,y0,moved} — tile-space anchor so the patch never jumps under the cursor
+let _compHover=null;         // patch id under the cursor, for the grab cursor
+
+/* ---------- snapshot readers ----------
+   The shelf hands snapshots in their JSON-safe form: tiles flat row-major, river maps as [k,v]
+   entry arrays. Never assume they have been rehydrated — and never mutate them, a snapshot is
+   shared by every patch that references it. */
+function composeTileReader(s){const two=Array.isArray(s.tiles[0]);return two?function(x,y){return s.tiles[y][x];}:function(x,y){return s.tiles[y*s.W+x];};}
+function composeEdgeEntries(r){return !r?[]:(typeof r.forEach==='function'&&typeof r.set==='function')?Array.from(r):r;}
+function composeOceanTile(){return defaultTile();}   // the blank canvas is whatever the default-tile toggle says: sea, or a slab of mountain to carve into
+function composeCopyTile(t){return {terrain:t.terrain,plot:t.plot,rgb:t.rgb?[t.rgb[0],t.rgb[1],t.rgb[2]]:[18,58,81],z:t.z,lat:t.lat,kc:t.kc,feature:t.feature,fv:t.fv,special:t.special,bonus:t.bonus};}
+
+/* ---------- compositing ---------- */
+/* eraseGen, not erased.size: erasing one region and then another of equal size would leave the size
+   unchanged and serve a stale composite. A monotonic counter can't collide. */
+function composeSig(){let s=comp.W+'x'+comp.H+':'+defaultTileKind+':e'+comp.eraseGen;for(const p of comp.patches)s+='|'+p.id+':'+p.x+','+p.y+':'+(p.landOnly?1:0)+':'+(p.snap&&p.snap.id);return s;}
+function composeInvalidate(){_compMemo=null;}
+/* Translating a river edge is a pure re-key: the map keys are grid coordinates and `dir` is an
+   ABSOLUTE cardinal, so moving a patch east by 3 tiles cannot rotate its rivers. No direction
+   math here, deliberately — see the nof/wof contract. */
+function composeMergeEdges(dst,ents,px,py,W,H){
+  for(let i=0;i<ents.length;i++){
+    const c=(''+ents[i][0]).split(','),gy=(+c[0])+py,gx=(+c[1])+px,v=ents[i][1];
+    if(gx<0||gx>=W||gy<0||gy>=H)continue;                        // edge slid off the canvas
+    dst.set(gy+','+gx,{dir:v.dir,d:v.d,rid:v.rid,bridge:v.bridge});   // later patch wins a collision, matching tile z-order
+  }
+}
+function compositeCompose(){
+  const sig=composeSig();
+  if(_compMemo&&_compMemo.sig===sig)return _compMemo.out;
+  const W=comp.W,H=comp.H,tiles=new Array(H);
+  for(let y=0;y<H;y++){const row=new Array(W);for(let x=0;x<W;x++)row[x]=composeOceanTile();tiles[y]=row;}   // fresh object per tile: coastPass mutates them in place
+  const nof=new Map(),wof=new Map();
+  for(const p of comp.patches){
+    const s=p.snap;if(!s||!s.tiles)continue;
+    const at=composeTileReader(s);
+    for(let sy=0;sy<s.H;sy++){const dy=p.y+sy;if(dy<0||dy>=H)continue;
+      for(let sx=0;sx<s.W;sx++){const dx=p.x+sx;if(dx<0||dx>=W)continue;
+        const t=at(sx,sy);if(!t)continue;
+        /* landOnly (the default) makes a patch a cut-out of its own coastline rather than a
+           rectangle: the snapshot's sea is skipped so patches can be nudged together until
+           their landmasses nearly touch without one's ocean punching a hole in the other's
+           continent. Turn it off to stamp the rectangle verbatim (useful to carve a sea). */
+        if(p.landOnly&&t.plot===PLOT.WATER)continue;
+        tiles[dy][dx]=composeCopyTile(t);}}
+    composeMergeEdges(nof,composeEdgeEntries(s.rivers&&s.rivers.nof),p.x,p.y,W,H);
+    composeMergeEdges(wof,composeEdgeEntries(s.rivers&&s.rivers.wof),p.x,p.y,W,H);
+  }
+  /* Erasures are applied after every patch, so they read as holes punched in the finished collage
+     rather than edits to any one snapshot — drag a patch out from under an erased area and the hole
+     stays where it was drawn. River edges flanking an erased tile go with it, for the same reason
+     maskFrame drops them: with a land default, cleanupRiverEdges would let them survive in the fill. */
+  if(comp.erased.size){
+    for(const k of comp.erased){const p=k.split(','),y=+p[0],x=+p[1];
+      if(x<0||x>=W||y<0||y>=H)continue;tiles[y][x]=defaultTile();}
+    const er=(x,y)=>comp.erased.has(y+','+x);
+    for(const k of [...nof.keys()]){const p=k.split(','),gy=+p[0],gx=+p[1];if(er(gx,gy)||er(gx,gy+1))nof.delete(k);}
+    for(const k of [...wof.keys()]){const p=k.split(','),gy=+p[0],gx=+p[1];if(er(gx,gy)||er(gx+1,gy))wof.delete(k);}
+  }
+  /* Both repair passes MUST run on the composite, not per patch: a snapshot's coast ring was
+     computed against its own sea, and that sea may now be another patch's land (the ring has to
+     become inland terrain-adjacent... i.e. re-derived) or the canvas ocean may now touch land it
+     never saw. coastPass re-derives ocean-vs-coast from the flattened plots; cleanupRiverEdges
+     then drops the edges that the reshuffle left flanked by water/coast, which Civ4 rejects. */
+  coastPass(tiles,W,H);
+  cleanupRiverEdges(nof,wof,tiles,W,H);
+  const out2={tiles,rivers:{nof,wof},W,H};
+  _compMemo={sig,out:out2};
+  return out2;
+}
+
+/* ---------- rendering ---------- */
+function composeSelPatch(){return composePatchById(comp.sel);}
+function composePatchById(id){if(id==null)return null;for(const p of comp.patches)if(p.id===id)return p;return null;}
+function composeDpr(){return cv.width/Math.max(1,mapBox.clientWidth||cv.width);}   // canvas is backing-store sized; text/handles must scale with it or they shrink on hidpi
+/* Patch outline in canvas pixels. In hex the block is ragged, so this is the bounding box:
+   odd rows lean half a tile east (hence +0.5 tw of width) and hexes overhang their row band by
+   s-th/2 top and bottom. */
+function composePatchRect(geo,p){
+  if(!geo.hex)return [geo.ox+p.x*geo.tw,geo.oy+p.y*geo.th,p.snap.W*geo.tw,p.snap.H*geo.th];
+  return [geo.ox+p.x*geo.tw,geo.oy+p.y*geo.th,(p.snap.W+0.5)*geo.tw,(p.snap.H-1)*geo.th+2*geo.s];
+}
+function composeFillTile(geo,x,y){
+  if(!geo.hex){ctx.fillRect(Math.floor(geo.ox+x*geo.tw),Math.floor(geo.oy+y*geo.th),Math.ceil(geo.tw)+1,Math.ceil(geo.th)+1);return;}
+  hexPathPointy(ctx,geo.ox+(x+0.5)*geo.tw+hexShiftX(y,comp.H)*geo.tw,geo.oy+geo.s+y*geo.th,geo.tw,geo.s);ctx.fill();
+}
+/* Rivers ride the square lattice even in hex mode (app-wide decision), so there is no honest hex
+   edge geometry to draw — skip the overlay there rather than invent one. Mapping copied from
+   drawRivers: nof key (gy,gx) is the south edge of that tile, wof key the east edge. */
+function composeDrawRivers(geo,R){
+  if(geo.hex||!R||(!R.nof.size&&!R.wof.size))return;
+  const tw=geo.tw,th=geo.th;
+  ctx.save();ctx.lineWidth=riverLineWidth();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#3aa0e0';ctx.beginPath();
+  for(const k of R.nof.keys()){const p=k.split(',');const gr=+p[0],gx=+p[1],y=geo.oy+(gr+1)*th;ctx.moveTo(geo.ox+gx*tw,y);ctx.lineTo(geo.ox+(gx+1)*tw,y);}
+  for(const k of R.wof.keys()){const p=k.split(',');const gy=+p[0],gx=+p[1],x=geo.ox+(gx+1)*tw;ctx.moveTo(x,geo.oy+gy*th);ctx.lineTo(x,geo.oy+(gy+1)*th);}
+  ctx.stroke();ctx.restore();
+}
+/* The ghost draws the WHOLE snapshot, sea included, even though landOnly will not stamp that sea:
+   while you are moving a patch you need to see its footprint, not just the land that will survive. */
+function composeDrawGhost(geo,g){
+  const s=g.snap;if(!s||!s.tiles)return;
+  const at=composeTileReader(s);
+  ctx.save();ctx.globalAlpha=0.6;
+  for(let sy=0;sy<s.H;sy++){const dy=g.y+sy;if(dy<-1||dy>comp.H)continue;
+    for(let sx=0;sx<s.W;sx++){const dx=g.x+sx;if(dx<-1||dx>comp.W)continue;
+      const t=at(sx,sy);if(!t)continue;const c=civTileColor(t);
+      ctx.fillStyle='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';composeFillTile(geo,dx,dy);}}
+  ctx.restore();
+}
+function composeDrawOutlines(geo){
+  const k=composeDpr();
+  ctx.save();
+  ctx.strokeStyle='rgba(233,227,211,0.25)';ctx.lineWidth=Math.max(1,k);
+  for(const p of comp.patches){if(p.id===comp.sel)continue;const r=composePatchRect(geo,p);ctx.strokeRect(r[0]+0.5,r[1]+0.5,r[2],r[3]);}
+  if(_compGhost){const g=_compGhost,r=[geo.ox+g.x*geo.tw,geo.oy+g.y*geo.th,(g.snap.W+(geo.hex?0.5:0))*geo.tw,geo.hex?((g.snap.H-1)*geo.th+2*geo.s):g.snap.H*geo.th];
+    ctx.setLineDash([6*k,4*k]);ctx.strokeStyle='#45c1d0';ctx.strokeRect(r[0]+0.5,r[1]+0.5,r[2],r[3]);ctx.setLineDash([]);}
+  const sp=composeSelPatch();
+  if(sp){const r=composePatchRect(geo,sp);
+    ctx.strokeStyle='#45c1d0';ctx.lineWidth=2*k;ctx.strokeRect(r[0]+0.5,r[1]+0.5,r[2],r[3]);
+    ctx.fillStyle='#45c1d0';const h=Math.max(4,Math.min(9,geo.tw*0.4));
+    const cs=[[r[0],r[1]],[r[0]+r[2],r[1]],[r[0],r[1]+r[3]],[r[0]+r[2],r[1]+r[3]]];
+    for(const c of cs)ctx.fillRect(c[0]-h/2,c[1]-h/2,h,h);}
+  ctx.restore();
+}
+function renderCompose(){
+  ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,cv.width,cv.height);
+  const C=compositeCompose();
+  const geo=drawCivGrid(ctx,C.tiles,C.W,C.H,{hex:hexMode,cw:cv.width,ch:cv.height,glyphs:true});
+  composeDrawRivers(geo,C.rivers);
+  composeDrawOutlines(geo);
+  if(_compGhost)composeDrawGhost(geo,_compGhost);
+  if(!comp.patches.length&&!_compGhost&&!comp.erased.size){const k=composeDpr();
+    ctx.save();ctx.fillStyle='#5f7c88';ctx.font=(14*k)+"px 'IBM Plex Mono',monospace";ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Click a snapshot in the shelf to place it',cv.width/2,cv.height/2);ctx.restore();}
+  const live=_selDraw,s=live||compSel;   // the compose mask, in fractional-tile space
+  if(s)drawSelection(ctx,s,(tx,ty)=>[geo.ox+tx*geo.tw, geo.hex?(geo.oy+geo.s+(ty-0.5)*geo.th):(geo.oy+ty*geo.th)],!!(live&&live.open));
+}
+
+/* ---------- host API ---------- */
+/* Hex parity: hexShiftX keys off (H-1-y)&1, i.e. row parity counted from the BOTTOM row, because
+   the serializer flips north/south and Civ5's odd rows must be the shifted ones. Within one
+   compose canvas H is fixed, so parity is fixed too — but a patch moved an ODD number of rows
+   lands its once-shifted rows on unshifted rows, which mirrors every hex adjacency inside it
+   (a river-mouth valley that ran NE now runs NW). So y is quantised to even offsets in hex mode.
+   x needs no such rule: a whole-tile east/west step preserves the lattice. */
+function composeSnapY(y){return (hexMode&&(y&1))?y-1:y;}
+function composeAddPatch(snapshot,x,y){
+  const p={id:comp.nextId++,snap:snapshot,x:x|0,y:composeSnapY(y|0),landOnly:true};
+  comp.patches.push(p);comp.sel=p.id;composeDirty();return p;
+}
+function composeRemovePatch(id){const i=comp.patches.findIndex(p=>p.id===id);if(i<0)return false;comp.patches.splice(i,1);if(comp.sel===id)comp.sel=null;composeDirty();return true;}
+function composeRaise(id){const i=comp.patches.findIndex(p=>p.id===id);if(i<0||i===comp.patches.length-1)return false;const p=comp.patches[i];comp.patches[i]=comp.patches[i+1];comp.patches[i+1]=p;composeDirty();return true;}
+function composeLower(id){const i=comp.patches.findIndex(p=>p.id===id);if(i<=0)return false;const p=comp.patches[i];comp.patches[i]=comp.patches[i-1];comp.patches[i-1]=p;composeDirty();return true;}
+function composeSetLandOnly(id,on){const p=composePatchById(id);if(!p)return false;p.landOnly=!!on;composeDirty();return true;}
+function composeClear(){comp.patches=[];comp.sel=null;_compPending=null;_compGhost=null;_compDrag=null;comp.erased.clear();comp.eraseGen++;composeDirty();}
+/* Fill every tile whose CENTRE falls inside the compose mask with the default tile. Centres, not
+   corners, so a shape drawn tight around a coastline takes the tiles it visibly covers. */
+function composeEraseSelection(){
+  if(!selIsUsable(compSel))return 0;
+  let n=0;
+  for(let y=0;y<comp.H;y++)for(let x=0;x<comp.W;x++){
+    const cx=x+0.5, cy=y+0.5;                            // tile centre in the mask's fractional-tile space
+    if(!selContains(compSel,cx,cy))continue;
+    const k=y+','+x;if(!comp.erased.has(k)){comp.erased.add(k);n++;}
+  }
+  if(n){comp.eraseGen++;composeDirty();}
+  return n;
+}
+function composeUnerase(){if(!comp.erased.size)return;comp.erased.clear();comp.eraseGen++;composeDirty();}
+function composeSetSize(W,H){comp.W=Math.max(8,Math.min(160,W|0));comp.H=Math.max(8,Math.min(120,H|0));composeDirty();}
+function composeStats(){const C=compositeCompose();let land=0;for(let y=0;y<C.H;y++)for(let x=0;x<C.W;x++)if(C.tiles[y][x].plot!==PLOT.WATER)land++;
+  return {patches:comp.patches.length,land,water:C.W*C.H-land,W:C.W,H:C.H};}
+/* Persist patch->snapshot by REFERENCE only: a snapshot is a full tile grid plus a thumbnail, and
+   a collage reuses the same one many times — inlining them would blow up localStorage by megabytes
+   and desync the copies. The shelf owns snapshot storage and resolves ids back on load. */
+function composeSerializeState(){return {v:1,kind:'terra-wbs-compose',W:comp.W,H:comp.H,
+  patches:comp.patches.map(p=>({snap:p.snap&&p.snap.id,x:p.x,y:p.y,landOnly:!!p.landOnly}))};}
+function composeLoadState(obj,resolve){
+  if(!obj||!Array.isArray(obj.patches))return 0;
+  comp.patches=[];comp.sel=null;comp.nextId=1;_compPending=null;_compGhost=null;_compDrag=null;
+  if(obj.W!=null)comp.W=Math.max(8,Math.min(160,obj.W|0));
+  if(obj.H!=null)comp.H=Math.max(8,Math.min(120,obj.H|0));
+  let dropped=0;
+  for(const r of obj.patches){
+    const s=resolve?resolve(r.snap):null;
+    if(!s||!s.tiles){dropped++;continue;}                       // snapshot deleted since the save: drop the patch silently, the rest of the collage is still valid
+    comp.patches.push({id:comp.nextId++,snap:s,x:r.x|0,y:composeSnapY(r.y|0),landOnly:r.landOnly!==false});
+  }
+  composeDirty();return dropped;
+}
+
+/* ---------- interaction ---------- */
+function composeActive(){return !!_compDeps&&_compDeps.getMode()==='compose';}
+function composeDirty(){composeInvalidate();if(_compDeps){if(_compDeps.rerender)_compDeps.rerender();if(_compDeps.onChange)_compDeps.onChange();}}
+function composeGeo(){return civGridGeometry(comp.W,comp.H,{hex:hexMode,cw:cv.width,ch:cv.height});}
+function composeCanvasXY(e){const r=mapBox.getBoundingClientRect();if(!r.width||!r.height)return null;
+  return [(e.clientX-r.left)*(cv.width/r.width),(e.clientY-r.top)*(cv.height/r.height)];}
+/* Two inverse mappings on purpose. tileAtPixel is authoritative INSIDE the grid (it knows the hex
+   half-row test) and is used for hit-testing and placement; composeFreeTile is a plain linear
+   inverse that keeps counting past the edges, and is used only for drag DELTAS — a patch must be
+   draggable half off the canvas, and a delta only needs to be self-consistent. */
+function composeFreeTile(geo,px,py){
+  if(!geo.hex)return {x:Math.floor((px-geo.ox)/geo.tw),y:Math.floor((py-geo.oy)/geo.th)};
+  const y=Math.round((py-geo.oy-geo.s)/geo.th);
+  return {x:Math.floor((px-geo.ox)/geo.tw-hexShiftX(y,comp.H)),y};
+}
+function composePatchAtTile(tx,ty){for(let i=comp.patches.length-1;i>=0;i--){const p=comp.patches[i];   // reverse: topmost first
+  if(tx>=p.x&&tx<p.x+p.snap.W&&ty>=p.y&&ty<p.y+p.snap.H)return p;}return null;}
+function composeCursor(){if(!composeActive())return;mapBox.style.cursor=_compPending?'copy':_compDrag?'grabbing':(_compHover!=null?'grab':'');}
+function composeBeginPlace(snapshot){if(!snapshot)return;_compPending=snapshot;_compGhost=null;comp.sel=null;composeCursor();composeDirty();}
+function composeCancelPending(){if(!_compPending)return false;_compPending=null;_compGhost=null;composeCursor();composeDirty();return true;}
+
+/* Phase matters here, and getting it wrong is silent. mapBox's listeners are CAPTURE-phase so they
+   see the event before the canvas does; the drag/release listeners are on WINDOW so a drag survives
+   the cursor leaving the map. Those two facts collide: calling stopPropagation() from a capture
+   listener on mapBox cancels the whole bubble phase, so a bubble-phase window listener never fires
+   while the pointer is over the map — i.e. exactly where dragging has to work. Hence:
+     - no blanket stopPropagation on mousemove (the geographic modes' hover/pan handlers already
+       return early on mode==='compose', so there is nothing left to suppress), and
+     - the window drag listeners are CAPTURE too, so they run ahead of anything on mapBox and cannot
+       be starved by a future stopPropagation added there.
+   click/wheel are still swallowed: those fire once and carry no drag state. */
+function installComposeInput(deps){
+  _compDeps=deps;if(_compBound)return;_compBound=true;
+  mapBox.addEventListener('mousedown',composeOnDown,true);
+  mapBox.addEventListener('click',composeSwallow,true);
+  mapBox.addEventListener('wheel',composeSwallow,{capture:true,passive:false});
+  mapBox.addEventListener('mouseleave',composeOnLeave,true);
+  window.addEventListener('mousemove',composeOnMove,true);
+  window.addEventListener('mouseup',composeOnUp,true);
+  window.addEventListener('keydown',composeOnKey);
+}
+function composeSwallow(e){if(!composeActive())return;e.stopPropagation();if(e.cancelable)e.preventDefault();}   // compose has no zoom, so a wheel over the collage must not scroll the page either
+function composeOnLeave(e){if(!composeActive())return;e.stopPropagation();if(_compGhost&&!_compDrag&&_compPending){_compGhost=null;if(_compDeps.rerender)_compDeps.rerender();}mapBox.style.cursor='';}
+function composeOnDown(e){
+  if(!composeActive())return;
+  /* An armed selection tool owns the pointer: its listener runs first but sits on the SAME element,
+     where stopPropagation cannot suppress a sibling, so the gate has to be explicit. */
+  if(selTool!=='none')return;
+  e.stopPropagation();if(e.button!==0)return;
+  const c=composeCanvasXY(e);if(!c)return;
+  const geo=composeGeo(),free=composeFreeTile(geo,c[0],c[1]),hit=tileAtPixel(geo,c[0],c[1],comp.W,comp.H);
+  if(_compPending){                                    // drop the pending snapshot centred on the cursor tile
+    const s=_compPending,q=hit||free;
+    _compPending=null;_compGhost=null;
+    composeAddPatch(s,q.x-(s.W>>1),q.y-(s.H>>1));composeCursor();return;
+  }
+  const q=hit||free,p=composePatchAtTile(q.x,q.y);
+  comp.sel=p?p.id:null;                                // clicking bare canvas deselects
+  _compDrag=p?{id:p.id,tx:free.x,ty:free.y,x0:p.x,y0:p.y,moved:false}:null;
+  composeCursor();composeDirty();
+}
+function composeOnMove(e){
+  if(!composeActive())return;
+  const c=composeCanvasXY(e);if(!c)return;
+  const geo=composeGeo(),free=composeFreeTile(geo,c[0],c[1]);
+  if(_compDrag){
+    const p=composePatchById(_compDrag.id);if(!p){_compDrag=null;return;}
+    const nx=_compDrag.x0+(free.x-_compDrag.tx),ny=composeSnapY(_compDrag.y0+(free.y-_compDrag.ty));
+    if(nx!==p.x||ny!==p.y){p.x=nx;p.y=ny;_compDrag.moved=true;_compGhost={snap:p.snap,x:nx,y:ny};composeDirty();}
+    return;
+  }
+  if(_compPending){_compGhost={snap:_compPending,x:free.x-(_compPending.W>>1),y:composeSnapY(free.y-(_compPending.H>>1))};if(_compDeps.rerender)_compDeps.rerender();return;}
+  const hov=composePatchAtTile(free.x,free.y),id=hov?hov.id:null;
+  if(id!==_compHover){_compHover=id;composeCursor();}
+}
+function composeOnUp(e){
+  if(!_compDrag)return;
+  _compDrag=null;_compGhost=null;
+  if(composeActive()){composeCursor();composeDirty();}
+}
+/* Arrow nudges step 2 rows in hex mode for the same parity reason as the drag snap; Shift scales
+   the step, so a shifted vertical nudge is 10 rows there and 5 in square. */
+function composeOnKey(e){
+  if(!composeActive())return;
+  const ae=document.activeElement,tn=ae?(ae.tagName||'').toLowerCase():'';
+  if(tn==='input'||tn==='textarea'||tn==='select'||(ae&&ae.isContentEditable))return;   // don't steal keys from the slider panel
+  if(e.key==='Escape'){if(!composeCancelPending()&&comp.sel!=null){comp.sel=null;composeDirty();}e.preventDefault();return;}
+  /* Delete is overloaded, and the mask wins: with a shape drawn it fills that area with the default
+     tile; with no shape it falls through to removing the selected patch, as it always did. */
+  if((e.key==='Delete'||e.key==='Backspace')&&selIsUsable(compSel)){e.preventDefault();composeEraseSelection();syncSelUI();return;}
+  const p=composeSelPatch();if(!p)return;
+  const s=e.shiftKey?5:1,sy=hexMode?s*2:s;
+  let dx=0,dy=0;
+  if(e.key==='ArrowLeft')dx=-s;else if(e.key==='ArrowRight')dx=s;
+  else if(e.key==='ArrowUp')dy=-sy;else if(e.key==='ArrowDown')dy=sy;   // y=0 is NORTH, so up decreases y
+  else if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();composeRemovePatch(p.id);return;}
+  else if(e.key==='['){e.preventDefault();composeLower(p.id);return;}
+  else if(e.key===']'){e.preventDefault();composeRaise(p.id);return;}
+  else return;
+  e.preventDefault();p.x+=dx;p.y=composeSnapY(p.y+dy);composeDirty();
+}
+
+/* ============================================================
+   Snapshot shelf — format, capture, thumbnails, persistence, UI
+   ============================================================
+   A snapshot freezes one evaluateFrame() result (the same tiles Generate would
+   write) so the user can tune a region, freeze it, tune a different region,
+   freeze that too, and later drag several onto a blank Compose canvas. This
+   file owns the snapshot object format, capturing/importing/exporting it,
+   its thumbnail, its IndexedDB persistence, and the shelf panel UI. It does
+   NOT own compose/arrange (composeBeginPlace) or export — those read the
+   snapshot object this file produces. */
+
+/* ---------- format + capture ---------- */
+
+/* Tiles are stored FLAT (row-major, index y*W+x) rather than as tiles[y][x]:
+   JSON.stringify of a flat array has none of the nested-array bracket/comma
+   bloat a 2-D array would add (matters once you're pasting this into a
+   textarea), and flat-vs-2D is a one-line convert at each end (see
+   snapshotTiles2D below), so nothing is lost by not keeping the 2-D shape. */
+const KNOWN_TERRAINS=new Set(Object.values(TERR));
+const KNOWN_FEATURES=new Set(['FEATURE_FOREST','FEATURE_JUNGLE','FEATURE_FLOOD_PLAINS','FEATURE_OASIS']);
+
+let snapshotSeq=0;
+/* counter+timestamp+random: never needs to be globally unique, only unique enough that two
+   snapshots captured in the same browser session (or pasted from two different sessions) don't
+   collide. Math.random() alone would be fine too, but the counter+time makes ids sort roughly by
+   capture order at a glance, which is convenient while debugging the shelf. */
+function nextSnapshotId(){return 'snap_'+Date.now().toString(36)+'_'+(snapshotSeq++)+'_'+Math.random().toString(36).slice(2,8);}
+
+function fmtLatDeg(v){const r=Math.round(v);return r>0?r+'°N':r<0?(-r)+'°S':'0°';}
+function fmtLonDeg(v){const r=Math.round(wrapLon(v));return r>0?r+'°E':r<0?(-r)+'°W':'0°';}
+/* readable auto-name, e.g. "52×32 · 12°S 74°W" (centre of the framed region). Wrapped in try/catch
+   because it's cosmetic only — a naming hiccup should never block a capture. */
+function autoSnapshotName(ev){
+  try{
+    const clat=(ev.topLat+ev.botLat)/2,clon=lonOf(ev.frame.cx);
+    return ev.W+'×'+ev.H+' · '+fmtLatDeg(clat)+' '+fmtLonDeg(clon);
+  }catch(e){return 'Snapshot '+(SHELF.length+1);}
+}
+
+/* Calls evaluateFrame() so a captured snapshot is, by construction, identical to what Generate
+   would have written for the current view + slider settings (see the comment on evaluateFrame). */
+/* Apply the world-space mask to a freshly evaluated frame, in place of `ev`:
+   crop to the mask's tile bounding box, and replace everything inside that box but outside the shape
+   with the default tile. Each tile is tested at the CENTRE of its own sampling footprint — the same
+   point classifyRegion averaged around, including the X/Y nudge and the hex half-row shift — so the
+   mask lines up with the tiles the user actually sees rather than an idealised grid. */
+function maskFrame(ev){
+  const s=worldSel;
+  if(!selIsUsable(s))return ev;
+  const R=srcRect(),W=ev.W,H=ev.H;
+  const nX=nudgeX*R.w/W, nY=nudgeY*R.h/H;
+  const inside=new Uint8Array(W*H);
+  let x0=W,y0=H,x1=-1,y1=-1;
+  for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){
+    const hX=hexShiftX(ty,H)*R.w/W;
+    const cx=R.x+((tx+0.5)/W)*R.w+nX+hX, cy=R.y+((ty+0.5)/H)*R.h+nY;
+    if(!selContains(s,cx,cy))continue;
+    inside[ty*W+tx]=1;
+    if(tx<x0)x0=tx;if(tx>x1)x1=tx;if(ty<y0)y0=ty;if(ty>y1)y1=ty;
+  }
+  if(x1<x0)return null;   // mask misses the grid entirely -> nothing to capture
+  /* Hex parity: hexShiftX keys off (H-1-y), so which rows lean east depends on the row count. Keeping
+     the CROPPED bottom row at the same parity as the original bottom row preserves every tile's shift
+     (see composeSnapY for the same rule applied to patches). Extend downward when we can. */
+  if(hexMode&&(((y1-(H-1))&1)!==0))y1=Math.min(H-1,y1+1);
+  const nw=x1-x0+1, nh=y1-y0+1, tiles=[];
+  for(let ty=y0;ty<=y1;ty++){const row=[];
+    for(let tx=x0;tx<=x1;tx++)row.push(inside[ty*W+tx]?ev.tiles[ty][tx]:defaultTile());
+    tiles.push(row);}
+  coastPass(tiles,nw,nh);   // the default fill is new sea (or new land) against the kept region: re-derive ocean vs coast
+  /* Rivers: shift into the cropped frame and drop any edge with a flank outside the mask — a river
+     must not run out into the default fill, and with a land default cleanupRiverEdges would not catch it. */
+  const nof=new Map(),wof=new Map();
+  const inMask=(x,y)=>(x>=0&&x<W&&y>=0&&y<H)&&!!inside[y*W+x];
+  for(const [k,e] of ev.rivers.nof){const p=k.split(','),gy=+p[0],gx=+p[1];
+    if(!inMask(gx,gy)||!inMask(gx,gy+1))continue;
+    const ny=gy-y0,nx=gx-x0;if(nx<0||nx>=nw||ny<0||ny>=nh)continue;nof.set(ny+','+nx,e);}
+  for(const [k,e] of ev.rivers.wof){const p=k.split(','),gy=+p[0],gx=+p[1];
+    if(!inMask(gx,gy)||!inMask(gx+1,gy))continue;
+    const ny=gy-y0,nx=gx-x0;if(nx<0||nx>=nw||ny<0||ny>=nh)continue;wof.set(ny+','+nx,e);}
+  cleanupRiverEdges(nof,wof,tiles,nw,nh);
+  const latOfRow=r=>latOf(R.y+(r/H)*R.h+nY);   // row boundaries, so the cropped span matches the kept tiles
+  return {tiles,W:nw,H:nh,rivers:{nof,wof},topLat:latOfRow(y0),botLat:latOfRow(y1+1),
+    hex:ev.hex,frame:ev.frame,land:ev.land,hills:ev.hills,peaks:ev.peaks,masked:true};
+}
+function captureSnapshot(name){
+  const ev=maskFrame(evaluateFrame());
+  if(!ev)throw new Error('The mask does not cover any tile of the framed region.');
+  const tiles=new Array(ev.W*ev.H);
+  for(let y=0;y<ev.H;y++)for(let x=0;x<ev.W;x++)tiles[y*ev.W+x]=ev.tiles[y][x];
+  const snap={
+    v:1,kind:'terra-wbs-snapshot',
+    id:nextSnapshotId(),
+    name:(name&&name.trim())||autoSnapshotName(ev),
+    W:ev.W,H:ev.H,hex:!!ev.hex,
+    topLat:ev.topLat,botLat:ev.botLat,
+    frame:{cx:ev.frame.cx,cy:ev.frame.cy,spanX:ev.frame.spanX},
+    createdAt:Date.now(),
+    tiles,
+    rivers:{nof:Array.from(ev.rivers.nof.entries()),wof:Array.from(ev.rivers.wof.entries())},
+    thumb:null
+  };
+  snap.thumb=renderSnapshotThumb(snap);
+  return snap;
+}
+
+function snapshotTiles2D(snap){
+  const g=new Array(snap.H);
+  for(let y=0;y<snap.H;y++){const row=new Array(snap.W);for(let x=0;x<snap.W;x++)row[x]=snap.tiles[y*snap.W+x];g[y]=row;}
+  return g;
+}
+function snapshotRiverMaps(snap){return {nof:new Map(snap.rivers.nof),wof:new Map(snap.rivers.wof)};}
+
+function snapshotToJSON(snap){return JSON.stringify(snap,null,1);}
+
+/* Never trust pasted input: this is the only path by which arbitrary text becomes a snapshot object
+   that later gets iterated, drawn, and (eventually, in someone else's code) serialized into a WBS
+   file, so every field that downstream code indexes into (terrain -> TCOLOR, plot -> a 0..3 switch,
+   river keys -> gy/gx) is checked here first. Throws a plain Error with a human-readable message;
+   the paste UI shows message text directly to the user. */
+function assertSnapshotShape(s){
+  if(!s||typeof s!=='object')throw new Error('Snapshot is not a JSON object.');
+  if(s.kind!=='terra-wbs-snapshot')throw new Error('Not a Terra-WBS snapshot (kind is "'+s.kind+'", expected "terra-wbs-snapshot").');
+  if(s.v!==1)throw new Error('Unsupported snapshot version '+s.v+' (this build only reads v1).');
+  if(!Number.isInteger(s.W)||s.W<8||s.W>160)throw new Error('Width (W) must be a whole number 8..160 (got '+s.W+').');
+  if(!Number.isInteger(s.H)||s.H<8||s.H>120)throw new Error('Height (H) must be a whole number 8..120 (got '+s.H+').');
+  if(!Array.isArray(s.tiles))throw new Error('Missing "tiles" array.');
+  if(s.tiles.length!==s.W*s.H)throw new Error('tiles.length is '+s.tiles.length+' but W×H = '+(s.W*s.H)+' — the array must be exactly one entry per tile.');
+  for(let i=0;i<s.tiles.length;i++){
+    const t=s.tiles[i];
+    if(!t||typeof t!=='object')throw new Error('tiles['+i+'] is not an object.');
+    if(!KNOWN_TERRAINS.has(t.terrain))throw new Error('tiles['+i+'] has an unknown terrain "'+t.terrain+'".');
+    if(!Number.isInteger(t.plot)||t.plot<0||t.plot>3)throw new Error('tiles['+i+'] has an invalid plot value "'+t.plot+'" (expected 0..3).');
+    if(t.feature!=null&&!KNOWN_FEATURES.has(t.feature))throw new Error('tiles['+i+'] has an unknown feature "'+t.feature+'".');
+  }
+  if(!s.rivers||typeof s.rivers!=='object')throw new Error('Missing "rivers" object.');
+  assertRiverEntries(s.rivers.nof,'nof');
+  assertRiverEntries(s.rivers.wof,'wof');
+}
+function assertRiverEntries(entries,label){
+  if(!Array.isArray(entries))throw new Error('rivers.'+label+' must be an array of [key,value] pairs.');
+  for(let i=0;i<entries.length;i++){
+    const e=entries[i];
+    if(!Array.isArray(e)||e.length!==2)throw new Error('rivers.'+label+'['+i+'] is not a [key,value] pair.');
+    const key=e[0],val=e[1];
+    if(typeof key!=='string'||!/^-?\d+,-?\d+$/.test(key))throw new Error('rivers.'+label+'['+i+'] has a malformed key "'+key+'" (expected "gy,gx").');
+    if(!val||typeof val!=='object')throw new Error('rivers.'+label+'['+i+'] value is not an object.');
+  }
+}
+/* Fresh id on import, always: pasting a snapshot the shelf already has (round-tripped through
+   copy/paste, or shared from another browser) must add a second entry, never silently collide with
+   or overwrite the existing one — the shelf is a collection you build up, not a keyed store the user
+   is expected to manage ids for. */
+function snapshotFromJSON(str){
+  let raw;
+  try{raw=JSON.parse(str);}catch(e){throw new Error('That isn\'t valid JSON ('+e.message+').');}
+  assertSnapshotShape(raw);
+  return Object.assign({},raw,{id:nextSnapshotId()});
+}
+
+/* ---------- thumbnail ---------- */
+
+/* Offscreen canvas sized to the snapshot's own aspect ratio (long edge = maxPx) and handed to
+   drawCivGrid with glyphs:false — hill/peak/oasis/bonus glyphs are a few px each at thumbnail scale
+   and just read as noise, the flat terrain colour block is what's actually recognizable. */
+function renderSnapshotThumb(snap,maxPx){
+  maxPx=maxPx||160;
+  const long=Math.max(snap.W,snap.H),scale=maxPx/long;
+  const cw=Math.max(1,Math.round(snap.W*scale)),ch=Math.max(1,Math.round(snap.H*scale));
+  const c=document.createElement('canvas');c.width=cw;c.height=ch;
+  const g=c.getContext('2d');
+  drawCivGrid(g,snapshotTiles2D(snap),snap.W,snap.H,{hex:!!snap.hex,cw,ch,glyphs:false});
+  return c.toDataURL('image/png');
+}
+
+/* ---------- persistence ----------
+   Lives inside the existing 'kv' object store (idbKV/idbSet/idbGet, defined elsewhere in this file)
+   instead of a new store: idbKV hardcodes indexedDB.open('terra-wbs',1) and only creates 'kv' in
+   onupgradeneeded, so adding a second store means bumping the DB version — which re-runs
+   onupgradeneeded and risks the folder handle already saved under 'saveDir'. Not worth the risk for
+   a feature that fits fine as extra keys in the store that's already there.
+   One key per snapshot ('shelf:item:<id>') plus a small index key ('shelf:index', just the id list)
+   rather than one giant blob: snapshots run 50-200KB each once a thumbnail's baked in, and a rename
+   or delete should touch its own key, not rewrite every snapshot on the shelf. */
+const SHELF_INDEX_KEY='shelf:index';
+const shelfItemKey=id=>'shelf:item:'+id;
+const idbDel=k=>idbKV('readwrite',s=>s.delete(k));   // idbKV only ships get/put wrappers (idbGet/idbSet); delete needs the store directly
+
+let SHELF=[];   // in-memory live list the UI renders from; shelf*() functions below keep it in sync with IndexedDB
+
+async function shelfIndexIds(){
+  try{const ids=await idbGet(SHELF_INDEX_KEY);return Array.isArray(ids)?ids:[];}
+  catch(e){return [];}
+}
+
+/* Never throws into the boot path: a missing or corrupt store just means an empty shelf. */
+async function shelfLoad(){
+  let ids;
+  try{ids=await shelfIndexIds();}
+  catch(e){console.warn('shelf: index unreadable, starting empty —',e);SHELF=[];return SHELF;}
+  const got=await Promise.all(ids.map(id=>idbGet(shelfItemKey(id)).catch(e=>{console.warn('shelf: item '+id+' unreadable —',e);return null;})));
+  SHELF=got.filter(s=>s&&s.id).sort((a,b)=>b.createdAt-a.createdAt);   // newest first
+  return SHELF;
+}
+
+/* In-memory list and UI first, IndexedDB after. The first open of the store costs a noticeable beat,
+   and waiting on it made a capture look like it had not registered — which matters more now that the
+   shelf panel is hidden outside compose mode and the button's count is the only feedback. The write
+   still happens; a failure just means this snapshot won't survive a reload, so it only warns. */
+async function shelfSave(snap){
+  const i=SHELF.findIndex(s=>s.id===snap.id);
+  if(i>=0)SHELF[i]=snap;else SHELF.unshift(snap);
+  SHELF.sort((a,b)=>b.createdAt-a.createdAt);
+  renderShelf();
+  try{
+    const ids=await shelfIndexIds();
+    if(!ids.includes(snap.id)){ids.push(snap.id);await idbSet(SHELF_INDEX_KEY,ids);}
+    await idbSet(shelfItemKey(snap.id),snap);
+  }catch(e){console.warn('shelf: could not persist "'+snap.name+'" — it will vanish on reload.',e);}
+  return snap;
+}
+
+async function shelfDelete(id){
+  const ids=(await shelfIndexIds()).filter(x=>x!==id);
+  await idbSet(SHELF_INDEX_KEY,ids);
+  await idbDel(shelfItemKey(id));
+  SHELF=SHELF.filter(s=>s.id!==id);
+  renderShelf();
+}
+
+async function shelfRename(id,name){
+  const snap=SHELF.find(s=>s.id===id);
+  if(!snap)return;
+  const trimmed=(name||'').trim();
+  if(trimmed)snap.name=trimmed;
+  await idbSet(shelfItemKey(id),snap);
+  renderShelf();
+}
+
+async function shelfClearAll(){
+  const ids=await shelfIndexIds();
+  await Promise.all(ids.map(id=>idbDel(shelfItemKey(id)).catch(()=>{})));
+  await idbSet(SHELF_INDEX_KEY,[]);
+  SHELF=[];
+  renderShelf();
+}
+/* ---------- session scope: the shelf does not outlive the program ----------
+   Snapshots are scratch, so a new run must start with an empty shelf. Doing that on close is not
+   actually possible to guarantee — an unload handler cannot reliably finish an async IndexedDB
+   transaction, and a crash or a force-quit never runs one at all — so the wipe happens on the next
+   START instead, which covers all three cases. sessionStorage is the discriminator: it survives a
+   reload (Ctrl+F5, which must NOT cost you the shelf you just filled) but not the process, so its
+   absence is precisely "this is a fresh run". The within-session IndexedDB writes stay, and are what
+   make the shelf survive an accidental reload or a crash mid-run. */
+const SHELF_SESSION_KEY='terra-wbs:shelf-session';
+async function shelfStartSession(){
+  let fresh=true;
+  try{fresh=!sessionStorage.getItem(SHELF_SESSION_KEY);sessionStorage.setItem(SHELF_SESSION_KEY,'1');}
+  catch(e){fresh=true;}   // no sessionStorage (private mode, blocked storage): fall back to always-clear, which errs toward the requested behaviour
+  if(fresh){try{await shelfClearAll();}catch(e){console.warn('shelf: could not clear last run —',e);}}
+  return fresh;
+}
+
+/* ---------- shelf panel UI ---------- */
+
+function renderShelf(){
+  /* The shelf panel is hidden outside compose mode, so the button carries the count — otherwise a
+     capture taken from a geographic viewer would have no visible destination. */
+  const cnt=document.getElementById('shelfCount');
+  if(cnt)cnt.textContent=SHELF.length?' · '+SHELF.length:'';
+  const list=document.getElementById('shelfList');
+  if(!list)return;
+  list.textContent='';
+  if(!SHELF.length){
+    const p=document.createElement('p');
+    p.className='note shelf-empty';
+    p.textContent='No snapshots yet. A snapshot freezes the framed region exactly as tuned — capture one with the 📷 snapshot button above the map, then arrange several here on the Compose canvas to build a collage world.';
+    list.appendChild(p);
+    return;
+  }
+  for(const snap of SHELF)list.appendChild(buildShelfItem(snap));
+}
+
+function buildShelfItem(snap){
+  const el=document.createElement('div');el.className='shelf-item';
+
+  const img=document.createElement('img');img.className='shelf-thumb';img.src=snap.thumb;img.alt='';img.width=64;img.height=64;
+  el.appendChild(img);
+
+  const meta=document.createElement('div');meta.className='shelf-meta';el.appendChild(meta);
+
+  const nameRow=document.createElement('div');nameRow.className='shelf-name-row';meta.appendChild(nameRow);
+  const nameEl=document.createElement('span');nameEl.className='shelf-name';nameEl.textContent=snap.name;nameRow.appendChild(nameEl);   // textContent only — snap.name can come from pasted JSON
+  const renameBtn=document.createElement('button');renameBtn.type='button';renameBtn.className='shelf-icon-btn';renameBtn.title='Rename';renameBtn.textContent='✎';
+  nameRow.appendChild(renameBtn);
+  renameBtn.addEventListener('click',()=>{
+    const input=document.createElement('input');input.className='numin shelf-rename-input';input.type='text';input.value=snap.name;
+    nameRow.replaceChild(input,nameEl);input.focus();input.select();
+    let done=false;
+    const commit=()=>{if(done)return;done=true;const v=input.value;if(input.parentNode)nameRow.replaceChild(nameEl,input);shelfRename(snap.id,v);};
+    const cancel=()=>{if(done)return;done=true;if(input.parentNode)nameRow.replaceChild(nameEl,input);};
+    input.addEventListener('keydown',e=>{if(e.key==='Enter')commit();else if(e.key==='Escape')cancel();});
+    input.addEventListener('blur',commit);
+  });
+
+  const dims=document.createElement('div');dims.className='shelf-dims';
+  dims.textContent=snap.W+'×'+snap.H+' · '+(snap.W*snap.H).toLocaleString()+' tiles'+(snap.hex?' · hex':'');
+  meta.appendChild(dims);
+
+  const btns=document.createElement('div');btns.className='shelf-btns';meta.appendChild(btns);
+
+  const placeBtn=document.createElement('button');placeBtn.type='button';placeBtn.className='vbtn';placeBtn.textContent='place';
+  placeBtn.addEventListener('click',()=>composeBeginPlace(snap));
+  btns.appendChild(placeBtn);
+
+  const copyBtn=document.createElement('button');copyBtn.type='button';copyBtn.className='vbtn';copyBtn.textContent='copy JSON';
+  copyBtn.addEventListener('click',()=>{
+    const json=snapshotToJSON(snap),was=copyBtn.textContent;
+    const flash=ok=>{copyBtn.textContent=ok?'copied ✓':'copy failed';setTimeout(()=>{copyBtn.textContent=was;},1400);};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(json).then(()=>flash(true),()=>flash(false));
+    else flash(false);   // clipboard API unavailable (insecure context, old browser, denied permission) — "copy JSON" via Paste JSON's textarea is the fallback path
+  });
+  btns.appendChild(copyBtn);
+
+  const delBtn=document.createElement('button');delBtn.type='button';delBtn.className='vbtn';delBtn.textContent='delete';
+  btns.appendChild(delBtn);
+  delBtn.addEventListener('click',()=>{
+    if(delBtn.dataset.confirm==='1'){shelfDelete(snap.id);return;}   // inline "sure?" toggle rather than window.confirm, to match the app's no-native-dialog feel
+    delBtn.dataset.confirm='1';delBtn.textContent='sure?';delBtn.classList.add('shelf-confirm');
+    setTimeout(()=>{delBtn.dataset.confirm='';delBtn.textContent='delete';delBtn.classList.remove('shelf-confirm');},2500);
+  });
+
+  return el;
+}
+
+/* Wires the toolbar's #snapshot button (freeze current view) and this panel's paste/clear controls,
+   then loads whatever's already on the shelf. Call once at boot. */
+function initShelf(){
+  /* Clear last run's shelf BEFORE loading, so a fresh start never briefly shows stale snapshots. */
+  shelfStartSession().then(shelfLoad).then(renderShelf).catch(e=>{console.warn('shelf: load failed —',e);SHELF=[];renderShelf();});
+
+  const snapBtn=document.getElementById('snapshot');
+  if(snapBtn)snapBtn.addEventListener('click',()=>{
+    let snap;
+    try{snap=captureSnapshot();}   // no name typed anywhere in the toolbar -> always auto-named; rename later from the shelf entry
+    catch(e){console.error('captureSnapshot failed:',e);alert('Could not capture snapshot: '+e.message);return;}
+    shelfSave(snap);
+    /* Flash the LABEL span, never the button's textContent — that would delete the count span beside it. */
+    const lab=document.getElementById('snapLabel');
+    if(lab){const was=lab.textContent;lab.textContent='saved ✓';setTimeout(()=>{lab.textContent=was;},900);}
+  });
+
+  const pasteToggle=document.getElementById('shelfPasteToggle'),pasteWrap=document.getElementById('shelfPasteWrap'),
+        pasteArea=document.getElementById('shelfPasteArea'),pasteErr=document.getElementById('shelfPasteErr');
+  if(pasteToggle&&pasteWrap)pasteToggle.addEventListener('click',async()=>{
+    const opening=pasteWrap.hidden;
+    pasteWrap.hidden=!opening;
+    if(!opening)return;
+    if(pasteErr)pasteErr.textContent='';
+    if(navigator.clipboard&&navigator.clipboard.readText){
+      try{const text=await navigator.clipboard.readText();if(text&&pasteArea)pasteArea.value=text;}
+      catch(e){/* read permission denied (common — it's a more sensitive permission than writeText) — textarea stays empty, user pastes manually with Ctrl+V, this is the required fallback, not a bug */}
+    }
+    if(pasteArea)pasteArea.focus();
+  });
+  const pasteCancel=document.getElementById('shelfPasteCancel');
+  if(pasteCancel)pasteCancel.addEventListener('click',()=>{pasteWrap.hidden=true;if(pasteArea)pasteArea.value='';if(pasteErr)pasteErr.textContent='';});
+  const pasteCommit=document.getElementById('shelfPasteCommit');
+  if(pasteCommit)pasteCommit.addEventListener('click',()=>{
+    let snap;
+    try{snap=snapshotFromJSON(pasteArea?pasteArea.value:'');}
+    catch(e){if(pasteErr)pasteErr.textContent=e.message;return;}
+    shelfSave(snap);
+    pasteWrap.hidden=true;if(pasteArea)pasteArea.value='';if(pasteErr)pasteErr.textContent='';
+  });
+
+  const clearBtn=document.getElementById('shelfClearAll');
+  if(clearBtn)clearBtn.addEventListener('click',()=>{
+    if(clearBtn.dataset.confirm==='1'){shelfClearAll();clearBtn.dataset.confirm='';clearBtn.textContent='clear all';return;}
+    clearBtn.dataset.confirm='1';clearBtn.textContent='clear all — sure?';
+    setTimeout(()=>{clearBtn.dataset.confirm='';clearBtn.textContent='clear all';},2500);
+  });
+}
+
+/* ---------- compose mode: host glue (panel, stats, export bridge) ----------
+   The compose engine owns `comp` and the canvas interaction; this section is only the wiring between
+   it and the rest of the app: the rail panel, the snapshot button, and the export hand-off. */
+const COMPOSE_LAT=45;   // a collage has no real latitude span — patches come from anywhere on Earth. Civ4 uses top/bottom latitude for its own resource & feature scatter, so we write a plain temperate span rather than a fabricated one.
+function composeRegion(){const c=compositeCompose();c.topLat=COMPOSE_LAT;c.botLat=-COMPOSE_LAT;c.wrapX=0;return c;}   // wrapX=0: a collage never spans the full 360
+function selectedPatch(){return comp.sel==null?null:comp.patches.find(p=>p.id===comp.sel)||null;}
+/* The rail carries two disjoint sets of controls. Everything tagged data-rail="tune" shapes how a
+   region is EVALUATED — coast, relief, terrain, features, rivers — and none of it can affect a
+   collage, whose tiles were evaluated when their snapshots were taken. Compose swaps that whole
+   block out for the two panels that do apply (the canvas and the shelf it draws from). The Generate
+   pane is untagged and stays in both, since it is the exit from either path. */
+function syncRailPanels(){
+  const on=(mode==='compose');
+  document.querySelectorAll('.rail [data-rail="tune"]').forEach(el=>{el.hidden=on;});
+  document.querySelectorAll('.rail [data-rail="compose"]').forEach(el=>{el.hidden=!on;});
+}
+function syncComposeUI(){
+  const on=(mode==='compose');
+  syncRailPanels();
+  document.getElementById('snapshot').disabled=on;   // snapshots are captured FROM a geographic frame, not from the collage
+  if(!on)return;
+  const p=selectedPatch(),ctl=document.getElementById('patchCtl');
+  ctl.hidden=!p;
+  if(p){document.getElementById('vPatch').textContent=p.snap.name+' · '+p.snap.W+'×'+p.snap.H+' @ '+p.x+','+p.y;
+    document.getElementById('patchLandOnly').checked=!!p.landOnly;}
+  const s=composeStats();
+  document.getElementById('stPatches').textContent=s.patches;
+  document.getElementById('stCompLand').textContent=s.land+' / '+s.water;
+  document.getElementById('stErased').textContent=comp.erased.size;
+  document.getElementById('compUnerase').disabled=!comp.erased.size;
+  /* A snapshot carries the lattice it was evaluated on: its tiles were classified, its coasts traced
+     and its relief passes run against square 8-neighbourhoods or hex 6-neighbourhoods. Stamping one
+     onto the other lattice keeps the terrain but silently re-reads every adjacency, so warn rather
+     than block — the collage is still exportable, it just won't match what the preview showed. */
+  const mixed=comp.patches.filter(p=>!!p.snap.hex!==!!hexMode).length,warn=document.getElementById('composeWarn');
+  warn.hidden=!mixed;
+  if(mixed)warn.textContent='⚠ '+mixed+' patch'+(mixed===1?'':'es')+' captured on the '+(hexMode?'square':'hex')+' grid '+(mixed===1?'is':'are')+' placed on a '+(hexMode?'hex':'square')+' canvas — terrain is preserved but tile adjacency is re-read, so coasts and rivers may not line up as previewed.';
+}
+function composeChanged(){syncComposeUI();}
+document.getElementById('cw').addEventListener('change',e=>{composeSetSize(parseInt(e.target.value)||60,comp.H);e.target.value=comp.W;relayout();syncComposeUI();});
+document.getElementById('chh').addEventListener('change',e=>{composeSetSize(comp.W,parseInt(e.target.value)||40);e.target.value=comp.H;relayout();syncComposeUI();});
+document.getElementById('patchLandOnly').addEventListener('change',e=>{const p=selectedPatch();if(p){composeSetLandOnly(p.id,e.target.checked);render();syncComposeUI();}});
+document.getElementById('patchRaise').addEventListener('click',()=>{const p=selectedPatch();if(p){composeRaise(p.id);render();syncComposeUI();}});
+document.getElementById('patchLower').addEventListener('click',()=>{const p=selectedPatch();if(p){composeLower(p.id);render();syncComposeUI();}});
+document.getElementById('patchDel').addEventListener('click',()=>{const p=selectedPatch();if(p){composeRemovePatch(p.id);render();syncComposeUI();}});
+document.getElementById('compClear').addEventListener('click',()=>{if(comp.patches.length&&!window.confirm('Remove all '+comp.patches.length+' patches from the canvas?'))return;composeClear();render();syncComposeUI();});
+document.getElementById('compUnerase').addEventListener('click',()=>{composeUnerase();render();syncComposeUI();});
+/* the #snapshot button is wired inside initShelf() — capture belongs with the shelf that stores it */
+document.querySelectorAll('#selTools [data-sel]').forEach(b=>b.addEventListener('click',()=>setSelTool(b.dataset.sel)));
+document.getElementById('selClear').addEventListener('click',clearSelection);
+document.getElementById('tgMtnDefault').addEventListener('change',e=>{defaultTileKind=e.target.checked?'peak':'ocean';composeInvalidate();syncSelUI();syncComposeUI();render();});
+installComposeInput({getMode:()=>mode,rerender:()=>schedule(),onChange:composeChanged});
+
 /* ---------- boot ---------- */
-drawLegend();updateArNote();
+drawLegend();updateArNote();syncComposeUI();syncSelUI();initShelf();
 /* Data-health probe: after the load chain, confirm each raster layer actually has pixels. This catches the
    "coastline only" failure (raster interiors blank) regardless of cause — a caught taint, a silent decode
    failure, or an empty array — and names the offending layer so it's diagnosable without opening DevTools. */
