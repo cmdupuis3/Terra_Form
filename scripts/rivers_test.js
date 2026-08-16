@@ -1,6 +1,6 @@
 /* rivers_test.js -- validate the corner-snap rasterizer + serializer mapping. */
 const fs = require("fs");
-const { reachesToEdges, plotRiverLines, nudgeRiverEdges } = require("./rivers_core.js");
+const { reachesToEdges, makeRiverProj, plotRiverLines, nudgeRiverEdges } = require("./rivers_core.js");
 
 let fails = 0;
 const ok = (name, cond, extra) => { console.log((cond ? "  PASS " : "  FAIL ") + name + (extra ? "  " + extra : "")); if (!cond) fails++; };
@@ -48,6 +48,41 @@ const V = { lonL: 0, lonR: 2, latT: 2, latB: 0 }, W = 10, H = 10;
   ok("flip: north row 0", [...nof.keys()].every(k => +k.split(",")[0] === 0));
   ok("flip: serializes at civY=H-1 not civY=0",
     plotRiverLines(nof, wof, 5, H - 1, H).some(s => s.includes("isNOfRiver")) && plotRiverLines(nof, wof, 5, 0, H).length === 0); })();
+
+// view rotation (ctrl+drag): the projection spins, the lattice does not. rot=0 must be a no-op.
+(() => {
+  const WSRC = 4096, HSRC = 2048, X = (lon) => (lon + 180) / 360 * WSRC, Y = (lat) => (90 - lat) / 180 * HSRC;
+  const rect = { x: X(V.lonL), y: Y(V.latT), w: X(V.lonR) - X(V.lonL), h: Y(V.latB) - Y(V.latT) };
+  const P = (rot) => makeRiverProj({ WSRC, HSRC, rect, W, H, rot, cx: rect.x + rect.w / 2, cy: rect.y + rect.h / 2 });
+  const w2e = [{ d: 5000, l: [[[0.12, 1.0], [1.88, 1.0]]] }];                     // along the view's horizontal centreline
+  const dump = (r) => [...r.nof].map(([k, e]) => "n" + k + ":" + e.dir).concat([...r.wof].map(([k, e]) => "w" + k + ":" + e.dir)).sort().join("|");
+  // the two forms are algebraically identical; a vertex landing exactly on a .5 corner boundary can
+  // still round the other way, which is why the app leaves proj null (not rot:0) while north-up.
+  ok("rot=0 projection is the axis-aligned formula",
+    dump(reachesToEdges(w2e, V, W, H, P(0))) === dump(reachesToEdges(w2e, V, W, H)));
+  const r90 = reachesToEdges(w2e, V, W, H, P(90));
+  ok("rot=90: the W->E run becomes a vertical run flowing North",
+    r90.nof.size === 0 && r90.wof.size > 0 && [...r90.wof.values()].every((e) => e.dir === 0), `${r90.wof.size} V edges`);
+  const r180 = reachesToEdges(w2e, V, W, H, P(180));
+  ok("rot=180: still horizontal, flow reverses to West",
+    r180.wof.size === 0 && r180.nof.size > 0 && [...r180.nof.values()].every((e) => e.dir === 3));
+  /* THE ANTIPODAL STREAK. A river ~180 deg from the view sits on the .5 rounding boundary of the
+     world-copy choice, so picking the copy PER VERTEX put two adjacent vertices a whole world apart
+     and the staircase joined opposite frame corners -- a straight diagonal across the viewer, on
+     every view, because something is always antipodal. Carrying the copy along the polyline keeps
+     the reach in one piece, far outside the frame, where it contributes nothing. */
+  const anti = [{ d: 5000, l: [[[-179.99, 1.0], [-179.97, 1.0], [-179.95, 1.0]]] }];   // view is at lon ~1, so this is the antipode
+  const ra = reachesToEdges(anti, V, W, H, P(35));
+  ok("antipodal reach draws no streak across the frame", ra.nof.size + ra.wof.size === 0, `${ra.nof.size + ra.wof.size} edges`);
+  // and a genuine +/-180 crossing is the same unwrap: consecutive vertices stay adjacent, not a world apart
+  const Vp = { lonL: 179, lonR: 181, latT: 2, latB: 0 };                               // view straddling the seam
+  const rectP = { x: X(179), y: Y(2), w: X(181) - X(179), h: Y(0) - Y(2) };
+  const Pp = makeRiverProj({ WSRC, HSRC, rect: rectP, W, H, rot: 0.0001, cx: rectP.x + rectP.w / 2, cy: rectP.y + rectP.h / 2 });
+  const seam = reachesToEdges([{ d: 5000, l: [[[179.2, 1.0], [179.8, 1.0], [-179.8, 1.0], [-179.2, 1.0]]] }], Vp, W, H, Pp);
+  const cols = [...seam.nof.keys()].map((k) => +k.split(",")[1]);
+  ok("seam-crossing reach stays one continuous run", seam.nof.size > 0 && Math.max(...cols) - Math.min(...cols) === seam.nof.size - 1,
+    `${seam.nof.size} edges, cols ${Math.min(...cols)}..${Math.max(...cols)}`);
+})();
 
 // connectivity on real data: each distinct river should render as ~one connected component
 function comps(nof, wof) {

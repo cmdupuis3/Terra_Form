@@ -1,0 +1,5 @@
+# Source is LF in the repo AND in the working tree, on every OS — pins the checkout so a Windows
+# clone with core.autocrlf=true can't flip it to CRLF (which shows up as a whole-file diff).
+# Unrelated to the EXPORT: the .CivBeyondSwordWBSave the app writes is CRLF by design (Civ4's
+# parser is Windows-native and CTDs on LF-only saves) — that's runtime output, never a tracked file.
+* text=auto eol=lf

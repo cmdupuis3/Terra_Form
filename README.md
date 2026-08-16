@@ -57,6 +57,19 @@ the folder.
 
 - Drag to pan, scroll to zoom. The viewer aspect is locked to the output grid
   (W×H), so what you frame is exactly what gets sampled into tiles.
+- **Ctrl+drag rotates** the world behind the frame (−180…180°; soft-snaps at
+  0/±90/180, hold Shift for 15° detents; ctrl+double-click or zoom-reset returns
+  to north-up). Rotation happens *before* sampling: the civ preview, captured
+  snapshots and the export all read the rotated frame at full fidelity, so a
+  snapshot arrives in compose already rotated and fixed — compose itself never
+  rotates anything. Rotation is defined in the plate-carrée pixel grid, so away
+  from the equator a rotated frame shears in real-world terms (E–W scale ∝
+  cos lat), same as the unrotated sampling contract. Axis tick labels hide while
+  rotated (the readout shows the angle); a rotated frame never sets `wrap X`.
+  The **box** mask stays rectangular *in the viewer* at any rotation, so a capture
+  always crops to a clean tile rectangle instead of a staircase with empty
+  corners; it keeps its grip on the geography through its diagonal. A **lasso**
+  is freeform and stays pinned to the world, unchanged.
 - View modes: satellite colour, elevation (hypsometric), roughness (heat ramp),
   Köppen climate (Beck et al. 2018 palette; ocean shown white), and the Civ tile
   preview.

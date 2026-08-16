@@ -2,6 +2,8 @@
  * + serializer fragment. Kept in sync with the inlined copy in index.html; validated by rivers_test.js.
  *
  *   view: {lonL,lonR,latT,latB} (lonL<lonR, latT>latB).  fx:0=west..W=east  fy:0=NORTH..H=south.
+ *   proj (optional): rotation-aware lon/lat -> grid, see makeRiverProj. The grid is FRAME space --
+ *   screen-aligned, view-centred -- and equals the view rect above whenever rot is 0.
  *   tile (gx,gy): gx=0 west, gy=0 NORTH == classifier tiles[gy][gx].
  *   serialize flip: grid[(H-1)-civY][gx]; maps keyed in gridRow space (gr,gx), gr=0 NORTH.
  *   horizontal edge = south edge of tile to its NORTH -> isNOfRiver + RiverWEDirection (E=1,W=3)
@@ -17,7 +19,36 @@
 (function (root) {
   "use strict";
 
-  function reachesToEdges(reaches, view, W, H) {
+  /* Rotation-aware lon/lat -> grid projection (the ctrl+drag view rotation). o:
+   *   {WSRC,HSRC,rect:{x,y,w,h},W,H,rot,cx,cy} -- rect/cx/cy in source px, rot in degrees about (cx,cy).
+   * Returns (lon,lat)->[fx,fy] in the very grid coords the axis-aligned FX/FY produce: lon/lat -> world
+   * source px -> worldToFrame -> grid. With rot=0 it is algebraically identical to FX/FY, which is why
+   * reachesToEdges' default (no proj) path can stay the literal old formula. */
+  /* The world copy is chosen ONCE PER POLYLINE and carried: the first vertex takes the copy nearest
+   * the view, every later vertex the copy nearest ITS PREDECESSOR. Per-vertex choice breaks at the
+   * antipode, where (cx-wx)/WS lands on the .5 rounding boundary and two adjacent vertices of one
+   * river fall a whole world apart -- the staircase then joins opposite frame corners and paints a
+   * diagonal across the viewer. Carrying the copy also unwraps a real +/-180 crossing. reset()
+   * starts a new polyline; call it per reach, and before any standalone single-point probe. */
+  function makeRiverProj(o) {
+    const rad = (o.rot || 0) * Math.PI / 180, c = Math.cos(rad), s = Math.sin(rad);
+    const R = o.rect, WS = o.WSRC, HS = o.HSRC, cx = o.cx, cy = o.cy;
+    let ref = null;
+    const P = (lon, lat) => {
+      let wx = (lon + 180) / 360 * WS; const wy = (90 - lat) / 180 * HS;
+      wx += Math.round(((ref == null ? cx : ref) - wx) / WS) * WS;   // to the view for the first vertex, to the predecessor after
+      ref = wx;
+      let fx = wx, fy = wy;
+      if (rad) { const dx = wx - cx, dy = wy - cy; fx = cx + c * dx + s * dy; fy = cy - s * dx + c * dy; }   // worldToFrame
+      return [(fx - R.x) / R.w * o.W, (fy - R.y) / R.h * o.H];
+    };
+    P.reset = () => { ref = null; };
+    return P;
+  }
+
+  // proj (optional): (lon,lat)->[fx,fy] grid coords, e.g. makeRiverProj(). Omitted => the axis-aligned
+  // view rect, i.e. the north-up behaviour. Everything past the vertex snap is grid-space either way.
+  function reachesToEdges(reaches, view, W, H, proj) {
     const nof = new Map(), wof = new Map();
     const { lonL, lonR, latT, latB } = view;
     const sx = W / (lonR - lonL), sy = H / (latT - latB);
@@ -41,9 +72,10 @@
           if (e2 < adx && y !== by) { err += adx; step(x, y, x, y + sy); y += sy; moved = true; }
           if (!moved) break; }
       };
-      let px = null, py = null;
+      let px = null, py = null; if (proj && proj.reset) proj.reset();   // one world copy per reach, like px/py
       for (const part of r.l) for (const pt of part) {
-        const cx = cl(Math.round(FX(pt[0])), W), cy = cl(Math.round(FY(pt[1])), H);
+        const g = proj ? proj(pt[0], pt[1]) : [FX(pt[0]), FY(pt[1])];
+        const cx = cl(Math.round(g[0]), W), cy = cl(Math.round(g[1]), H);
         if (px !== null && (cx !== px || cy !== py)) connect(px, py, cx, cy);
         px = cx; py = cy;
       }
@@ -205,7 +237,7 @@
     }
   }
 
-  const api = { reachesToEdges, plotRiverLines, nudgeRiverEdges };
+  const api = { reachesToEdges, makeRiverProj, plotRiverLines, nudgeRiverEdges };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.RiversCore = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

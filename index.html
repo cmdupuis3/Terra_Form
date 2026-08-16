@@ -543,19 +543,22 @@ function koppenZoneCull(R){           // gather in-view polys from loaded tiles;
   for(const k of ids){const t=KTILE.get(k);if(!t||t==='load')continue;for(const q of t.polys){const b=q.b;if(b[2]<lonMin||b[0]>lonMax||b[3]<latMin||b[1]>latMax)continue;vis.push(q);}}
   return {vis};
 }
-/* fill each in-view zone with its class colour; holes handled per-polygon by evenodd (closePath supplies closure) */
+/* fill each in-view zone with its class colour; holes handled per-polygon by evenodd (closePath supplies closure).
+   R is the FRAME rect shifted by this world copy's offset; rotated, vertices are projected world -> frame here
+   (same convention as fillPolysWindowed), so the fill is frame-space and never goes inside a rotated transform. */
 function fillKoppenZonesWindowed(g,vis,R,W,H){
+  const a=rotRad(),rc=Math.cos(a),rs=Math.sin(a),vx=view.cx,vy=view.cy,RX=a?view.cx-view.spanX/2:R.x,ow=RX-R.x;
   for(const p of vis){
     g.fillStyle=KOPPEN_CSS[p.v]||KOPPEN_CSS[0];
     g.beginPath();
-    for(const ring of p.r){for(let i=0;i<ring.length;i++){const lon=ring[i][0],lat=ring[i][1];const x=(((lon+180)/360*WSRC)-R.x)/R.w*W,y=(((90-lat)/180*HSRC)-R.y)/R.h*H;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();}
+    for(const ring of p.r){for(let i=0;i<ring.length;i++){const lon=ring[i][0],lat=ring[i][1];let px=((lon+180)/360*WSRC)+ow,py=(90-lat)/180*HSRC;if(a){const dx=px-vx,dy=py-vy;px=vx+rc*dx+rs*dy;py=vy-rs*dx+rc*dy;}const x=(px-RX)/R.w*W,y=(py-R.y)/R.h*H;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();}
     g.fill('evenodd');
   }
 }
 
 /* ---------- view state ---------- */
 const cv=document.getElementById('view'),ctx=cv.getContext('2d'),mapBox=document.getElementById('mapBox'),wrap=document.querySelector('.viewer-wrap');
-let view={cx:WSRC/2,cy:HSRC/2,spanX:WSRC};
+let view={cx:WSRC/2,cy:HSRC/2,spanX:WSRC,rot:0};   // rot: frame rotation in degrees, (-180,180]; 0 = north-up
 let mode='color';
 const P={sea:0.5,blendHill:0.9,blendPeak:0.7,hill:0.55,peak:0.8,
          dryPlains:0.42,dryDesert:0.66,                        // dryness-axis boundaries (0 wet -> 1 arid): >=dryPlains -> plains, >=dryDesert -> desert
@@ -635,11 +638,28 @@ function vectorCoastActive(){return windowWidthDeg()<=coastThr;}
 /* viewer aspect is locked to the output grid (W/H) */
 function maxSpanX(){return Math.min(WSRC,HSRC*(out.W/effH()));}
 function spanY(){return view.spanX*(effH()/out.W);}
+/* ---------- frame rotation ----------
+   FRAME SPACE is the screen-aligned source-px coordinate system centred on (view.cx,view.cy); it
+   coincides with world (source-raster) space when view.rot===0. The canvas rect always shows the
+   frame rect (srcRect()), so rotating the view spins the WORLD behind a fixed frame — and because
+   sampling reads whatever the frame covers, civ preview / capture / export inherit the rotation
+   with no compose-side changes. Rotation is defined in plate-carrée px space (the viewer aspect
+   lock makes the canvas->source scale uniform, so canvas-centre rotation == view-centre rotation). */
+function rotRad(){return (view.rot||0)*Math.PI/180;}
+function normDeg(d){d=((d+180)%360+360)%360-180;return d<=-180?d+360:d;}   // (-180,180]
+function frameToWorld(fx,fy){const a=rotRad();if(!a)return [fx,fy];const c=Math.cos(a),s=Math.sin(a),dx=fx-view.cx,dy=fy-view.cy;return [view.cx+c*dx-s*dy,view.cy+s*dx+c*dy];}
+function worldToFrame(wx,wy){const a=rotRad();if(!a)return [wx,wy];const c=Math.cos(a),s=Math.sin(a),dx=wx-view.cx,dy=wy-view.cy;return [view.cx+c*dx+s*dy,view.cy-s*dx+c*dy];}
+/* axis-aligned world-space box covering the rotated frame: use for prefetch, culling and clamping */
+function rotAABB(){const R=srcRect(),a=rotRad();if(!a)return R;const c=Math.abs(Math.cos(a)),s=Math.abs(Math.sin(a)),w=R.w*c+R.h*s,h=R.w*s+R.h*c;return {x:view.cx-w/2,y:view.cy-h/2,w,h};}
 function clampView(){
-  view.spanX=Math.max(6,Math.min(maxSpanX(),view.spanX));
-  const sy=spanY();
+  view.rot=normDeg(view.rot||0);
+  const a=rotRad(),ca=Math.abs(Math.cos(a)),sa=Math.abs(Math.sin(a)),ky=effH()/out.W;
+  /* the rotated frame's AABB must fit the source vertically: AABB h = spanX*(sa+ky*ca) <= HSRC */
+  const cap=Math.min(WSRC,HSRC/(sa+ky*ca));
+  view.spanX=Math.max(6,Math.min(cap,view.spanX));
+  const hh=view.spanX*(sa+ky*ca)/2;
   view.cx=Math.max(-WRAP_PX,Math.min(WSRC+WRAP_PX,view.cx));   // horizontal wrap margin
-  view.cy=Math.max(sy/2,Math.min(HSRC-sy/2,view.cy));
+  view.cy=Math.max(hh,Math.min(HSRC-hh,view.cy));
 }
 function srcRect(){const sy=spanY();return {x:view.cx-view.spanX/2,y:view.cy-sy/2,w:view.spanX,h:sy};}
 function wrapOffsets(R){const k0=Math.floor(R.x/WSRC),k1=Math.floor((R.x+R.w-1e-6)/WSRC),o=[];for(let k=k0;k<=k1;k++)o.push(k*WSRC);return o;}   // world copies the view spans (x*WSRC), [0] unless it straddles +/-180
@@ -716,24 +736,30 @@ function classifyRegion(W,H){
   const lf=new Float32Array(N),hA=new Float32Array(N),rgh=new Float32Array(N),kcA=new Uint8Array(N),rA=new Float32Array(N),gA=new Float32Array(N),bA=new Float32Array(N),ltA=new Float32Array(N),wA=new Float32Array(N),proxA=new Float32Array(N),pA=new Float32Array(N);
   const kcHist=new Uint16Array(31);                                // reused per tile: histogram over the 30 Köppen classes
   const nX=nudgeX*R.w/W, nY=nudgeY*R.h/H;                           // X/Y nudge: shift each tile sampling footprint by a fraction of a tile
+  const rotA=rotRad(),rcos=Math.cos(rotA),rsin=Math.sin(rotA),vcx=view.cx,vcy=view.cy;   // the tile lattice and every sample point live in FRAME space; each sample is rotated to world before indexing the global rasters (rotA===0 -> frame IS world, direct index)
   for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){
     const hX=hexShiftX(ty,H)*R.w/W;   // hex mode: odd CIV rows sample half a tile east
     const x0=R.x+(tx/W)*R.w+nX+hX,x1=R.x+((tx+1)/W)*R.w+nX+hX,y0=R.y+(ty/H)*R.h+nY,y1=R.y+((ty+1)/H)*R.h+nY;
-    const sx0=Math.floor(x0),sx1=Math.ceil(x1)-1,sy0=Math.max(0,Math.floor(y0)),sy1=Math.min(HSRC-1,Math.ceil(y1)-1);   // sx may cross +/-180 (wrapped below); sy stays clamped
+    const sx0=Math.floor(x0),sx1=Math.ceil(x1)-1,sy0=Math.max(0,Math.floor(y0)),sy1=Math.min(HSRC-1,Math.ceil(y1)-1);   // FRAME px; sx may cross +/-180 (wrapped below); frame y stays inside the source (clampView fits the rotated AABB vertically)
     const stepx=Math.max(1,Math.floor((sx1-sx0+1)/12)),stepy=Math.max(1,Math.floor((sy1-sy0+1)/12));
     let n=0,hSum=0,rS=0,gS=0,bS=0,lSum=0,wS=0,pS=0;kcHist.fill(0);
-    for(let sy=sy0;sy<=sy1;sy+=stepy)for(let sx=sx0;sx<=sx1;sx+=stepx){const i=sy*WSRC+(((sx%WSRC)+WSRC)%WSRC),h=heightArr[i],rr=colorArr[i*3],gg=colorArr[i*3+1],bb=colorArr[i*3+2];hSum+=h;rS+=rr;gS+=gg;bS+=bb;const mx=rr>gg?(rr>bb?rr:bb):(gg>bb?gg:bb),mn=rr<gg?(rr<bb?rr:bb):(gg<bb?gg:bb);if(mx>168&&mn>0.75*mx)wS++;kcHist[koppenArr[i]]++;lSum+=landMask[i];pS+=playaArr?playaArr[i]:0;n++;}
+    for(let sy=sy0;sy<=sy1;sy+=stepy)for(let sx=sx0;sx<=sx1;sx+=stepx){let i;
+      if(!rotA)i=sy*WSRC+(((sx%WSRC)+WSRC)%WSRC);
+      else{const dx=sx-vcx,dy=sy-vcy,wx=vcx+rcos*dx-rsin*dy,wy=vcy+rsin*dx+rcos*dy,iy=wy<0?0:wy>HSRC-1?HSRC-1:Math.floor(wy);i=iy*WSRC+(((Math.floor(wx)%WSRC)+WSRC)%WSRC);}   // frame -> world, wrap X, clamp Y
+      const h=heightArr[i],rr=colorArr[i*3],gg=colorArr[i*3+1],bb=colorArr[i*3+2];hSum+=h;rS+=rr;gS+=gg;bS+=bb;const mx=rr>gg?(rr>bb?rr:bb):(gg>bb?gg:bb),mn=rr<gg?(rr<bb?rr:bb):(gg<bb?gg:bb);if(mx>168&&mn>0.75*mx)wS++;kcHist[koppenArr[i]]++;lSum+=landMask[i];pS+=playaArr?playaArr[i]:0;n++;}
     if(!n)n=1; const idx=ty*W+tx; let hAvg=hSum/n;
+    const fcx=(x0+x1)/2,fcy=(y0+y1)/2;let wcx=fcx,wcy=fcy;
+    if(rotA){const dx=fcx-vcx,dy=fcy-vcy;wcx=vcx+rcos*dx-rsin*dy;wcy=vcy+rsin*dx+rcos*dy;}   // ROTATED tile centre, in world px: drives latitude, base roughness and polar proximity
     let rghV=null;
     if(fineH){let fs=0,fn=0,frs=0;const fx0=Math.max(0,Math.floor((x0-R.x)/R.w*fineH.fw)),fx1=Math.min(fineH.fw-1,Math.ceil((x1-R.x)/R.w*fineH.fw)-1),fy0=Math.max(0,Math.floor((y0-R.y)/R.h*fineH.fh)),fy1=Math.min(fineH.fh-1,Math.ceil((y1-R.y)/R.h*fineH.fh)-1);const fsx=Math.max(1,Math.floor((fx1-fx0+1)/10)),fsy=Math.max(1,Math.floor((fy1-fy0+1)/10));for(let fy=fy0;fy<=fy1;fy+=fsy)for(let fx=fx0;fx<=fx1;fx+=fsx){const fi=fy*fineH.fw+fx;fs+=fineH.data[fi];frs+=fineH.rough[fi];fn++;}if(fn){hAvg=fs/fn;rghV=frs/fn;}}   // fine-scale height AND roughness override at zoom-in
     hA[idx]=hAvg; rA[idx]=rS/n;gA[idx]=gS/n;bA[idx]=bS/n; wA[idx]=wS/n;pA[idx]=pS/n;   // wA = fraction of footprint that is snow/salt-white
     if(fineC){const cx0=Math.max(0,Math.floor((x0-R.x)/R.w*fineC.fw)),cx1=Math.min(fineC.fw-1,Math.ceil((x1-R.x)/R.w*fineC.fw)-1),cy0=Math.max(0,Math.floor((y0-R.y)/R.h*fineC.fh)),cy1=Math.min(fineC.fh-1,Math.ceil((y1-R.y)/R.h*fineC.fh)-1);const csx=Math.max(1,Math.floor((cx1-cx0+1)/8)),csy=Math.max(1,Math.floor((cy1-cy0+1)/8));let rs2=0,gs2=0,bs2=0,ws2=0,cn=0;for(let cy=cy0;cy<=cy1;cy+=csy)for(let cx=cx0;cx<=cx1;cx+=csx){const ci=(cy*fineC.fw+cx)*4,rr=fineC.data[ci],gg=fineC.data[ci+1],bb=fineC.data[ci+2];rs2+=rr;gs2+=gg;bs2+=bb;const mx=rr>gg?(rr>bb?rr:bb):(gg>bb?gg:bb),mn=rr<gg?(rr<bb?rr:bb):(gg<bb?gg:bb);if(mx>168&&mn>0.75*mx)ws2++;cn++;}if(cn){rA[idx]=rs2/cn;gA[idx]=gs2/cn;bA[idx]=bs2/cn;wA[idx]=ws2/cn;}}   // fine-scale satellite colour override at zoom-in
-    if(rghV===null){const rcx=(x0+x1)/2,rcy=(y0+y1)/2,rsx=Math.min(rf.sw-1,Math.max(0,Math.floor(rcx/rf.k))),rsy=Math.min(rf.sh-1,Math.max(0,Math.floor(rcy/rf.k)));rghV=rf.data[rsy*rf.sw+rsx];}   // base roughness fallback (zoomed out / tiles not loaded)
+    if(rghV===null){const rsx=Math.min(rf.sw-1,Math.max(0,Math.floor(wcx/rf.k))),rsy=Math.min(rf.sh-1,Math.max(0,Math.floor(wcy/rf.k)));rghV=rf.data[rsy*rf.sw+rsx];}   // base roughness fallback (zoomed out / tiles not loaded); roughSmooth is the GLOBAL world-space field, so it is sampled at the rotated centre
     rgh[idx]=rghV;
     let kcls=0,kb=0;for(let k=1;k<31;k++)if(kcHist[k]>kb){kb=kcHist[k];kcls=k;} kcA[idx]=kcls;   // dominant non-ocean Köppen class
     if(fineKop){const fx0=Math.max(0,Math.floor((x0-R.x)/R.w*fineKop.fw)),fx1=Math.min(fineKop.fw-1,Math.ceil((x1-R.x)/R.w*fineKop.fw)-1),fy0=Math.max(0,Math.floor((y0-R.y)/R.h*fineKop.fh)),fy1=Math.min(fineKop.fh-1,Math.ceil((y1-R.y)/R.h*fineKop.fh)-1);kcHist.fill(0);for(let fy=fy0;fy<=fy1;fy++)for(let fx=fx0;fx<=fx1;fx++){const kv=fineKop.data[fy*fineKop.fw+fx];if(kv>0&&kv<31)kcHist[kv]++;}let fb=0,fc=0;for(let k=1;k<31;k++)if(kcHist[k]>fb){fb=kcHist[k];fc=k;}if(fb>0)kcA[idx]=fc;}   // crisp vector Köppen overrides the raster dominant at zoom-in
-    ltA[idx]=latOf((y0+y1)/2); lf[idx]=lSum/n;
-    const pcx=Math.min(WSRC-1,Math.max(0,Math.round((x0+x1)/2))),pcy=Math.min(HSRC-1,Math.max(0,Math.round((y0+y1)/2)));
+    ltA[idx]=latOf(wcy); lf[idx]=lSum/n;   // per-tile latitude follows the ROTATED centre, so climate tracks the world, not the frame
+    const pcx=rotA?(((Math.round(wcx)%WSRC)+WSRC)%WSRC):Math.min(WSRC-1,Math.max(0,Math.round(wcx))),pcy=Math.min(HSRC-1,Math.max(0,Math.round(wcy)));
     proxA[idx]=Math.exp(-distPolar[pcy*WSRC+pcx]/PROX_SCALE_PX);   // 1 at a polar zone, decaying outward
   }
   if(vectorCoastActive()){const vf=rasterizeVectorLandFrac(W,H,R);for(let i=0;i<N;i++)lf[i]=vf[i];}   // crisp fractional land
@@ -1054,8 +1080,12 @@ function expandFactor(b){
   return 1+islandExpand*(targetL/L-1);
 }
 /* fill per-polygon so overlapping polygons UNION (OR), not XOR; holes still cut within each polygon */
+/* R is the FRAME rect, shifted by this world copy's wrap offset (callers cull against the AABB separately).
+   Rotated, each vertex goes world px -> + that offset -> frame, and the window uses the true frame rect, so
+   the output is frame-space and is drawn/indexed 1:1; at rot 0 both rects coincide and this is a direct map. */
 function fillPolysWindowed(g,vis,R,W,H,expand){
   if(expand&&islandExpand>0)updateExpandBounds(vis,R);
+  const a=rotRad(),rc=Math.cos(a),rs=Math.sin(a),vx=view.cx,vy=view.cy,RX=a?view.cx-view.spanX/2:R.x,ow=RX-R.x;
   for(const p of vis){
     const f=expand?expandFactor(p.b):1,cx=(p.b[0]+p.b[2])/2,cy=(p.b[1]+p.b[3])/2;
     g.beginPath();
@@ -1063,7 +1093,9 @@ function fillPolysWindowed(g,vis,R,W,H,expand){
       for(let i=0;i<ring.length;i++){
         let lon=ring[i][0],lat=ring[i][1];
         if(f!==1){lon=cx+(lon-cx)*f;lat=cy+(lat-cy)*f;}
-        const x=(((lon+180)/360*WSRC)-R.x)/R.w*W,y=(((90-lat)/180*HSRC)-R.y)/R.h*H;
+        let px=((lon+180)/360*WSRC)+ow,py=(90-lat)/180*HSRC;
+        if(a){const dx=px-vx,dy=py-vy;px=vx+rc*dx+rs*dy;py=vy-rs*dx+rc*dy;}
+        const x=(px-RX)/R.w*W,y=(py-R.y)/R.h*H;
         i?g.lineTo(x,y):g.moveTo(x,y);
       }
       g.closePath();
@@ -1100,11 +1132,11 @@ function ensureSatTiles(ids){
     img.src='data/sat_tiles/'+id+'.'+(STILE_META.ext||'png');
   }
 }
-function drawSatTile(g,img,id,R){
-  const q=id.split('_'),c=+q[0],r=+q[1],D=STILE_META.deg;
+function drawSatTile(g,img,id,R,W,H){
+  const q=id.split('_'),c=+q[0],r=+q[1],D=STILE_META.deg;W=W||cv.width;H=H||cv.height;   // W/H are the (possibly overscanned) dest extent R maps onto, not necessarily the canvas
   const sx=(c*D)/360*WSRC, sy=(r*D)/180*HSRC;                          // tile top-left (lon=c*D-180, lat=90-r*D) in source px
-  const dx=(sx-R.x)/R.w*cv.width, dy=(sy-R.y)/R.h*cv.height;
-  const dw=(D/360*WSRC)/R.w*cv.width, dh=(D/180*HSRC)/R.h*cv.height;
+  const dx=(sx-R.x)/R.w*W, dy=(sy-R.y)/R.h*H;
+  const dw=(D/360*WSRC)/R.w*W, dh=(D/180*HSRC)/R.h*H;
   g.drawImage(img,dx,dy,dw,dh);
 }
 
@@ -1112,7 +1144,7 @@ function drawSatTile(g,img,id,R){
 function buildHypsLUT(){HYPS_LUT=[new Uint8Array(256),new Uint8Array(256),new Uint8Array(256)];for(let k=0;k<256;k++){const c=rampLerp(HYPS_LAND,k/255);HYPS_LUT[0][k]=c[0];HYPS_LUT[1][k]=c[1];HYPS_LUT[2][k]=c[2];}}
 function jitElevCanvas(R){
   const F=buildFineHeightForView(R); if(!F) return null;
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h);
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+','+(view.rot||0);   // rot: srcRect() is rotation-independent, so the frame rect alone would memo a stale buffer
   if(key===_jeKey&&_jeCanvas) return _jeCanvas;
   if(!HYPS_LUT) buildHypsLUT();
   const hd=F.data,fw=F.fw,fh=F.fh;
@@ -1125,7 +1157,7 @@ function jitElevCanvas(R){
 function buildRoughLUT(){ROUGH_LUT=[new Uint8Array(256),new Uint8Array(256),new Uint8Array(256)];for(let k=0;k<256;k++){const c=heatColor(Math.pow(k/255,0.7));ROUGH_LUT[0][k]=c[0];ROUGH_LUT[1][k]=c[1];ROUGH_LUT[2][k]=c[2];}}   // gamma folded into index -> colour is a table lookup
 function jitRoughCanvas(R){
   const F=buildFineHeightForView(R); if(!F) return null;                             // needs the fine height buffer (zoomed in, tiles loaded, not wrapped)
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+'|'+roughHalo;
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+','+(view.rot||0)+'|'+roughHalo;   // rot: see jitElevCanvas
   if(key===_jrKey&&_jrCanvas) return _jrCanvas;
   if(!ROUGH_LUT) buildRoughLUT();
   const hd=F.data,fw=F.fw,fh=F.fh,g=new Float32Array(fw*fh),inv=1/RGH_REF;
@@ -1158,25 +1190,37 @@ function ensureHgtTiles(ids){
     img.src='data/hgt_tiles/'+id+'.'+(HTILE_META.ext||'png');
   }
 }
+/* Canvas transform taking WORLD source px straight to a per-view buffer that covers the frame rect R
+   at W x H, i.e. world -> frame (rotate by -rot about the view centre) -> buffer. Every per-view window
+   buffer is FRAME space, so classification and drawing index it with frame coords unchanged. */
+function setFrameTransform(g,R,W,H,a){
+  const kx=W/R.w,ky=H/R.h,ca=Math.cos(a),sa=Math.sin(a),vx=view.cx,vy=view.cy;
+  g.setTransform(kx*ca,-ky*sa,kx*sa,ky*ca,kx*(vx-ca*vx-sa*vy-R.x),ky*(vy+sa*vx-ca*vy-R.y));
+}
 // assemble a fine-scale height buffer for the current view from the height tiles (null -> fall back to the base grid)
 function buildFineHeightForView(R){
   if(!HTILE_META||windowWidthDeg()>coastThr) return null;
-  if(R.x<0||R.x+R.w>WSRC) return null;                              // antimeridian-crossing view -> base grid
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h);
+  const RA=rotAABB();
+  if(RA.x<0||RA.x+RA.w>WSRC) return null;                           // antimeridian-crossing SOURCE coverage (rotated corners included) -> base grid
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+','+(view.rot||0);
   if(key===_fineHKey&&_fineH) return _fineH;
   const fullW=HTILE_META.cols*HTILE_META.tileW, fullH=HTILE_META.rows*HTILE_META.tileH, CAP=2400;
   let fw=Math.round(R.w/WSRC*fullW), fh=Math.round(R.h/HSRC*fullH);
   if(fw>CAP){fh=Math.max(2,Math.round(fh*CAP/fw));fw=CAP;} if(fh>CAP){fw=Math.max(2,Math.round(fw*CAP/fh));fh=CAP;}
   fw=Math.max(2,fw);fh=Math.max(2,fh);
-  const ids=hgtTileIdsForView(R); ensureHgtTiles(ids);
+  const ids=hgtTileIdsForView(RA); ensureHgtTiles(ids);            // AABB: a rotated frame reaches tiles outside its own rect
   const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const g=cvs.getContext('2d');g.imageSmoothingEnabled=false;
+  const a=rotRad(),ov=a?R.w/fw:0;                                  // FRAME-SPACE buffer: one canvas transform maps world px -> frame px -> buffer px, so the tiles land rotated. ov = 1 buffer px of overlap, so rotated tile edges leave no seam
+  if(a)setFrameTransform(g,R,fw,fh,a);
   let drew=0;
   for(const id of ids){const t=HTILE.get(id);if(t&&t!=='load'&&t!=='err'){
     const q=id.split('_'),c=+q[0],rr=+q[1],D=HTILE_META.deg;
     const sx=(c*D)/360*WSRC, sy=(rr*D)/180*HSRC;
-    const dx=(sx-R.x)/R.w*fw, dy=(sy-R.y)/R.h*fh, dw=(D/360*WSRC)/R.w*fw, dh=(D/180*HSRC)/R.h*fh;
-    g.drawImage(t,dx,dy,dw,dh);drew++;
+    if(a){g.drawImage(t,sx,sy,(D/360*WSRC)+ov,(D/180*HSRC)+ov);}
+    else{const dx=(sx-R.x)/R.w*fw, dy=(sy-R.y)/R.h*fh, dw=(D/360*WSRC)/R.w*fw, dh=(D/180*HSRC)/R.h*fh;g.drawImage(t,dx,dy,dw,dh);}
+    drew++;
   }}
+  if(a)g.setTransform(1,0,0,1,0,0);
   if(drew<ids.length) return null;                                 // not fully loaded yet -> base grid this pass
   const px=g.getImageData(0,0,fw,fh).data, data=new Float32Array(fw*fh);
   for(let i=0;i<fw*fh;i++)data[i]=(px[i*4]*256+px[i*4+1])/65535;   // 16-bit two-channel (R=hi, G=lo) -> encoded height
@@ -1187,17 +1231,21 @@ function buildFineHeightForView(R){
 // rasterize the in-view Köppen VECTOR zones into a class-indexed buffer (red channel = class), so the Civ classification samples crisp Köppen at zoom-in instead of the coarse raster
 function buildFineKoppenForView(R,W,H){
   if(!KTILE_INDEX||windowWidthDeg()>coastThr) return null;
-  if(R.x<0||R.x+R.w>WSRC) return null;                              // antimeridian-crossing view -> raster koppenArr
-  const ids=tileIdsForView(R); ensureTiles(ids);
+  const RA=rotAABB();
+  if(RA.x<0||RA.x+RA.w>WSRC) return null;                           // antimeridian-crossing SOURCE coverage (rotated corners included) -> raster koppenArr
+  const ids=tileIdsForView(RA); ensureTiles(ids);
   for(const k of ids){const t=KTILE.get(k); if(t==='load'||t===undefined) return null;}   // not fully loaded -> raster this pass
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+','+W+'x'+H;
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+','+(view.rot||0)+','+W+'x'+H;
   if(key===_fineKopKey&&_fineKop) return _fineKop;
   const fw=Math.min(2000,Math.max(2,W*6)), fh=Math.min(2000,Math.max(2,H*6));   // ~6 px per Civ tile -> stable dominant-class histogram
   const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const g=cvs.getContext('2d');
   g.fillStyle='#000';g.fillRect(0,0,fw,fh);                        // background = class 0 (ocean/none)
-  const {vis}=koppenZoneCull(R);
+  const {vis}=koppenZoneCull(RA);
+  const a=rotRad(),ca=Math.cos(a),sa=Math.sin(a),vx=view.cx,vy=view.cy;   // VECTOR source: project each vertex world -> FRAME, so the buffer is frame-space with no rotated resampling
   for(const q of vis){ g.fillStyle='rgb('+(q.v&255)+',0,0)'; g.beginPath();
-    for(const ring of q.r){for(let i=0;i<ring.length;i++){const lon=ring[i][0],lat=ring[i][1];const x=(((lon+180)/360*WSRC)-R.x)/R.w*fw,y=(((90-lat)/180*HSRC)-R.y)/R.h*fh;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();}
+    for(const ring of q.r){for(let i=0;i<ring.length;i++){const lon=ring[i][0],lat=ring[i][1];let px=(lon+180)/360*WSRC,py=(90-lat)/180*HSRC;
+      if(a){const dx=px-vx,dy=py-vy;px=vx+ca*dx+sa*dy;py=vy-sa*dx+ca*dy;}
+      const x=(px-R.x)/R.w*fw,y=(py-R.y)/R.h*fh;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();}
     g.fill('evenodd'); }
   const px=g.getImageData(0,0,fw,fh).data, data=new Uint8Array(fw*fh);
   for(let i=0;i<fw*fh;i++)data[i]=px[i*4];                         // red channel = class index
@@ -1206,36 +1254,49 @@ function buildFineKoppenForView(R,W,H){
 // assemble a high-res satellite-colour buffer for the current view from the sat tiles, so the colour heuristics (aridity, brightness, redness, white-cover) run on crisp colour instead of the 2048 base
 function buildFineColorForView(R){
   if(!STILE_META||windowWidthDeg()>coastThr) return null;
-  if(R.x<0||R.x+R.w>WSRC) return null;                              // antimeridian-crossing view -> raster colorArr
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h);
+  const RA=rotAABB();
+  if(RA.x<0||RA.x+RA.w>WSRC) return null;                           // antimeridian-crossing SOURCE coverage (rotated corners included) -> raster colorArr
+  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+','+(view.rot||0);
   if(key===_fineCKey&&_fineC) return _fineC;
   const fullW=STILE_META.cols*STILE_META.tileW, fullH=STILE_META.rows*STILE_META.tileH, CAP=2000;
   let fw=Math.round(R.w/WSRC*fullW), fh=Math.round(R.h/HSRC*fullH);
   if(fw>CAP){fh=Math.max(2,Math.round(fh*CAP/fw));fw=CAP;} if(fh>CAP){fw=Math.max(2,Math.round(fw*CAP/fh));fh=CAP;}
   fw=Math.max(2,fw);fh=Math.max(2,fh);
-  const ids=satTileIdsForView(R); ensureSatTiles(ids);
+  const ids=satTileIdsForView(RA); ensureSatTiles(ids);            // AABB: a rotated frame reaches tiles outside its own rect
   const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const g=cvs.getContext('2d');g.imageSmoothingEnabled=true;
+  const a=rotRad(),ov=a?R.w/fw:0;                                  // FRAME-SPACE buffer (see setFrameTransform); ov = 1 buffer px of overlap so rotated tile edges leave no seam
+  if(a)setFrameTransform(g,R,fw,fh,a);
   let drew=0;
   for(const id of ids){const t=STILE.get(id);if(t&&t!=='load'&&t!=='err'){
     const q=id.split('_'),c=+q[0],rr=+q[1],D=STILE_META.deg;
     const sx=(c*D)/360*WSRC, sy=(rr*D)/180*HSRC;
-    const dx=(sx-R.x)/R.w*fw, dy=(sy-R.y)/R.h*fh, dw=(D/360*WSRC)/R.w*fw, dh=(D/180*HSRC)/R.h*fh;
-    g.drawImage(t,dx,dy,dw,dh);drew++;
+    if(a){g.drawImage(t,sx,sy,(D/360*WSRC)+ov,(D/180*HSRC)+ov);}
+    else{const dx=(sx-R.x)/R.w*fw, dy=(sy-R.y)/R.h*fh, dw=(D/360*WSRC)/R.w*fw, dh=(D/180*HSRC)/R.h*fh;g.drawImage(t,dx,dy,dw,dh);}
+    drew++;
   }}
+  if(a)g.setTransform(1,0,0,1,0,0);
   if(drew<ids.length) return null;                                 // not fully loaded yet -> raster colorArr this pass
   const data=g.getImageData(0,0,fw,fh).data;                       // RGBA, high-res satellite colour
   _fineCKey=key;_fineC={data,fw,fh};return _fineC;
 }
+function padRect(R,p){return {x:R.x-p,y:R.y-p,w:R.w+2*p,h:R.h+2*p};}   // grows a rect about its own centre (the rotated-draw composition assumes the source rect stays centred on the view)
 function drawLayerWithCoast(R){
-  const offs=wrapOffsets(R), dw=WSRC/R.w*cv.width, up=(R.w/cv.width)<1;
+  const a=rotRad(), RA=a?padRect(rotAABB(),R.w/cv.width*2):R;            // world AABB of the rotated frame (+2px slack so the corners are not exactly tangent); culls, tile ids and global-raster source rects must use it or the rotated corners come up empty
+  const CW=cv.width*(RA.w/R.w), CH=cv.height*(RA.h/R.h);                 // overscanned canvas at the same px scale; exactly the canvas when rot===0
+  const offs=wrapOffsets(RA), dw=WSRC/RA.w*CW, up=(R.w/cv.width)<1;
   const koppenVec=(mode==='climate'&&vectorKoppenActive());
   // ---- land interior colouring, drawn once per wrapped world copy (offs=[0] unless the view straddles +/-180) ----
-  if(koppenVec){ctx.fillStyle=KOPPEN_CSS[0];ctx.fillRect(0,0,cv.width,cv.height);}   // ocean/none background, once
-  for(const off of offs){
-    const Rk={x:R.x-off,y:R.y,w:R.w,h:R.h}, destX=(off-R.x)/R.w*cv.width;
-    if(koppenVec){fillKoppenZonesWindowed(ctx,koppenZoneCull(Rk).vis,Rk,cv.width,cv.height);}
-    else{ctx.imageSmoothingEnabled=(up&&mode!=='climate');ctx.drawImage(LAYERS[mode],0,R.y,WSRC,R.h,destX,0,dw,cv.height);ctx.imageSmoothingEnabled=false;}   // full-width copy positioned by destX
-    if(satTilesActive()){ctx.imageSmoothingEnabled=true;const ids=satTileIdsForView(Rk);ensureSatTiles(ids);for(const id of ids){const t=STILE.get(id);if(t&&t!=='load'&&t!=='err')drawSatTile(ctx,t,id,Rk);}ctx.imageSmoothingEnabled=false;}
+  if(koppenVec){ctx.fillStyle=KOPPEN_CSS[0];ctx.fillRect(0,0,cv.width,cv.height);   // ocean/none background, once
+    for(const off of offs){const Rk={x:R.x-off,y:R.y,w:R.w,h:R.h}, RAk={x:RA.x-off,y:RA.y,w:RA.w,h:RA.h};
+      fillKoppenZonesWindowed(ctx,koppenZoneCull(RAk).vis,Rk,cv.width,cv.height);}   // frame-space fill: 1:1, never inside the rotated transform
+  }else{
+    if(a){ctx.save();ctx.translate(cv.width/2,cv.height/2);ctx.rotate(-a);ctx.translate(-CW/2,-CH/2);}   // global rasters only: overscan covers the rotated corners, the canvas clips the rest
+    for(const off of offs){
+      const RAk={x:RA.x-off,y:RA.y,w:RA.w,h:RA.h}, destX=(off-RA.x)/RA.w*CW;
+      ctx.imageSmoothingEnabled=(up&&mode!=='climate');ctx.drawImage(LAYERS[mode],0,RA.y,WSRC,RA.h,destX,0,dw,CH);ctx.imageSmoothingEnabled=false;   // full-width copy positioned by destX
+      if(satTilesActive()){ctx.imageSmoothingEnabled=true;const ids=satTileIdsForView(RAk);ensureSatTiles(ids);for(const id of ids){const t=STILE.get(id);if(t&&t!=='load'&&t!=='err')drawSatTile(ctx,t,id,RAk,CW,CH);}ctx.imageSmoothingEnabled=false;}
+    }
+    if(a)ctx.restore();
   }
   if(mode==='roughness'){const jr=jitRoughCanvas(R);if(jr){ctx.imageSmoothingEnabled=true;ctx.drawImage(jr,0,0,cv.width,cv.height);ctx.imageSmoothingEnabled=false;}}   // fine-scale roughness, single buffer (no tile seams)
   if(mode==='elevation'){const je=jitElevCanvas(R);if(je){ctx.imageSmoothingEnabled=true;ctx.drawImage(je,0,0,cv.width,cv.height);ctx.imageSmoothingEnabled=false;}}   // fine-scale hypsometric tint, single buffer
@@ -1243,10 +1304,12 @@ function drawLayerWithCoast(R){
   if(aCanvas.width!==cv.width||aCanvas.height!==cv.height){aCanvas.width=cv.width;aCanvas.height=cv.height;wcCanvas.width=cv.width;wcCanvas.height=cv.height;}
   actx.imageSmoothingEnabled=false;actx.clearRect(0,0,cv.width,cv.height);
   const vec=vectorCoastActive();
-  for(const off of offs){
-    const Rk={x:R.x-off,y:R.y,w:R.w,h:R.h}, destX=(off-R.x)/R.w*cv.width;
-    if(vec){actx.fillStyle='#fff';fillPolysWindowed(actx,coastPathCull(Rk).vis,Rk,cv.width,cv.height,true);actx.globalCompositeOperation='destination-out';fillPolysWindowed(actx,lakePathCull(Rk).vis,Rk,cv.width,cv.height,false);actx.globalCompositeOperation='source-over';}
-    else{actx.drawImage(landAlphaCanvas,0,R.y,WSRC,R.h,destX,0,dw,cv.height);}
+  if(vec){for(const off of offs){const Rk={x:R.x-off,y:R.y,w:R.w,h:R.h}, RAk={x:RA.x-off,y:RA.y,w:RA.w,h:RA.h};   // frame-space fill: 1:1, never inside the rotated transform
+    actx.fillStyle='#fff';fillPolysWindowed(actx,coastPathCull(RAk).vis,Rk,cv.width,cv.height,true);actx.globalCompositeOperation='destination-out';fillPolysWindowed(actx,lakePathCull(RAk).vis,Rk,cv.width,cv.height,false);actx.globalCompositeOperation='source-over';}
+  }else{
+    if(a){actx.save();actx.translate(cv.width/2,cv.height/2);actx.rotate(-a);actx.translate(-CW/2,-CH/2);}   // global raster mask: same overscan as the layer above, so mask and colour stay registered
+    for(const off of offs)actx.drawImage(landAlphaCanvas,0,RA.y,WSRC,RA.h,(off-RA.x)/RA.w*CW,0,dw,CH);
+    if(a)actx.restore();
   }
   // ---- water (once), only where the coastline says water ----
   wctx.globalCompositeOperation='source-over';wctx.clearRect(0,0,cv.width,cv.height);wctx.fillStyle=waterColorFor(mode);wctx.fillRect(0,0,cv.width,cv.height);
@@ -1257,9 +1320,10 @@ function rasterizeVectorLandFrac(W,H,R){
   const ss=hexMode?4:3,sw=W*ss,sh=H*ss;   // hex: ss=4 so the half-tile row shift is a whole number of subpixels (2)
   if(lgCanvas.width!==sw||lgCanvas.height!==sh){lgCanvas.width=sw;lgCanvas.height=sh;}
   lgctx.fillStyle='#000';lgctx.fillRect(0,0,sw,sh);
-  for(const off of wrapOffsets(R)){const Rk={x:R.x-off,y:R.y,w:R.w,h:R.h};
-    lgctx.fillStyle='#fff';fillPolysWindowed(lgctx,coastPathCull(Rk).vis,Rk,sw,sh,true);   // land (+expander, union)
-    lgctx.fillStyle='#000';fillPolysWindowed(lgctx,lakePathCull(Rk).vis,Rk,sw,sh,false);   // lakes -> water
+  const RA=rotAABB();                                               // cull against the SOURCE coverage (rotated corners included); the mask itself comes out FRAME-space, so the tile loop below reads it 1:1
+  for(const off of wrapOffsets(RA)){const Rk={x:R.x-off,y:R.y,w:R.w,h:R.h},Rc={x:RA.x-off,y:RA.y,w:RA.w,h:RA.h};
+    lgctx.fillStyle='#fff';fillPolysWindowed(lgctx,coastPathCull(Rc).vis,Rk,sw,sh,true);   // land (+expander, union)
+    lgctx.fillStyle='#000';fillPolysWindowed(lgctx,lakePathCull(Rc).vis,Rk,sw,sh,false);   // lakes -> water
   }
   const d=lgctx.getImageData(0,0,sw,sh).data,frac=new Float32Array(W*H);
   for(let ty=0;ty<H;ty++){const ox=Math.round(hexShiftX(ty,H)*ss);for(let tx=0;tx<W;tx++){let s=0;for(let j=0;j<ss;j++)for(let i=0;i<ss;i++){if(d[((ty*ss+j)*sw+Math.min(sw-1,tx*ss+i+ox))*4]>127)s++;}frac[ty*W+tx]=s/(ss*ss);}}   // shifted rows read half a tile east (clamped at the frame edge; vector regime never wraps)
@@ -1268,12 +1332,12 @@ function rasterizeVectorLandFrac(W,H,R){
 
 /* ---------- rendering ---------- */
 function render(){
-  ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,cv.width,cv.height);const R=srcRect();
+  ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,cv.width,cv.height);const R=srcRect(),RA=rotAABB();
   if(mode==='roughness')ensureRough();
-  if(HTILE_META&&windowWidthDeg()<=coastThr&&R.x>=0&&R.x+R.w<=WSRC)ensureHgtTiles(hgtTileIdsForView(R));   // warm the fine-height cache for classification
-  if(KTILE_INDEX&&windowWidthDeg()<=coastThr&&R.x>=0&&R.x+R.w<=WSRC)ensureTiles(tileIdsForView(R));   // warm the koppen vector tiles for classification (any mode)
-  if(STILE_META&&windowWidthDeg()<=coastThr&&R.x>=0&&R.x+R.w<=WSRC)ensureSatTiles(satTileIdsForView(R));   // warm the satellite tiles for classification colour (any mode)
-  if(RMAN&&riverN>0)ensureRiverTiles(riverTileIdsForView(R));   // warm the river tiles (whole channels) overlapping the view
+  if(HTILE_META&&windowWidthDeg()<=coastThr&&RA.x>=0&&RA.x+RA.w<=WSRC)ensureHgtTiles(hgtTileIdsForView(RA));   // warm the fine-height cache for classification (AABB: rotated corners too)
+  if(KTILE_INDEX&&windowWidthDeg()<=coastThr&&RA.x>=0&&RA.x+RA.w<=WSRC)ensureTiles(tileIdsForView(RA));   // warm the koppen vector tiles for classification (any mode)
+  if(STILE_META&&windowWidthDeg()<=coastThr&&RA.x>=0&&RA.x+RA.w<=WSRC)ensureSatTiles(satTileIdsForView(RA));   // warm the satellite tiles for classification colour (any mode)
+  if(RMAN&&riverN>0)ensureRiverTiles(riverTileIdsForView(RA));   // warm the river tiles (whole channels) overlapping the view
   if(mode==='compose'){renderCompose();return;}   // compose mode has no geographic frame: no layers, rivers-in-view, graticule or axes
   if(mode==='civ'){
     lastTiles=evaluateFrame();   // classify + river-aware features, exactly as the export does — the preview IS the snapshot
@@ -1285,8 +1349,9 @@ function render(){
 }
 /* Source px -> canvas px for the current frame; the mask is stored in source px so it stays pinned
    to the world as you pan and zoom. */
-function worldToCanvas(R){return (sx,sy)=>[(sx-R.x)/R.w*cv.width,(sy-R.y)/R.h*cv.height];}
-function canvasToWorld(R,px,py){return [R.x+(px/cv.width)*R.w, R.y+(py/cv.height)*R.h];}
+function worldToCanvas(R){const a=rotRad();if(!a)return (sx,sy)=>[(sx-R.x)/R.w*cv.width,(sy-R.y)/R.h*cv.height];
+  return (sx,sy)=>{const [fx,fy]=worldToFrame(sx,sy);return [(fx-R.x)/R.w*cv.width,(fy-R.y)/R.h*cv.height];};}
+function canvasToWorld(R,px,py){return frameToWorld(R.x+(px/cv.width)*R.w, R.y+(py/cv.height)*R.h);}
 function drawWorldSelection(R){
   const live=_selDraw&&mode!=='compose'?_selDraw:null;
   const s=live||worldSel;
@@ -1302,8 +1367,9 @@ function evaluateFrame(){
   try{rivers=selectedOnly(computeRiverEdges(R,out.W,out.H,riverN,region.tiles));}   // deselected channels dropped here, so features and export agree
   catch(e){console.error('evaluateFrame: river pass failed; continuing with no rivers this frame:',e);}
   applyFeatures(region.tiles,out.W,out.H,rivers);   // flood plains need the river edges, so features come last
-  region.rivers=rivers;region.topLat=latOf(R.y);region.botLat=latOf(R.y+R.h);
-  region.hex=hexMode;region.frame={cx:view.cx,cy:view.cy,spanX:view.spanX};region.wrapX=R.w>=WSRC-1e-6?1:0;
+  const RA=rotAABB();   // rotated: the header's lat span is the world extent the frame reaches (metadata only — per-tile latitude drives classification)
+  region.rivers=rivers;region.topLat=latOf(RA.y);region.botLat=latOf(RA.y+RA.h);
+  region.hex=hexMode;region.frame={cx:view.cx,cy:view.cy,spanX:view.spanX,rot:view.rot||0};region.wrapX=(view.rot?0:(R.w>=WSRC-1e-6?1:0));   // a rotated frame cannot X-wrap
   return region;
 }
 /* ---------- Selection masks: box & lasso ----------
@@ -1321,10 +1387,19 @@ let _selCursor=null;       // live cursor point, for the rubber-band segment of 
 function activeSel(){return mode==='compose'?compSel:worldSel;}
 function setActiveSel(s){if(mode==='compose')compSel=s;else worldSel=s;}
 /* Rect is stored as its two corners so the same point list serves both kinds; a lasso keeps every
-   vertex. Both normalise to a polygon for the inside test, which keeps one code path. */
+   vertex. Both normalise to a polygon for the inside test, which keeps one code path.
+   A geographic box (s.frame) is rectangular IN THE VIEWER at any rotation: its corners are squared
+   up in FRAME space and handed back as a world quad, so it always draws as a screen-aligned box and
+   always selects a clean tile rectangle (a world-axis-aligned box would cover a staircase of tiles
+   under rotation, and capture would crop to a bbox padded with empty corners). The stored diagonal
+   stays world-pinned, so the box keeps its grip on the geography through pan, zoom and rotation.
+   Compose masks carry no `frame` flag — that canvas has no rotation. */
 function selPolygon(s){
   if(!s)return null;
-  if(s.kind==='rect'){const [a,b]=s.pts,x0=Math.min(a[0],b[0]),x1=Math.max(a[0],b[0]),y0=Math.min(a[1],b[1]),y1=Math.max(a[1],b[1]);
+  if(s.kind==='rect'){const [a,b]=s.pts;
+    if(s.frame&&view.rot){const A=worldToFrame(a[0],a[1]),B=worldToFrame(b[0],b[1]),fx0=Math.min(A[0],B[0]),fx1=Math.max(A[0],B[0]),fy0=Math.min(A[1],B[1]),fy1=Math.max(A[1],B[1]);
+      return [frameToWorld(fx0,fy0),frameToWorld(fx1,fy0),frameToWorld(fx1,fy1),frameToWorld(fx0,fy1)];}
+    const x0=Math.min(a[0],b[0]),x1=Math.max(a[0],b[0]),y0=Math.min(a[1],b[1]),y1=Math.max(a[1],b[1]);
     return [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];}
   return s.pts;
 }
@@ -1467,9 +1542,12 @@ function drawTileGrid(){ctx.save();ctx.strokeStyle='rgba(233,227,211,0.18)';ctx.
   for(let x=0;x<=out.W;x++){const px=Math.round(x/out.W*cv.width)+0.5;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,cv.height);ctx.stroke();}
   for(let y=0;y<=out.H;y++){const py=Math.round(y/out.H*cv.height)+0.5;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(cv.width,py);ctx.stroke();}ctx.restore();}
 function niceStep(range){const raw=range/6,p=Math.pow(10,Math.floor(Math.log10(Math.max(1e-6,raw)))),m=raw/p;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*p;}
-function drawGraticule(R){ctx.save();ctx.strokeStyle='rgba(69,193,208,0.16)';ctx.lineWidth=1;const latT=latOf(R.y),latB=latOf(R.y+R.h),lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,py=(sy-R.y)/R.h*cv.height;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(cv.width,py);ctx.stroke();}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,px=(sx-R.x)/R.w*cv.width;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,cv.height);ctx.stroke();}ctx.restore();}
-function drawAxes(R){const latAx=document.getElementById('latAxis'),lonAx=document.getElementById('lonAxis');latAx.innerHTML='';lonAx.innerHTML='';const latT=latOf(R.y),latB=latOf(R.y+R.h),lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,frac=(sy-R.y)/R.h;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.top=(frac*100)+'%';const v=Math.round(L);el.textContent=(v>0?v+'°N':v<0?(-v)+'°S':'0°');latAx.appendChild(el);}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,frac=(sx-R.x)/R.w;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.left=(frac*100)+'%';const v=Math.round(((L+540)%360)-180);el.textContent=(v>0?v+'°E':v<0?(-v)+'°W':'0°');lonAx.appendChild(el);}}
-function updateReadout(R){const latT=latOf(R.y),latB=latOf(R.y+R.h),kmW=(R.w/WSRC)*40075*Math.max(0.05,Math.cos((latT+latB)/2*Math.PI/180));document.getElementById('readout').innerHTML='center&nbsp; <b>'+latOf(view.cy).toFixed(1)+'°, '+wrapLon(lonOf(view.cx)).toFixed(1)+'°</b><br>span&nbsp;&nbsp;&nbsp; <b>'+Math.round(kmW).toLocaleString()+' km</b> wide · '+(latT-latB).toFixed(1)+'° lat';const vs=document.getElementById('viewSource');if(vs){const vec=vectorCoastActive();vs.textContent=vec?'Vector':'Raster';vs.classList.toggle('vec',vec);}}
+/* Lines are world-space segments spanning the rotated frame's AABB, mapped through worldToCanvas (affine,
+   so two endpoints suffice); ends overshoot the canvas when rotated and are clipped. RA===R when rot===0. */
+function drawGraticule(R){ctx.save();ctx.strokeStyle='rgba(69,193,208,0.16)';ctx.lineWidth=1;const RA=view.rot?rotAABB():R,P=worldToCanvas(R);const latT=latOf(RA.y),latB=latOf(RA.y+RA.h),lonL=lonOf(RA.x),lonR=lonOf(RA.x+RA.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,p0=P(RA.x,sy),p1=P(RA.x+RA.w,sy);ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,p0=P(sx,RA.y),p1=P(sx,RA.y+RA.h);ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();}ctx.restore();}
+function drawAxes(R){const latAx=document.getElementById('latAxis'),lonAx=document.getElementById('lonAxis');latAx.innerHTML='';lonAx.innerHTML='';if(view.rot)return;   // frame edges are not iso-lat/lon once rotated: no tick position is meaningful, the readout carries the angle instead
+  const latT=latOf(R.y),latB=latOf(R.y+R.h),lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,frac=(sy-R.y)/R.h;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.top=(frac*100)+'%';const v=Math.round(L);el.textContent=(v>0?v+'°N':v<0?(-v)+'°S':'0°');latAx.appendChild(el);}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,frac=(sx-R.x)/R.w;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.left=(frac*100)+'%';const v=Math.round(((L+540)%360)-180);el.textContent=(v>0?v+'°E':v<0?(-v)+'°W':'0°');lonAx.appendChild(el);}}
+function updateReadout(R){const latT=latOf(R.y),latB=latOf(R.y+R.h),kmW=(R.w/WSRC)*40075*Math.max(0.05,Math.cos((latT+latB)/2*Math.PI/180));document.getElementById('readout').innerHTML='center&nbsp; <b>'+latOf(view.cy).toFixed(1)+'°, '+wrapLon(lonOf(view.cx)).toFixed(1)+'°</b><br>span&nbsp;&nbsp;&nbsp; <b>'+Math.round(kmW).toLocaleString()+' km</b> wide · '+(latT-latB).toFixed(1)+'° lat'+(view.rot?'<br>rot&nbsp;&nbsp;&nbsp;&nbsp; <b>⟲ '+view.rot.toFixed(1).replace(/\.0$/,'')+'°</b> · ctrl+dblclick resets':'');const vs=document.getElementById('viewSource');if(vs){const vec=vectorCoastActive();vs.textContent=vec?'Vector':'Raster';vs.classList.toggle('vec',vec);}}
 
 /* ---------- WBS serializer (verified; kept in sync with scripts/civ4_wbs_core.js, validated by scripts/civ4_wbs_test.js) ---------- */
 function worldSizeFor(W,H){const n=W*H;if(n<=40*24)return'WORLDSIZE_DUEL';if(n<=56*36)return'WORLDSIZE_TINY';if(n<=66*44)return'WORLDSIZE_SMALL';if(n<=84*52)return'WORLDSIZE_STANDARD';if(n<=104*64)return'WORLDSIZE_LARGE';return'WORLDSIZE_HUGE';}
@@ -1480,8 +1558,37 @@ function worldSizeFor(W,H){const n=W*H;if(n<=40*24)return'WORLDSIZE_DUEL';if(n<=
    (per-reach netting missed those, leaving a spurious edge with an arbitrary direction). Channels
    are netted independently, so a tributary (its own rid by the channel decomposition) is never
    cancelled against the river it joins, keeping confluences connected. A reach without a rid is
-   its own channel (old per-reach behaviour). */
-function reachesToEdges(reaches,view,W,H){
+   its own channel (old per-reach behaviour).
+   `proj` (optional) replaces the axis-aligned view-rect projection with a rotation-aware one; the
+   lattice it lands on is identical in shape, so nothing downstream of the vertex snap knows or cares. */
+/* Rotation-aware lon/lat -> tile grid: lon/lat -> world source px -> worldToFrame -> grid. The grid is
+   FRAME space (screen-aligned, view-centred), so every downstream step -- corner snap, staircase,
+   net-flow, cleanup, nudge -- keeps working on the lattice the canvas actually shows. At rot=0 this is
+   algebraically the axis-aligned FX/FY below, so the north-up path is left literally untouched. */
+/* The world copy is chosen ONCE PER POLYLINE and then carried: the first vertex takes the copy
+   nearest the view, every later vertex the copy nearest ITS PREDECESSOR. Choosing per vertex
+   instead breaks exactly at the antipode, where (cx-wx)/WS sits on the .5 rounding boundary and two
+   adjacent vertices of one river land a whole world apart -- the staircase then connects opposite
+   frame corners and paints a straight diagonal across the viewer (and its flipped bbox defeats the
+   cull, so the antipodal river is always the one that shows up). Carrying the copy also unwraps a
+   genuine +/-180 crossing, which is the same operation. Call reset() to start a new polyline. */
+function makeRiverProj(o){
+  const rad=(o.rot||0)*Math.PI/180,c=Math.cos(rad),s=Math.sin(rad),R=o.rect,WS=o.WSRC,HS=o.HSRC,cx=o.cx,cy=o.cy;
+  let ref=null;
+  const P=(lon,lat)=>{
+    let wx=(lon+180)/360*WS;const wy=(90-lat)/180*HS;
+    wx+=Math.round(((ref==null?cx:ref)-wx)/WS)*WS;              // nearest copy: to the view for the first vertex, to the predecessor after
+    ref=wx;
+    let fx=wx,fy=wy;
+    if(rad){const dx=wx-cx,dy=wy-cy;fx=cx+c*dx+s*dy;fy=cy-s*dx+c*dy;}
+    return [(fx-R.x)/R.w*o.W,(fy-R.y)/R.h*o.H];
+  };
+  P.reset=()=>{ref=null;};
+  return P;
+}
+// null while north-up, so reachesToEdges keeps its exact axis-aligned fast path
+function riverProj(R,W,H){return (view.rot||0)?makeRiverProj({WSRC,HSRC,rect:R,W,H,rot:view.rot,cx:view.cx,cy:view.cy}):null;}
+function reachesToEdges(reaches,view,W,H,proj){
   const nof=new Map(),wof=new Map(),{lonL,lonR,latT,latB}=view,sx=W/(lonR-lonL),sy=H/(latT-latB);
   const FX=lon=>(lon-lonL)*sx,FY=lat=>(latT-lat)*sy;            // fx:0=west..W=east  fy:0=NORTH..H=south
   const cl=(v,hi)=>v<0?0:v>hi?hi:v;
@@ -1503,9 +1610,10 @@ function reachesToEdges(reaches,view,W,H){
         if(e2<adx&&y!==by){err+=adx;step(x,y,x,y+sy);y+=sy;moved=true;}
         if(!moved)break;}
     };
-    let px=null,py=null;
+    let px=null,py=null;if(proj&&proj.reset)proj.reset();        // one world copy per reach, like px/py
     for(const part of r.l)for(const pt of part){
-      const cx=cl(Math.round(FX(pt[0])),W),cy=cl(Math.round(FY(pt[1])),H);
+      const g=proj?proj(pt[0],pt[1]):[FX(pt[0]),FY(pt[1])];
+      const cx=cl(Math.round(g[0]),W),cy=cl(Math.round(g[1]),H);
       if(px!==null&&(cx!==px||cy!==py))connect(px,py,cx,cy);
       px=cx;py=cy;
     }
@@ -1537,9 +1645,12 @@ function prepTile(j){
 function maxRiverLodForZoom(){const ww=windowWidthDeg();return ww>120?0:ww>40?1:ww>12?2:3;}   // load smaller rivers only as the window narrows
 function riverTileIdsForView(R){        // manifest tiles overlapping the view whose LOD is coarse enough for this zoom
   if(!RMAN)return [];
-  const lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),latT=latOf(R.y),latB=latOf(R.y+R.h),ids=[],maxLod=maxRiverLodForZoom();
-  for(const t of RMAN.tiles){if((t.lod||0)>maxLod)continue;const b=t.b;if(b[2]<lonL||b[0]>lonR||b[3]<latB||b[1]>latT)continue;ids.push(t.id);}
-  return ids;
+  const latT=latOf(R.y),latB=latOf(R.y+R.h),ids=new Set(),maxLod=maxRiverLodForZoom();
+  for(const o of wrapOffsets(R)){       // a seam-straddling rect tests each world copy's own lon window (manifest bboxes live in [-180,180])
+    const lonL=lonOf(Math.max(R.x,o)-o),lonR=lonOf(Math.min(R.x+R.w,o+WSRC)-o);
+    for(const t of RMAN.tiles){if((t.lod||0)>maxLod)continue;const b=t.b;if(b[2]<lonL||b[0]>lonR||b[3]<latB||b[1]>latT)continue;ids.add(t.id);}
+  }
+  return [...ids];
 }
 function ensureRiverTiles(ids){         // fetch not-yet-loaded tiles; bump the memo generation + re-render as each lands
   for(const id of ids){ if(RTILE.has(id))continue; RTILE.set(id,'load');
@@ -1659,7 +1770,9 @@ function bridgeEstuaries(nof,wof,tiles,W,H,R,mouths){
         if(!isW(nx,ny)||comp[ny*W+nx]!==-1)continue;comp[ny*W+nx]=id;st.push([nx,ny]);}}
     size.push(n);
   }
-  const tileAt=(lon,lat)=>[Math.floor((lon-lonL)/(lonR-lonL)*W),Math.floor((latT-lat)/(latT-latB)*H)];
+  const PJ=riverProj(R,W,H);   // same lon/lat -> frame-grid projection the edges were rasterized with
+  const tileAt=PJ?((lon,lat)=>{PJ.reset();const p=PJ(lon,lat);return [Math.floor(p[0]),Math.floor(p[1])];})   // standalone probe: copy nearest the view, never a carried one
+                :((lon,lat)=>[Math.floor((lon-lonL)/(lonR-lonL)*W),Math.floor((latT-lat)/(latT-latB)*H)]);
   const isSeaLL=(lon,lat)=>{const t=tileAt(lon,lat);if(!isW(t[0],t[1]))return false;
     const id=comp[t[1]*W+t[0]];return id>=0&&size[id]>LAKE_MAX;};      // stops at the sea, passes through lakes
   const isAnyWaterLL=(lon,lat)=>{const t=tileAt(lon,lat);return isW(t[0],t[1]);};
@@ -1704,7 +1817,7 @@ function bridgeEstuaries(nof,wof,tiles,W,H,R,mouths){
     const line=traceEstuaryPath(P.field,RES,P.box,m,isSeaLL,dLon,dLat);
     if(line&&line.length>1)bridges.push({d:1,rid:m.rid,l:[line]});
   }
-  if(bridges.length){const be=reachesToEdges(bridges,{lonL,lonR,latT,latB},W,H);
+  if(bridges.length){const be=reachesToEdges(bridges,{lonL,lonR,latT,latB},W,H,PJ);
     for(const [k,v] of be.nof)if(!nof.has(k)){v.bridge=true;nof.set(k,v);}
     for(const [k,v] of be.wof)if(!wof.has(k)){v.bridge=true;wof.set(k,v);}}
 }
@@ -1836,19 +1949,29 @@ function computeRiverEdges(R,W,H,N,tiles){
   const empty={nof:new Map(),wof:new Map()};
   if(!RMAN||N<=0)return empty;
   const onSig=[...RIVER_ON].sort().join(',');   // selected rivers alter `keep`, so they must be part of the memo key
-  const key=_riverGen+'|'+R.x.toFixed(3)+'_'+R.y.toFixed(3)+'_'+R.w.toFixed(3)+'_'+R.h.toFixed(3)+'_'+W+'_'+H+'_'+N+'_'+onSig;
+  const key=_riverGen+'|'+R.x.toFixed(3)+'_'+R.y.toFixed(3)+'_'+R.w.toFixed(3)+'_'+R.h.toFixed(3)+'_'+(view.rot||0).toFixed(3)+'_'+W+'_'+H+'_'+N+'_'+onSig;
   let raw;
   if(_rivMemo.key===key){raw=_rivMemo.raw;}
   else{
+    const PJ=riverProj(R,W,H);
     const lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),latT=latOf(R.y),latB=latOf(R.y+R.h);
-    const inv=[];for(const t of RTILE.values()){if(!t||t==='load')continue;for(const f of t.features){const b=f.bbox;if(b[2]<lonL||b[0]>lonR||b[3]<latB||b[1]>latT)continue;inv.push(f);}}
+    /* In-frame test, and with it the top-N "in-frame discharge" ranking. North-up: the view rect in
+       lon/lat, exactly as before. Rotated: the projection is affine, so the grid AABB of the four
+       projected bbox corners IS the image of the bbox -- test that against the tile lattice. Tighter
+       than the world-space AABB both ways: rivers reaching into the rotated corners are kept, and
+       reaches sitting in the AABB's own corners (outside the frame) don't get clamped into a smear
+       along the frame border. */
+    const vis=PJ?(b=>{PJ.reset();const p=[PJ(b[0],b[1]),PJ(b[0],b[3]),PJ(b[2],b[1]),PJ(b[2],b[3])];   // reset: all four corners in ONE copy, else a flipped bbox spans the frame and nothing is ever culled
+        let x0=1/0,y0=1/0,x1=-1/0,y1=-1/0;for(const q of p){if(q[0]<x0)x0=q[0];if(q[0]>x1)x1=q[0];if(q[1]<y0)y0=q[1];if(q[1]>y1)y1=q[1];}
+        return !(x1<0||x0>W||y1<0||y0>H);}):(b=>!(b[2]<lonL||b[0]>lonR||b[3]<latB||b[1]>latT));
+    const inv=[];for(const t of RTILE.values()){if(!t||t==='load')continue;for(const f of t.features){if(!vis(f.bbox))continue;inv.push(f);}}
     if(!inv.length){raw=empty;_rivMemo={key,raw,inView:0};}
     else{
       const best=new Map();for(const f of inv){const c=best.get(f.rid);if(c==null||f.d>c)best.set(f.rid,f.d);}
       const keep=new Set([...best.entries()].sort((a,b)=>b[1]-a[1]).slice(0,N).map(e=>e[0]));
       for(const rid of RIVER_ON)if(best.has(rid))keep.add(rid);   // selected rivers stay in view even below the top-N discharge cutoff
       const sel=inv.filter(f=>keep.has(f.rid));
-      raw=reachesToEdges(sel,{lonL,lonR,latT,latB},W,H);
+      raw=reachesToEdges(sel,{lonL,lonR,latT,latB},W,H,PJ);
       // per-channel mouths for estuary bridging. A channel's downstream terminal is only a real
       // MOUTH if it doesn't land on another channel -- a tributary ends at a CONFLUENCE, and must
       // never go hunting for an estuary (it's usually far inland, and the search is expensive).
@@ -2118,7 +2241,7 @@ document.getElementById('tgGrid').addEventListener('change',e=>{showGrid=e.targe
 document.getElementById('tgGrat').addEventListener('change',e=>{showGrat=e.target.checked;render();});
 document.getElementById('zin').addEventListener('click',()=>{view.spanX*=0.7;clampView();lastTiles=null;schedule();});
 document.getElementById('zout').addEventListener('click',()=>{view.spanX/=0.7;clampView();lastTiles=null;schedule();});
-document.getElementById('zreset').addEventListener('click',()=>{view={cx:WSRC/2,cy:HSRC/2,spanX:1e9};clampView();lastTiles=null;schedule();});
+document.getElementById('zreset').addEventListener('click',()=>{view={cx:WSRC/2,cy:HSRC/2,spanX:1e9,rot:0};clampView();lastTiles=null;schedule();});
 document.getElementById('regen').addEventListener('click',()=>{generateWorld((Math.random()*1e6)|0);repaintLayers();lastTiles=null;render();refreshStats();});
 document.getElementById('generate').addEventListener('click',generate);
 
@@ -2161,10 +2284,30 @@ mapBox.addEventListener('mousemove',e=>{           // cursor hints that rivers a
   mapBox.style.cursor=riverHitAt(e.clientX,e.clientY)!=null?'pointer':'';
 });
 mapBox.addEventListener('mouseleave',()=>{if(selTool==='none')mapBox.style.cursor='';});
-mapBox.addEventListener('mousedown',e=>{if(mode==='compose'||selTool!=='none')return;drag={x:e.clientX,y:e.clientY};dragMoved=false;mapBox.classList.add('dragging');});   // no view panning in compose (no geographic frame) or while a selection tool is armed (the drag draws the mask)
+/* Plain drag pans; CTRL+drag rotates the world about the frame centre (-180..180]. Rotation happens
+   BEFORE capture, so snapshots arrive in compose already rotated at full sampling fidelity. */
+function rotDragAngle(e){const r=mapBox.getBoundingClientRect();return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI;}
+const ROT_SOFT_SNAP=3;   // degrees: snap to 0/±90/180 when this close (Shift: hard 15° detents)
+mapBox.addEventListener('mousedown',e=>{if(mode==='compose'||selTool!=='none')return;
+  if(e.ctrlKey){drag={kind:'rot',rot0:view.rot||0,a0:rotDragAngle(e)};dragMoved=false;mapBox.classList.add('dragging');return;}
+  drag={x:e.clientX,y:e.clientY};dragMoved=false;mapBox.classList.add('dragging');});   // no view panning in compose (no geographic frame) or while a selection tool is armed (the drag draws the mask)
 window.addEventListener('mouseup',()=>{drag=null;mapBox.classList.remove('dragging');});
-window.addEventListener('mousemove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)>2||Math.abs(dy)>2)dragMoved=true;drag={x:e.clientX,y:e.clientY};const r=mapBox.getBoundingClientRect();view.cx-=dx*(view.spanX/r.width);view.cy-=dy*(spanY()/r.height);clampView();lastTiles=null;schedule();});
-mapBox.addEventListener('wheel',e=>{if(mode==='compose')return;e.preventDefault();const r=mapBox.getBoundingClientRect(),R=srcRect(),ux=R.x+((e.clientX-r.left)/r.width)*R.w,uy=R.y+((e.clientY-r.top)/r.height)*R.h;view.spanX*=(e.deltaY<0?0.85:1/0.85);clampView();const R2=srcRect(),nx=R2.x+((e.clientX-r.left)/r.width)*R2.w,ny=R2.y+((e.clientY-r.top)/r.height)*R2.h;view.cx+=ux-nx;view.cy+=uy-ny;clampView();lastTiles=null;schedule();},{passive:false});
+window.addEventListener('mousemove',e=>{if(!drag)return;
+  if(drag.kind==='rot'){
+    dragMoved=true;
+    let rot=drag.rot0-(rotDragAngle(e)-drag.a0);              // minus: the world follows the cursor
+    if(e.shiftKey)rot=Math.round(rot/15)*15;
+    else for(const s of [-180,-90,0,90,180])if(Math.abs(rot-s)<=ROT_SOFT_SNAP)rot=s;
+    view.rot=normDeg(rot);clampView();lastTiles=null;schedule();return;
+  }
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)>2||Math.abs(dy)>2)dragMoved=true;drag={x:e.clientX,y:e.clientY};const r=mapBox.getBoundingClientRect();
+  const a=rotRad(),c=Math.cos(a),s=Math.sin(a),fdx=dx*(view.spanX/r.width),fdy=dy*(spanY()/r.height);
+  view.cx-=c*fdx-s*fdy;view.cy-=s*fdx+c*fdy;               // screen delta rotated into world space, so the map follows the cursor at any rotation
+  clampView();lastTiles=null;schedule();});
+mapBox.addEventListener('dblclick',e=>{if(mode==='compose'||selTool!=='none'||!e.ctrlKey)return;view.rot=0;clampView();lastTiles=null;schedule();});   // ctrl+double-click: reset rotation
+mapBox.addEventListener('wheel',e=>{if(mode==='compose')return;e.preventDefault();const r=mapBox.getBoundingClientRect(),px=(e.clientX-r.left)*(cv.width/r.width),py=(e.clientY-r.top)*(cv.height/r.height);
+  const [ux,uy]=canvasToWorld(srcRect(),px,py);view.spanX*=(e.deltaY<0?0.85:1/0.85);clampView();
+  const [nx,ny]=canvasToWorld(srcRect(),px,py);view.cx+=ux-nx;view.cy+=uy-ny;clampView();lastTiles=null;schedule();},{passive:false});
 
 /* ---------- selection input (shared by the geographic viewers and the compose canvas) ----------
    One gesture vocabulary in both places:
@@ -2197,7 +2340,7 @@ function selOnDown(e){
   if(selTool==='none'||e.button!==0)return;
   const p=selSpacePoint(e),c=selCanvasPoint(e);if(!p||!c)return;
   e.stopPropagation();if(e.cancelable)e.preventDefault();
-  if(selTool==='rect'){_selDraw={kind:'rect',pts:[p,p],anchor:c,moved:false,open:false};return;}
+  if(selTool==='rect'){_selDraw={kind:'rect',pts:[p,p],anchor:c,moved:false,open:false,frame:mode!=='compose'};return;}
   if(_selDraw&&_selDraw.open){                       // continuing a click-by-click polygon
     const first=_selDraw.pts[0],fc=selToCanvas(first);
     if(_selDraw.pts.length>=3&&fc&&Math.hypot(c[0]-fc[0],c[1]-fc[1])<=selClosePx()){selCommit({kind:'lasso',pts:_selDraw.pts.slice()});return;}
@@ -2232,7 +2375,7 @@ function selOnMove(e){
 }
 function selOnUp(e){
   if(selTool==='none'||!_selDraw)return;
-  if(_selDraw.kind==='rect'){const s=_selDraw;_selDraw=null;selCommit(s.moved?{kind:'rect',pts:s.pts.slice()}:null);return;}
+  if(_selDraw.kind==='rect'){const s=_selDraw;_selDraw=null;selCommit(s.moved?{kind:'rect',pts:s.pts.slice(),frame:s.frame}:null);return;}
   if(_selDraw.freehand){const s=_selDraw;_selDraw=null;selCommit({kind:'lasso',pts:s.pts.slice()});return;}
   selRepaint();   // a plain click: the polygon stays open, waiting for the next vertex
 }
@@ -2639,10 +2782,12 @@ function maskFrame(ev){
   const nX=nudgeX*R.w/W, nY=nudgeY*R.h/H;
   const inside=new Uint8Array(W*H);
   let x0=W,y0=H,x1=-1,y1=-1;
+  const rotA=rotRad();
   for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){
     const hX=hexShiftX(ty,H)*R.w/W;
-    const cx=R.x+((tx+0.5)/W)*R.w+nX+hX, cy=R.y+((ty+0.5)/H)*R.h+nY;
-    if(!selContains(s,cx,cy))continue;
+    const cx=R.x+((tx+0.5)/W)*R.w+nX+hX, cy=R.y+((ty+0.5)/H)*R.h+nY;   // footprint centre in FRAME space; the mask lives in world px, so rotate before testing
+    if(rotA){const w=frameToWorld(cx,cy);if(!selContains(s,w[0],w[1]))continue;}
+    else if(!selContains(s,cx,cy))continue;
     inside[ty*W+tx]=1;
     if(tx<x0)x0=tx;if(tx>x1)x1=tx;if(ty<y0)y0=ty;if(ty>y1)y1=ty;
   }
@@ -2667,7 +2812,7 @@ function maskFrame(ev){
     if(!inMask(gx,gy)||!inMask(gx+1,gy))continue;
     const ny=gy-y0,nx=gx-x0;if(nx<0||nx>=nw||ny<0||ny>=nh)continue;wof.set(ny+','+nx,e);}
   cleanupRiverEdges(nof,wof,tiles,nw,nh);
-  const latOfRow=r=>latOf(R.y+(r/H)*R.h+nY);   // row boundaries, so the cropped span matches the kept tiles
+  const latOfRow=r=>{const fy=R.y+(r/H)*R.h+nY;return latOf(rotA?frameToWorld(R.x+R.w/2,fy)[1]:fy);};   // row boundaries, so the cropped span matches the kept tiles; rotated, a row is not one latitude — take the frame's centre column
   return {tiles,W:nw,H:nh,rivers:{nof,wof},topLat:latOfRow(y0),botLat:latOfRow(y1+1),
     hex:ev.hex,frame:ev.frame,land:ev.land,hills:ev.hills,peaks:ev.peaks,masked:true};
 }
@@ -2682,7 +2827,7 @@ function captureSnapshot(name){
     name:(name&&name.trim())||autoSnapshotName(ev),
     W:ev.W,H:ev.H,hex:!!ev.hex,
     topLat:ev.topLat,botLat:ev.botLat,
-    frame:{cx:ev.frame.cx,cy:ev.frame.cy,spanX:ev.frame.spanX},
+    frame:{cx:ev.frame.cx,cy:ev.frame.cy,spanX:ev.frame.spanX,rot:ev.frame.rot||0},
     createdAt:Date.now(),
     tiles,
     rivers:{nof:Array.from(ev.rivers.nof.entries()),wof:Array.from(ev.rivers.wof.entries())},
