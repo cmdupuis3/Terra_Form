@@ -73,6 +73,12 @@ the folder.
 - View modes: satellite colour, elevation (hypsometric), roughness (heat ramp),
   Köppen climate (Beck et al. 2018 palette; ocean shown white), and the Civ tile
   preview.
+- Elevation and roughness switch from the 4096-px base to the fine height tiles as
+  soon as a base pixel would cover more than ~0.8 screen (CSS) pixels, i.e. just before
+  the base would start to magnify, provided the view is regional (the padded view spans
+  at most 1600 of the 2.5-degree tile cells, roughly an 80-degree window); past the
+  vector cutoff below they are always on. The fine buffer is built with a margin around
+  the view so dragging glides instead of re-snapping to whole base pixels.
 - **Coastline panel** — *vector cutoff* sets the coarse↔crisp zoom switch; *island
   bias* (↑) lowers the land %% a coastal tile needs so small islands survive; *seaway
   bias* (↑) raises it in land-surrounded spots so channels (e.g. around Marajó) open;

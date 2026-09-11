@@ -634,6 +634,19 @@ const bufCanvas=document.createElement('canvas'),bctx=bufCanvas.getContext('2d')
 const lgCanvas=document.createElement('canvas'),lgctx=lgCanvas.getContext('2d');
 function windowWidthDeg(){return view.spanX/WSRC*360;}
 function vectorCoastActive(){return windowWidthDeg()<=coastThr;}
+/* fine height tiles: on past the vector cutoff, OR as soon as a base px would cover >= 1/FINE_HGT_UP CSS px
+   (just before the 4096 base starts to magnify) as long as the padded view spans <= FINE_MAX_CELLS tile cells.
+   CSS px, not canvas px: on a high-DPI screen the canvas is 2x wider, which would switch the fine tiles on at the
+   whole-world view and queue every tile (~5000, ~250 MB) at startup, starving the river tiles and the UI.
+   The cell budget keeps the zoom trigger to regional views (~85 deg wide) whatever the monitor size. */
+const FINE_HGT_UP=1.25, FINE_MAX_CELLS=1600;
+function fineTileRect(){const R=srcRect(),a=rotRad(),w=R.w+2*(Math.ceil(R.w*FINE_PAD)+2),h=R.h+2*(Math.ceil(R.h*FINE_PAD)+2),c=Math.abs(Math.cos(a)),s=Math.abs(Math.sin(a)),W=w*c+h*s,H=w*s+h*c;return {x:view.cx-W/2,y:view.cy-H/2,w:W,h:H};}   // world AABB of the padded FRAME rect the fine buffer covers (view + FINE_PAD ring + snap slack), rotated about the view centre
+function fineCellCount(A){const D=HTILE_META.deg,cl=(v,hi)=>v<0?0:v>hi?hi:v;
+  const c0=cl(Math.floor((lonOf(A.x)+180)/D),HTILE_META.cols-1),c1=cl(Math.floor((lonOf(A.x+A.w)+180)/D),HTILE_META.cols-1);
+  const r0=cl(Math.floor((90-latOf(A.y))/D),HTILE_META.rows-1),r1=cl(Math.floor((90-latOf(A.y+A.h))/D),HTILE_META.rows-1);
+  return (c1-c0+1)*(r1-r0+1);}
+function fineHgtActive(){if(!HTILE_META)return false;if(windowWidthDeg()<=coastThr)return true;
+  return srcRect().w<=mapBox.clientWidth*FINE_HGT_UP&&fineCellCount(fineTileRect())<=FINE_MAX_CELLS;}
 
 /* viewer aspect is locked to the output grid (W/H) */
 function maxSpanX(){return Math.min(WSRC,HSRC*(out.W/effH()));}
@@ -728,6 +741,7 @@ function pctl(sorted,x){if(!sorted||!sorted.length)return x;let lo=0,hi=sorted.l
 function classifyRegion(W,H){
   const R=srcRect(),N=W*H;
   const fineH=buildFineHeightForView(R);   // fine-scale elevation from the zoom-in height tiles (null when zoomed out / not loaded)
+  const fSh=fineH?fineFrameShift(fineH):[0,0],fRx=fineH?fineH.R.x+fSh[0]:0,fRy=fineH?fineH.R.y+fSh[1]:0,fKx=fineH?fineH.fw/fineH.R.w:0,fKy=fineH?fineH.fh/fineH.R.h:0;   // the buffer covers its own padded FRAME rect (shifted for the current centre), so frame px -> buffer px goes through that, not the view rect
   const fineKop=buildFineKoppenForView(R,W,H);   // crisp Köppen from the vector tiles at zoom-in (null -> raster koppenArr)
   const fineC=buildFineColorForView(R);   // high-res satellite colour from the sat tiles at zoom-in (null -> raster colorArr)
   ensureRough();                                                   // build/refresh the smoothed roughness field for the current zoom + halo
@@ -751,7 +765,7 @@ function classifyRegion(W,H){
     const fcx=(x0+x1)/2,fcy=(y0+y1)/2;let wcx=fcx,wcy=fcy;
     if(rotA){const dx=fcx-vcx,dy=fcy-vcy;wcx=vcx+rcos*dx-rsin*dy;wcy=vcy+rsin*dx+rcos*dy;}   // ROTATED tile centre, in world px: drives latitude, base roughness and polar proximity
     let rghV=null;
-    if(fineH){let fs=0,fn=0,frs=0;const fx0=Math.max(0,Math.floor((x0-R.x)/R.w*fineH.fw)),fx1=Math.min(fineH.fw-1,Math.ceil((x1-R.x)/R.w*fineH.fw)-1),fy0=Math.max(0,Math.floor((y0-R.y)/R.h*fineH.fh)),fy1=Math.min(fineH.fh-1,Math.ceil((y1-R.y)/R.h*fineH.fh)-1);const fsx=Math.max(1,Math.floor((fx1-fx0+1)/10)),fsy=Math.max(1,Math.floor((fy1-fy0+1)/10));for(let fy=fy0;fy<=fy1;fy+=fsy)for(let fx=fx0;fx<=fx1;fx+=fsx){const fi=fy*fineH.fw+fx;fs+=fineH.data[fi];frs+=fineH.rough[fi];fn++;}if(fn){hAvg=fs/fn;rghV=frs/fn;}}   // fine-scale height AND roughness override at zoom-in
+    if(fineH){let fs=0,fn=0,frs=0;const fx0=Math.max(0,Math.floor((x0-fRx)*fKx)),fx1=Math.min(fineH.fw-1,Math.ceil((x1-fRx)*fKx)-1),fy0=Math.max(0,Math.floor((y0-fRy)*fKy)),fy1=Math.min(fineH.fh-1,Math.ceil((y1-fRy)*fKy)-1);const fsx=Math.max(1,Math.floor((fx1-fx0+1)/10)),fsy=Math.max(1,Math.floor((fy1-fy0+1)/10));for(let fy=fy0;fy<=fy1;fy+=fsy)for(let fx=fx0;fx<=fx1;fx+=fsx){const fi=fy*fineH.fw+fx;fs+=fineH.data[fi];frs+=fineH.rough[fi];fn++;}if(fn){hAvg=fs/fn;rghV=frs/fn;}}   // fine-scale height AND roughness override at zoom-in
     hA[idx]=hAvg; rA[idx]=rS/n;gA[idx]=gS/n;bA[idx]=bS/n; wA[idx]=wS/n;pA[idx]=pS/n;   // wA = fraction of footprint that is snow/salt-white
     if(fineC){const cx0=Math.max(0,Math.floor((x0-R.x)/R.w*fineC.fw)),cx1=Math.min(fineC.fw-1,Math.ceil((x1-R.x)/R.w*fineC.fw)-1),cy0=Math.max(0,Math.floor((y0-R.y)/R.h*fineC.fh)),cy1=Math.min(fineC.fh-1,Math.ceil((y1-R.y)/R.h*fineC.fh)-1);const csx=Math.max(1,Math.floor((cx1-cx0+1)/8)),csy=Math.max(1,Math.floor((cy1-cy0+1)/8));let rs2=0,gs2=0,bs2=0,ws2=0,cn=0;for(let cy=cy0;cy<=cy1;cy+=csy)for(let cx=cx0;cx<=cx1;cx+=csx){const ci=(cy*fineC.fw+cx)*4,rr=fineC.data[ci],gg=fineC.data[ci+1],bb=fineC.data[ci+2];rs2+=rr;gs2+=gg;bs2+=bb;const mx=rr>gg?(rr>bb?rr:bb):(gg>bb?gg:bb),mn=rr<gg?(rr<bb?rr:bb):(gg<bb?gg:bb);if(mx>168&&mn>0.75*mx)ws2++;cn++;}if(cn){rA[idx]=rs2/cn;gA[idx]=gs2/cn;bA[idx]=bs2/cn;wA[idx]=ws2/cn;}}   // fine-scale satellite colour override at zoom-in
     if(rghV===null){const rsx=Math.min(rf.sw-1,Math.max(0,Math.floor(wcx/rf.k))),rsy=Math.min(rf.sh-1,Math.max(0,Math.floor(wcy/rf.k)));rghV=rf.data[rsy*rf.sw+rsx];}   // base roughness fallback (zoomed out / tiles not loaded); roughSmooth is the GLOBAL world-space field, so it is sampled at the rotated centre
@@ -1109,9 +1123,9 @@ const wcCanvas=document.createElement('canvas'),wctx=wcCanvas.getContext('2d');
    colour view when zoomed past coastThr. External PNGs, fetched on demand and cached; the water/background
    colour logic is unchanged (the coastline water pass paints over the tiles' ocean afterwards). */
 let STILE_META=null; const STILE=new Map();
-let _jeKey=null,_jeCanvas=null,HYPS_LUT=null;   // JIT elevation colouring: view cache + 256-entry hypsometric LUT
+let _jeF=null,_jeCanvas=null,HYPS_LUT=null;   // JIT elevation colouring: view cache + 256-entry hypsometric LUT
 const RGH_REF=0.14;   // global 99.9th-pct gradient normalizer (matches the former pre-baked roughness tiles)
-let _jrKey=null,_jrCanvas=null,ROUGH_LUT=null;   // JIT roughness: view cache + 256-entry heat LUT (gamma baked into the index)
+let _jrF=null,_jrHalo=null,_jrCanvas=null,ROUGH_LUT=null;   // JIT roughness: view cache + 256-entry heat LUT (gamma baked into the index)
 function loadSatIndex(done){
   fetch('data/sat_tiles/index.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();})
     .then(j=>{STILE_META=j;done();})
@@ -1144,31 +1158,38 @@ function drawSatTile(g,img,id,R,W,H){
 function buildHypsLUT(){HYPS_LUT=[new Uint8Array(256),new Uint8Array(256),new Uint8Array(256)];for(let k=0;k<256;k++){const c=rampLerp(HYPS_LAND,k/255);HYPS_LUT[0][k]=c[0];HYPS_LUT[1][k]=c[1];HYPS_LUT[2][k]=c[2];}}
 function jitElevCanvas(R){
   const F=buildFineHeightForView(R); if(!F) return null;
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+','+(view.rot||0);   // rot: srcRect() is rotation-independent, so the frame rect alone would memo a stale buffer
-  if(key===_jeKey&&_jeCanvas) return _jeCanvas;
+  if(F===_jeF&&_jeCanvas) return _jeCanvas;   // one colouring per fine buffer; the buffer itself decides when the view has outrun it
   if(!HYPS_LUT) buildHypsLUT();
   const hd=F.data,fw=F.fw,fh=F.fh;
   const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const c2=cvs.getContext('2d'),img=c2.createImageData(fw,fh),o=img.data,LR=HYPS_LUT[0],LG=HYPS_LUT[1],LB=HYPS_LUT[2];
   for(let i=0;i<fw*fh;i++){let idx=(hd[i]*255)|0;if(idx>255)idx=255;const p=i*4;o[p]=LR[idx];o[p+1]=LG[idx];o[p+2]=LB[idx];o[p+3]=255;}
-  c2.putImageData(img,0,0);_jeKey=key;_jeCanvas=cvs;return cvs;
+  c2.putImageData(img,0,0);_jeF=F;_jeCanvas=cvs;return cvs;
 }
 
 // --- JIT roughness: fine-scale ruggedness computed on the fly from the grayscale height tiles (no pre-baked image files) ---
 function buildRoughLUT(){ROUGH_LUT=[new Uint8Array(256),new Uint8Array(256),new Uint8Array(256)];for(let k=0;k<256;k++){const c=heatColor(Math.pow(k/255,0.7));ROUGH_LUT[0][k]=c[0];ROUGH_LUT[1][k]=c[1];ROUGH_LUT[2][k]=c[2];}}   // gamma folded into index -> colour is a table lookup
 function jitRoughCanvas(R){
   const F=buildFineHeightForView(R); if(!F) return null;                             // needs the fine height buffer (zoomed in, tiles loaded, not wrapped)
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+','+(view.rot||0)+'|'+roughHalo;   // rot: see jitElevCanvas
-  if(key===_jrKey&&_jrCanvas) return _jrCanvas;
+  if(F===_jrF&&_jrHalo===roughHalo&&_jrCanvas) return _jrCanvas;
   if(!ROUGH_LUT) buildRoughLUT();
   const hd=F.data,fw=F.fw,fh=F.fh,g=new Float32Array(fw*fh),inv=1/RGH_REF;
   for(let y=0;y<fh;y++)for(let x=0;x<fw;x++){const i=y*fw+x,xr=x<fw-1?i+1:i,xl=x>0?i-1:i,yd=y<fh-1?i+fw:i,yu=y>0?i-fw:i;const gx=hd[xr]-hd[xl],gy=hd[yd]-hd[yu];let v=Math.sqrt(gx*gx+gy*gy)*inv;g[i]=v>1?1:v;}
   const haloR=Math.round(7*roughHalo); if(haloR>=1)smoothField(g,fw,fh,haloR);        // same halo the slider drives on the base
   const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const c2=cvs.getContext('2d'),img=c2.createImageData(fw,fh),o=img.data,LR=ROUGH_LUT[0],LG=ROUGH_LUT[1],LB=ROUGH_LUT[2];
   for(let i=0;i<fw*fh;i++){let idx=(g[i]*255)|0;if(idx>255)idx=255;const p=i*4;o[p]=LR[idx];o[p+1]=LG[idx];o[p+2]=LB[idx];o[p+3]=255;}
-  c2.putImageData(img,0,0);_jrKey=key;_jrCanvas=cvs;return cvs;
+  c2.putImageData(img,0,0);_jrF=F;_jrHalo=roughHalo;_jrCanvas=cvs;return cvs;
 }
 let HTILE_META=null, HTILE_SET=null; const HTILE=new Map();   // grayscale raw-height tiles: fine elevation for the Civ classification when zoomed in. HTILE_SET = Set of existing "col_row" ids (null -> dense/legacy, every tile assumed present)
-let _fineHKey=null,_fineH=null;
+let _fineH=null;   // {data,rough,fw,fh,R,vw,vh,cx,cy,rot}: FRAME-space buffer covering rect R (the view padded by FINE_PAD each side), built with the view centre at (cx,cy)
+const FINE_PAD=0.25;   // padding each side as a fraction of the view: a drag reuses the buffer until the view leaves it, instead of rebuilding (and jumping) at every whole base px
+/* Frame-space shift of a fine buffer's content for the CURRENT view centre. The frame rotates about the view centre,
+   so moving the centre by d moves every frame point by d - Rot(d): exactly 0 north-up, small but non-zero rotated. */
+function fineFrameShift(F){if(!F.rot)return [0,0];const dx=view.cx-F.cx,dy=view.cy-F.cy,a=rotRad(),ca=Math.cos(a),sa=Math.sin(a);return [dx-(ca*dx+sa*dy),dy-(-sa*dx+ca*dy)];}
+function fineSameZoom(F,R){return !!F&&F.rot===(view.rot||0)&&Math.abs(F.vw-R.w)<1e-6&&Math.abs(F.vh-R.h)<1e-6;}
+function fineCovers(F,R){if(!fineSameZoom(F,R))return false;const [dx,dy]=fineFrameShift(F),B=F.R;return R.x-dx>=B.x&&R.x+R.w-dx<=B.x+B.w&&R.y-dy>=B.y&&R.y+R.h-dy<=B.y+B.h;}
+/* Paint a per-fine-buffer canvas onto the view: the buffer's rect is placed sub-pixel exactly against the current frame
+   rect, so panning glides instead of stepping by whole base px; anything the buffer does not cover shows the base underneath */
+function drawFineBuf(g,cvs,F,R){const [dx,dy]=fineFrameShift(F),B=F.R;g.imageSmoothingEnabled=true;g.drawImage(cvs,(B.x+dx-R.x)/R.w*cv.width,(B.y+dy-R.y)/R.h*cv.height,B.w/R.w*cv.width,B.h/R.h*cv.height);g.imageSmoothingEnabled=false;}
 let _fineKopKey=null,_fineKop=null;
 let _fineCKey=null,_fineC=null;
 function loadHgtIndex(done){
@@ -1185,11 +1206,13 @@ function hgtTileIdsForView(R){
 function ensureHgtTiles(ids){
   for(const id of ids){ if(HTILE.has(id))continue; HTILE.set(id,'load');
     const img=new Image();
-    img.onload=()=>{HTILE.set(id,img);_fineHKey=null;render();};
+    img.onload=()=>{HTILE.set(id,img);schedule();};   // schedule, not render: hundreds can land per second, one redraw per frame is plenty. _fineH is only ever a COMPLETE buffer, so a new tile never invalidates it
     img.onerror=()=>{HTILE.set(id,'err');};
     img.src='data/hgt_tiles/'+id+'.'+(HTILE_META.ext||'png');
   }
+  if(HTILE.size>HTILE_MAX){const keep=new Set(hgtTileIdsForView(fineTileRect()));for(const id of ids)keep.add(id);for(const [k,v] of HTILE){if(HTILE.size<=HTILE_MAX)break;if(v!=='load'&&!keep.has(k))HTILE.delete(k);}}   // the wider activation can sweep in hundreds of tiles per view: drop ones the current view doesn't use
 }
+const HTILE_MAX=2500;   // > the tiles FINE_MAX_CELLS can ever ask for, so the cache holds a whole padded view plus recent neighbours
 /* Canvas transform taking WORLD source px straight to a per-view buffer that covers the frame rect R
    at W x H, i.e. world -> frame (rotate by -rot about the view centre) -> buffer. Every per-view window
    buffer is FRAME space, so classification and drawing index it with frame coords unchanged. */
@@ -1199,34 +1222,34 @@ function setFrameTransform(g,R,W,H,a){
 }
 // assemble a fine-scale height buffer for the current view from the height tiles (null -> fall back to the base grid)
 function buildFineHeightForView(R){
-  if(!HTILE_META||windowWidthDeg()>coastThr) return null;
+  if(!fineHgtActive()) return null;
   const RA=rotAABB();
   if(RA.x<0||RA.x+RA.w>WSRC) return null;                           // antimeridian-crossing SOURCE coverage (rotated corners included) -> base grid
-  const key=Math.round(R.x)+','+Math.round(R.y)+','+Math.round(R.w)+','+Math.round(R.h)+','+(view.rot||0);
-  if(key===_fineHKey&&_fineH) return _fineH;
-  const fullW=HTILE_META.cols*HTILE_META.tileW, fullH=HTILE_META.rows*HTILE_META.tileH, CAP=2400;
-  let fw=Math.round(R.w/WSRC*fullW), fh=Math.round(R.h/HSRC*fullH);
+  if(fineCovers(_fineH,R)) return _fineH;                          // same zoom + rotation and the (shifted) view still sits inside the padded buffer: reuse, no rebuild
+  const px=Math.ceil(R.w*FINE_PAD),py=Math.ceil(R.h*FINE_PAD);
+  const Rk={x:Math.floor(R.x)-px,y:Math.floor(R.y)-py,w:Math.ceil(R.w)+2*px+1,h:Math.ceil(R.h)+2*py+1};   // FRAME rect the buffer covers: the view plus a ring, snapped outward to whole base px
+  const fullW=HTILE_META.cols*HTILE_META.tileW, fullH=HTILE_META.rows*HTILE_META.tileH;
+  const CAP=Math.min(4096,Math.max(2400,Math.ceil(cv.width*(1+2*FINE_PAD))));   // keeps >= 1 fine px per screen px across the view at the activation zoom (the padded buffer is 1+2*FINE_PAD views wide)
+  let fw=Math.round(Rk.w/WSRC*fullW), fh=Math.round(Rk.h/HSRC*fullH);
   if(fw>CAP){fh=Math.max(2,Math.round(fh*CAP/fw));fw=CAP;} if(fh>CAP){fw=Math.max(2,Math.round(fw*CAP/fh));fh=CAP;}
   fw=Math.max(2,fw);fh=Math.max(2,fh);
-  const ids=hgtTileIdsForView(RA); ensureHgtTiles(ids);            // AABB: a rotated frame reaches tiles outside its own rect
+  const ids=hgtTileIdsForView(fineTileRect()); ensureHgtTiles(ids);   // AABB of the padded frame rect (a rotated ring reaches further than px/py along either axis; over-including only prefetches)
+  for(const id of ids){const t=HTILE.get(id);if(!t||t==='load'||t==='err')return fineSameZoom(_fineH,R)?_fineH:null;}   // not fully loaded yet -> keep the previous buffer at this zoom (partial coverage beats a flash back to the base grid), else base grid this pass. Checked before allocating/drawing, so a loading storm costs nothing here
   const cvs=document.createElement('canvas');cvs.width=fw;cvs.height=fh;const g=cvs.getContext('2d');g.imageSmoothingEnabled=false;
-  const a=rotRad(),ov=a?R.w/fw:0;                                  // FRAME-SPACE buffer: one canvas transform maps world px -> frame px -> buffer px, so the tiles land rotated. ov = 1 buffer px of overlap, so rotated tile edges leave no seam
-  if(a)setFrameTransform(g,R,fw,fh,a);
-  let drew=0;
-  for(const id of ids){const t=HTILE.get(id);if(t&&t!=='load'&&t!=='err'){
+  const a=rotRad(),ov=a?Rk.w/fw:0;                                 // FRAME-SPACE buffer: one canvas transform maps world px -> frame px -> buffer px, so the tiles land rotated. ov = 1 buffer px of overlap, so rotated tile edges leave no seam
+  if(a)setFrameTransform(g,Rk,fw,fh,a);
+  for(const id of ids){const t=HTILE.get(id);{
     const q=id.split('_'),c=+q[0],rr=+q[1],D=HTILE_META.deg;
     const sx=(c*D)/360*WSRC, sy=(rr*D)/180*HSRC;
     if(a){g.drawImage(t,sx,sy,(D/360*WSRC)+ov,(D/180*HSRC)+ov);}
-    else{const dx=(sx-R.x)/R.w*fw, dy=(sy-R.y)/R.h*fh, dw=(D/360*WSRC)/R.w*fw, dh=(D/180*HSRC)/R.h*fh;g.drawImage(t,dx,dy,dw,dh);}
-    drew++;
+    else{const dx=(sx-Rk.x)/Rk.w*fw, dy=(sy-Rk.y)/Rk.h*fh, dw=(D/360*WSRC)/Rk.w*fw, dh=(D/180*HSRC)/Rk.h*fh;g.drawImage(t,dx,dy,dw,dh);}
   }}
   if(a)g.setTransform(1,0,0,1,0,0);
-  if(drew<ids.length) return null;                                 // not fully loaded yet -> base grid this pass
-  const px=g.getImageData(0,0,fw,fh).data, data=new Float32Array(fw*fh);
-  for(let i=0;i<fw*fh;i++)data[i]=(px[i*4]*256+px[i*4+1])/65535;   // 16-bit two-channel (R=hi, G=lo) -> encoded height
+  const px4=g.getImageData(0,0,fw,fh).data, data=new Float32Array(fw*fh);
+  for(let i=0;i<fw*fh;i++)data[i]=(px4[i*4]*256+px4[i*4+1])/65535;   // 16-bit two-channel (R=hi, G=lo) -> encoded height
   const rough=new Float32Array(fw*fh);                             // fine roughness = gradient magnitude of the fine height, so classification ruggedness is fine too (not the 4096 base)
   for(let y=0;y<fh;y++)for(let x=0;x<fw;x++){const i=y*fw+x,xr=x<fw-1?i+1:i,xl=x>0?i-1:i,yd=y<fh-1?i+fw:i,yu=y>0?i-fw:i;const gx=data[xr]-data[xl],gy=data[yd]-data[yu];rough[i]=Math.sqrt(gx*gx+gy*gy);}
-  _fineHKey=key;_fineH={data,rough,fw,fh};return _fineH;
+  _fineH={data,rough,fw,fh,R:Rk,vw:R.w,vh:R.h,cx:view.cx,cy:view.cy,rot:view.rot||0};return _fineH;
 }
 // rasterize the in-view Köppen VECTOR zones into a class-indexed buffer (red channel = class), so the Civ classification samples crisp Köppen at zoom-in instead of the coarse raster
 function buildFineKoppenForView(R,W,H){
@@ -1298,8 +1321,8 @@ function drawLayerWithCoast(R){
     }
     if(a)ctx.restore();
   }
-  if(mode==='roughness'){const jr=jitRoughCanvas(R);if(jr){ctx.imageSmoothingEnabled=true;ctx.drawImage(jr,0,0,cv.width,cv.height);ctx.imageSmoothingEnabled=false;}}   // fine-scale roughness, single buffer (no tile seams)
-  if(mode==='elevation'){const je=jitElevCanvas(R);if(je){ctx.imageSmoothingEnabled=true;ctx.drawImage(je,0,0,cv.width,cv.height);ctx.imageSmoothingEnabled=false;}}   // fine-scale hypsometric tint, single buffer
+  if(mode==='roughness'){const jr=jitRoughCanvas(R);if(jr)drawFineBuf(ctx,jr,_jrF,R);}   // fine-scale roughness, single buffer (no tile seams), placed sub-pixel exactly
+  if(mode==='elevation'){const je=jitElevCanvas(R);if(je)drawFineBuf(ctx,je,_jeF,R);}   // fine-scale hypsometric tint, single buffer
   // ---- land-alpha mask, accumulated across copies ----
   if(aCanvas.width!==cv.width||aCanvas.height!==cv.height){aCanvas.width=cv.width;aCanvas.height=cv.height;wcCanvas.width=cv.width;wcCanvas.height=cv.height;}
   actx.imageSmoothingEnabled=false;actx.clearRect(0,0,cv.width,cv.height);
@@ -1334,7 +1357,7 @@ function rasterizeVectorLandFrac(W,H,R){
 function render(){
   ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,cv.width,cv.height);const R=srcRect(),RA=rotAABB();
   if(mode==='roughness')ensureRough();
-  if(HTILE_META&&windowWidthDeg()<=coastThr&&RA.x>=0&&RA.x+RA.w<=WSRC)ensureHgtTiles(hgtTileIdsForView(RA));   // warm the fine-height cache for classification (AABB: rotated corners too)
+  if(fineHgtActive()&&RA.x>=0&&RA.x+RA.w<=WSRC)ensureHgtTiles(hgtTileIdsForView(fineTileRect()));   // warm the fine-height cache (padded ring included, so the next buffer rebuild finds its tiles loaded; AABB: rotated corners too)
   if(KTILE_INDEX&&windowWidthDeg()<=coastThr&&RA.x>=0&&RA.x+RA.w<=WSRC)ensureTiles(tileIdsForView(RA));   // warm the koppen vector tiles for classification (any mode)
   if(STILE_META&&windowWidthDeg()<=coastThr&&RA.x>=0&&RA.x+RA.w<=WSRC)ensureSatTiles(satTileIdsForView(RA));   // warm the satellite tiles for classification colour (any mode)
   if(RMAN&&riverN>0)ensureRiverTiles(riverTileIdsForView(RA));   // warm the river tiles (whole channels) overlapping the view
