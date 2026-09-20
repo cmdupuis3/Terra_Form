@@ -56,7 +56,7 @@ KOPPEN_KEYS = [None, 'Af', 'Am', 'Aw', 'BWh', 'BWk', 'BSh', 'BSk', 'Csa', 'Csb',
                'Dfa', 'Dfb', 'Dfc', 'Dfd', 'ET', 'EF']
 SEA, PEAK = -500.0, 6000.0
 BASE_PPD = 4096 / 360.0          # the working grid (elev_4096.png)
-MAX_MOSAIC_PX = 400_000_000      # fine elevation read into memory for one frame
+MAX_WINDOW_PX = 48_000_000       # fine elevation held in memory for one band of the frame
 EPS = 1e-9
 CRS = "EPSG:4326"
 
@@ -160,23 +160,48 @@ def build_elevation(frame, base_path, fine):
     deg, tw, th = idx["deg"], idx["tileW"], idx["tileH"]
     have = set(idx["tiles"])
     ct0, ct1, rt0, rt1, ids = frame.tile_ids(deg)
-    mh, mw = (rt1 - rt0) * th, (ct1 - ct0) * tw
-    if mh * mw > MAX_MOSAIC_PX:
-        raise SystemExit(f"fine elevation for this frame is {mw}x{mh} px; lower --ppd or use --elev-source base")
-    mosaic_tf = Affine(deg / tw, 0.0, ct0 * deg - 180.0, 0.0, -deg / th, 90.0 - rt0 * deg)
-    # The tiles are land only: the ocean between them comes from the base.
-    mosaic = resample_global(base, (mh, mw), mosaic_tf, Resampling.bilinear)
-    n = 0
+    fppd = tw / deg                      # the tiles' own density, 120 px/deg
+    mw = (ct1 - ct0) * tw                # the mosaic's width: the whole run of tile columns
+    rows_of = {}
     for c, r, tid in ids:
         if tid in have:
-            y, x = (r - rt0) * th, (c - ct0) * tw
-            mosaic[y:y + th, x:x + tw] = rg16_decode(os.path.join(tdir, f"{tid}.{idx.get('ext', 'png')}"))
-            n += 1
+            rows_of.setdefault(r, []).append((c, tid))
+
+    # The whole mosaic is 43200x18000 px for a global frame — 3 GB of float32, which is why this
+    # goes band by band down the output instead. A band is as many output rows as keep its source
+    # window under the budget, padded by the few source rows a resampling kernel reaches over.
+    src_per_dst = fppd / frame.ppd
+    band = max(1, int(MAX_WINDOW_PX / max(1, mw) / max(1.0, src_per_dst)))
+    pad = int(math.ceil(src_per_dst)) + 2
+    fine_rows = int(round(180.0 * fppd))
+    fine_down = frame.ppd < fppd
+    resampling = Resampling.average if fine_down else Resampling.bilinear
     code = np.zeros((frame.h, frame.w), np.float32)
-    fine_down = frame.ppd < tw / deg
-    reproject(mosaic, code, src_transform=mosaic_tf, src_crs=CRS, dst_transform=frame.transform(), dst_crs=CRS,
-              resampling=Resampling.average if fine_down else Resampling.bilinear)
-    return code, f"fine hgt_tiles ({n} tiles)"
+    used = set()
+    for y0 in range(0, frame.h, band):
+        y1 = min(frame.h, y0 + band)
+        lat_top = frame.lat_max - y0 * frame.res
+        lat_bot = frame.lat_max - y1 * frame.res
+        s0 = max(0, int(math.floor((90.0 - lat_top) * fppd)) - pad)
+        s1 = min(fine_rows, int(math.ceil((90.0 - lat_bot) * fppd)) + pad)
+        win_tf = Affine(1.0 / fppd, 0.0, ct0 * deg - 180.0, 0.0, -1.0 / fppd, 90.0 - s0 / fppd)
+        # The tiles are land only: the ocean between them comes from the base.
+        win = resample_global(base, (s1 - s0, mw), win_tf, Resampling.bilinear)
+        for r in range(rt0, rt1):
+            ty0 = int(round(r * deg * fppd))
+            a0, a1 = max(s0, ty0), min(s1, ty0 + th)
+            if a1 <= a0:
+                continue
+            for c, tid in rows_of.get(r, ()):
+                t = rg16_decode(os.path.join(tdir, f"{tid}.{idx.get('ext', 'png')}"))
+                win[a0 - s0:a1 - s0, (c - ct0) * tw:(c - ct0) * tw + tw] = t[a0 - ty0:a1 - ty0]
+                used.add(tid)
+        out = np.zeros((y1 - y0, frame.w), np.float32)
+        reproject(win, out, src_transform=win_tf, src_crs=CRS,
+                  dst_transform=Affine(frame.res, 0.0, frame.lon_min, 0.0, -frame.res, lat_top), dst_crs=CRS,
+                  resampling=resampling)
+        code[y0:y1] = out
+    return code, f"fine hgt_tiles ({len(used)} tiles)"
 
 
 def build_koppen(frame, base_path, fine):
