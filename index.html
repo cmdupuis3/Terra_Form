@@ -143,7 +143,7 @@
 <header>
   <div class="brand">TERRA<span>·</span>WBS</div>
   <div class="tagline">real-world raster &rarr; Civilization&nbsp;IV worldbuilder save</div>
-  <div class="pill" title="Elevation (NASA-derived), coastline + lakes (Natural Earth 10m), Köppen climate (Beck et al. 2023), and satellite colour (NASA Blue Marble Next Generation, Aug 2004) are all real data.">REAL ELEVATION · COAST · KÖPPEN · SATELLITE</div>
+  <div class="pill" title="Elevation (NASA-derived), coastline (© OpenStreetMap contributors, ODbL; Natural Earth 10m zoomed out), lakes (Natural Earth 10m), Köppen climate (Beck et al. 2023), and satellite colour (NASA Blue Marble Next Generation, Aug 2004) are all real data.">REAL ELEVATION · COAST (© OSM) · KÖPPEN · SATELLITE</div>
 </header>
 
 <main>
@@ -1065,13 +1065,75 @@ function loadCoastHires(done){
     .then(j=>{COAST_HI=(j&&j.polys)?j:null;done();})
     .catch(e=>{COAST_HI=null;console.warn('coast_hires.json not loaded ('+e+') -- windowed coast uses the reduced set. Serve over http(s).');done();});
 }
+/* ---------- OSM coast tiles (two LODs; built by scripts/build_coast_tiles.py) ----------
+   data/coast_tiles/index.json lists, per LOD, the cells that have a file ("tiles") and the cells that are
+   solid land ("land"); every other cell is open water. lod "c" = 10 deg cells at ~300 m, used from the vector
+   cutoff down to FINE_COAST_DEG; lod "f" = 2.5 deg cells at ~22 m below that. A tile is a gzipped stream of
+   quantized delta-varint rings (format in the script header); it decodes into the same {b,r} polygons the
+   NE set uses, so fillPolysWindowed / coastPathCull / the island expander need no changes. While a view's
+   tiles are still loading the other LOD stands in, then the NE hires set, so the coast never blinks out. */
+let CTILE_META=null; const CTILE=new Map();   // "lod/col_row" -> 'load' | 'err' | {polys}
+const CTILE_MAX=600, FINE_COAST_DEG=8;
+function loadCoastTileIndex(done){
+  fetch('data/coast_tiles/index.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();})
+    .then(j=>{for(const k in j.lods){const L=j.lods[k];L.set=new Set(L.tiles);L.landSet=new Set(L.land);L.rects=new Map();}CTILE_META=j;done();})
+    .catch(e=>{CTILE_META=null;console.warn('coast_tiles/index.json not loaded ('+e+') -- windowed coast uses the Natural Earth set.');done();});
+}
+function coastLod(){if(!CTILE_META)return null;const w=windowWidthDeg();if(w>coastThr)return null;const L=CTILE_META.lods;return (w<=FINE_COAST_DEG&&L.f)?'f':L.c?'c':L.f?'f':null;}
+/* cells of one LOD the rect touches, split into files to fetch and solid-land cells (R may be wrap-shifted; cols clamp) */
+function coastTileIdsForView(R,lod){
+  const L=CTILE_META.lods[lod],D=L.deg,lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h);
+  const c0=Math.max(0,Math.floor((lonMin+180)/D)),c1=Math.min(L.cols-1,Math.floor((lonMax+180)/D));
+  const r0=Math.max(0,Math.floor((90-latMax)/D)),r1=Math.min(L.rows-1,Math.floor((90-latMin)/D));
+  const fetchIds=[],land=[];for(let c=c0;c<=c1;c++)for(let r=r0;r<=r1;r++){const k=c+'_'+r;if(L.set.has(k))fetchIds.push(k);else if(L.landSet.has(k))land.push(k);}
+  return {fetch:fetchIds,land};
+}
+function landRectPoly(lod,id){const L=CTILE_META.lods[lod];let p=L.rects.get(id);if(p)return p;const [c,r]=id.split('_').map(Number),D=L.deg,e=D*0.002;   // tiny overlap so abutting fills union to full coverage (no anti-alias seam)
+  const x0=-180+c*D-e,x1=x0+D+2*e,y1=90-r*D+e,y0=y1-D-2*e;p={b:[x0,y0,x1,y1],r:[[[x0,y0],[x1,y0],[x1,y1],[x0,y1]]]};L.rects.set(id,p);return p;}
+async function decodeCoastTile(buf){
+  let u8=new Uint8Array(buf);
+  if(u8[0]===0x1f&&u8[1]===0x8b)u8=new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+  if(u8[0]!==0x43||u8[1]!==0x53||u8[2]!==0x54||u8[3]!==0x31)throw new Error('not a CST1 tile');
+  const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength),lon0=dv.getFloat64(8,true),lat0=dv.getFloat64(16,true),q=dv.getFloat64(24,true);
+  let p=32;const vi=()=>{let r=0,s=0,b;do{b=u8[p++];r+=(b&0x7f)*2**s;s+=7;}while(b&0x80);return r;},zz=u=>(u%2?-(u+1)/2:u/2);
+  const n=vi(),polys=new Array(n);
+  for(let i=0;i<n;i++){const nr=vi(),rings=new Array(nr);let bx0=Infinity,by0=Infinity,bx1=-Infinity,by1=-Infinity;
+    for(let j=0;j<nr;j++){const nv=vi(),ring=new Array(nv);let x=0,y=0;
+      for(let k=0;k<nv;k++){x+=zz(vi());y+=zz(vi());const lon=lon0+x*q,lat=lat0+y*q;ring[k]=[lon,lat];if(!j){if(lon<bx0)bx0=lon;if(lon>bx1)bx1=lon;if(lat<by0)by0=lat;if(lat>by1)by1=lat;}}
+      rings[j]=ring;}
+    polys[i]={b:[bx0,by0,bx1,by1],r:rings};}
+  return {polys};
+}
+function ensureCoastTiles(ids,lod){
+  const L=CTILE_META.lods[lod];
+  for(const id of ids){const key=lod+'/'+id;if(CTILE.has(key))continue;CTILE.set(key,'load');
+    fetch('data/coast_tiles/'+lod+'/'+id+'.'+(L.ext||'bin')).then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.arrayBuffer();}).then(decodeCoastTile)
+      .then(t=>{CTILE.set(key,t);lastTiles=null;schedule();}).catch(e=>{CTILE.set(key,'err');console.warn('coast tile '+key+' failed ('+e+')');});}
+  if(CTILE.size>CTILE_MAX){const keep=new Set();for(const k in CTILE_META.lods)for(const off of wrapOffsets(rotAABB())){const RA=rotAABB();for(const id of coastTileIdsForView({x:RA.x-off,y:RA.y,w:RA.w,h:RA.h},k).fetch)keep.add(k+'/'+id);}
+    for(const [k,v] of CTILE){if(CTILE.size<=CTILE_MAX)break;if(v!=='load'&&!keep.has(k))CTILE.delete(k);}}
+}
+/* warm the tiles the current view needs: the active LOD, plus the fine LOD a little before it switches on */
+function warmCoastTiles(RA){
+  if(!CTILE_META||windowWidthDeg()>coastThr)return;const lod=coastLod();if(!lod)return;
+  for(const off of wrapOffsets(RA)){const Rk={x:RA.x-off,y:RA.y,w:RA.w,h:RA.h};ensureCoastTiles(coastTileIdsForView(Rk,lod).fetch,lod);
+    if(lod==='c'&&CTILE_META.lods.f&&windowWidthDeg()<=FINE_COAST_DEG*1.5)ensureCoastTiles(coastTileIdsForView(Rk,'f').fetch,'f');}
+}
+/* the polygons covering R from the OSM tiles, or null when some needed tile isn't decoded yet (caller falls back) */
+function coastTilePolys(R){
+  const lod=coastLod();if(!lod)return null;
+  for(const k of (lod==='f'?['f','c']:['c','f'])){const L=CTILE_META.lods[k];if(!L)continue;
+    const need=coastTileIdsForView(R,k),out=[];let ok=true;
+    for(const id of need.fetch){const t=CTILE.get(k+'/'+id);if(!t||t==='load'||t==='err'){ok=false;break;}for(const p of t.polys)out.push(p);}
+    if(!ok)continue;for(const id of need.land)out.push(landRectPoly(k,id));return out;}
+  return null;
+}
 let LAKES_HI=null;   // hires lakes (data/lakes_hires.json); used in the windowed pass when loaded. Coarse land mask keeps the embedded reduced LAKES.
 function loadLakesHires(done){
   fetch('data/lakes_hires.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();})
     .then(j=>{LAKES_HI=(j&&j.polys)?j:null;landMask=buildLandMask(LAKES_HI);landAlphaCanvas=buildLandAlpha(LAKES_HI);done();})
     .catch(e=>{LAKES_HI=null;console.warn('lakes_hires.json not loaded ('+e+') -- windowed lakes use the reduced set. Serve over http(s).');done();});
 }
-function coastPathCull(R){const lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h);const vis=[];for(const p of (COAST_HI||COAST).polys){const b=p.b;if(b[2]<lonMin||b[0]>lonMax||b[3]<latMin||b[1]>latMax)continue;vis.push(p);}return {vis};}
+function coastPathCull(R){const lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h);const vis=[];for(const p of (coastTilePolys(R)||(COAST_HI||COAST).polys)){const b=p.b;if(b[2]<lonMin||b[0]>lonMax||b[3]<latMin||b[1]>latMax)continue;vis.push(p);}return {vis};}   // OSM tiles when loaded, else the NE set
 function lakePathCull(R){const lonMin=lonOf(R.x),lonMax=lonOf(R.x+R.w),latMax=latOf(R.y),latMin=latOf(R.y+R.h);const vis=[];for(const p of (LAKES_HI||LAKES).polys){const b=p.b;if(b[2]<lonMin||b[0]>lonMax||b[3]<latMin||b[1]>latMax)continue;vis.push(p);}return {vis};}
 function waterColorFor(m){return m==='climate'?'rgb(255,255,255)':m==='roughness'?'rgb(0,0,0)':m==='elevation'?'rgb(24,74,120)':'rgb(20,66,104)';}
 let islandExpand=0, expandSteep=1.0, expandMaxMult=1.5, expLmin=0, expLmax=-1, expAreaCap=Infinity;
@@ -1360,6 +1422,7 @@ function render(){
   if(fineHgtActive()&&RA.x>=0&&RA.x+RA.w<=WSRC)ensureHgtTiles(hgtTileIdsForView(fineTileRect()));   // warm the fine-height cache (padded ring included, so the next buffer rebuild finds its tiles loaded; AABB: rotated corners too)
   if(KTILE_INDEX&&windowWidthDeg()<=coastThr&&RA.x>=0&&RA.x+RA.w<=WSRC)ensureTiles(tileIdsForView(RA));   // warm the koppen vector tiles for classification (any mode)
   if(STILE_META&&windowWidthDeg()<=coastThr&&RA.x>=0&&RA.x+RA.w<=WSRC)ensureSatTiles(satTileIdsForView(RA));   // warm the satellite tiles for classification colour (any mode)
+  warmCoastTiles(RA);   // OSM coast tiles for the windowed vector pass (wrap copies handled inside)
   if(RMAN&&riverN>0)ensureRiverTiles(riverTileIdsForView(RA));   // warm the river tiles (whole channels) overlapping the view
   if(mode==='compose'){renderCompose();return;}   // compose mode has no geographic frame: no layers, rivers-in-view, graticule or axes
   if(mode==='civ'){
@@ -3228,7 +3291,7 @@ function maybeWarnFileProtocol(){
 function loadCoast(done){fetch('data/coast_10m.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{COAST=(j&&j.polys)?j:{polys:[]};done();}).catch(e=>{baseDataMissing=true;COAST={polys:[]};console.warn('coast_10m.json not loaded ('+e+') -- serve over http(s).');done();});}
 function loadLakes(done){fetch('data/lakes_10m.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{LAKES=(j&&j.polys)?j:{polys:[]};done();}).catch(e=>{LAKES={polys:[]};console.warn('lakes_10m.json not loaded ('+e+').');done();});}
 function loadRivers(done){fetch('data/river_tiles/manifest.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{RMAN=j;updateRiverReadout();done();}).catch(e=>{RMAN=null;console.warn('river tiles manifest not loaded ('+e+') -- serve over http(s).');done();});}
-loadElevation(()=>loadKoppen(()=>loadColor(()=>loadCoast(()=>loadLakes(()=>{landMask=buildLandMask();landAlphaCanvas=buildLandAlpha();generateWorld(1);repaintLayers();relayout();maybeWarnFileProtocol();maybeWarnMissingData();checkDataHealth();loadKoppenIndex(()=>render());loadLakesHires(()=>render());loadCoastHires(()=>render());loadPlayas(()=>render());loadSatIndex(()=>render());loadHgtIndex(()=>render());loadRivers(()=>render());})))));
+loadElevation(()=>loadKoppen(()=>loadColor(()=>loadCoast(()=>loadLakes(()=>{landMask=buildLandMask();landAlphaCanvas=buildLandAlpha();generateWorld(1);repaintLayers();relayout();maybeWarnFileProtocol();maybeWarnMissingData();checkDataHealth();loadKoppenIndex(()=>render());loadLakesHires(()=>render());loadCoastHires(()=>render());loadCoastTileIndex(()=>render());loadPlayas(()=>render());loadSatIndex(()=>render());loadHgtIndex(()=>render());loadRivers(()=>render());})))));
 </script>
 </body>
 </html>

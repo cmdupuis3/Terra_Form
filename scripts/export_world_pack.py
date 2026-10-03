@@ -29,7 +29,9 @@ Each layer is drawn from the finest source the density calls for (--elev-source,
                                                      dropped ocean cells are filled from the base)
   koppen     base: data/koppen_2048.png        fine: data/koppen_tiles polygons, rasterised
              (written at its own resolution when the frame is a whole multiple of it)
-  land       base: data/coast_10m + lakes_10m  fine: data/coast_hires + lakes_hires
+  land       base: data/coast_10m + lakes_10m  fine: data/coast_tiles (OSM land polygons, ODbL; the
+                                                     fine LOD) + lakes_hires; coast_hires when the
+                                                     tile set is absent
   rivers     data/river_tiles, rasterised at any density
 
     # the Earth without the poles, on the working grid
@@ -270,14 +272,80 @@ def burn(frame, shapes, all_touched=False):
     return out
 
 
+def decode_coast_tile(path):
+    """One data/coast_tiles/<lod>/<col>_<row>.bin -> list of GeoJSON polygons. Format: see the header of
+    scripts/build_coast_tiles.py (gzip, "CST1", f64 lon0/lat0/q, then varint counts and zigzag-varint
+    deltas in units of q; ring 0 is the exterior, the closing vertex is implicit)."""
+    import gzip, struct
+    with open(path, "rb") as f:
+        buf = f.read()
+    if buf[:2] == b"\x1f\x8b":
+        buf = gzip.decompress(buf)
+    assert buf[:4] == b"CST1", path
+    lon0, lat0, q = struct.unpack_from("<ddd", buf, 8)
+    pos = 32
+
+    def varint():
+        nonlocal pos
+        r, s = 0, 0
+        while True:
+            b = buf[pos]; pos += 1
+            r |= (b & 0x7F) << s; s += 7
+            if not b & 0x80:
+                return r
+
+    def zz(u):
+        return (u >> 1) ^ -(u & 1)
+
+    polys = []
+    for _ in range(varint()):
+        rings = []
+        for _ in range(varint()):
+            n, x, y, ring = varint(), 0, 0, []
+            for _ in range(n):
+                x += zz(varint()); y += zz(varint())
+                ring.append([lon0 + x * q, lat0 + y * q])
+            ring.append(ring[0])
+            rings.append(ring)
+        if rings and len(rings[0]) >= 4:
+            polys.append({"type": "Polygon", "coordinates": rings})
+    return polys
+
+
+def coast_tile_polys(frame, lod="f"):
+    """Land polygons under the frame from data/coast_tiles (OSM land polygons, built by
+    scripts/build_coast_tiles.py), or None when the tile set isn't there. Cells the index marks as
+    solid land come back as their cell rectangle; cells absent from the index are open water."""
+    root = os.path.join(DATA, "coast_tiles")
+    ipath = os.path.join(root, "index.json")
+    if not os.path.exists(ipath):
+        return None
+    idx = json.load(open(ipath, encoding="utf-8"))
+    L = idx["lods"].get(lod) or next(iter(idx["lods"].values()))
+    have, land, D = set(L["tiles"]), set(L["land"]), float(L["deg"])
+    geoms = []
+    for _, r, key in frame.tile_ids(D)[4]:
+        if key in have:
+            geoms += decode_coast_tile(os.path.join(root, lod, key + "." + L.get("ext", "bin")))
+        elif key in land:
+            c = int(key.split("_")[0])
+            x0, y1 = -180.0 + c * D, 90.0 - r * D
+            geoms.append({"type": "Polygon", "coordinates": [[[x0, y1 - D], [x0 + D, y1 - D], [x0 + D, y1], [x0, y1], [x0, y1 - D]]]})
+    return geoms
+
+
 def build_landmask(frame, fine):
     stem = "hires" if fine else "10m"
-    land = polys_in_frame(os.path.join(DATA, f"coast_{stem}.json"), frame)
+    land = coast_tile_polys(frame) if fine else None
+    coast_src = "coast_tiles/f (OpenStreetMap)"
+    if land is None:
+        land = polys_in_frame(os.path.join(DATA, f"coast_{stem}.json"), frame)
+        coast_src = f"coast_{stem}"
     lakes = polys_in_frame(os.path.join(DATA, f"lakes_{stem}.json"), frame)
     mask = burn(frame, [(g, 1) for g in land])
     if lakes:
         mask[burn(frame, [(g, 1) for g in lakes]) == 1] = 0
-    return (mask * 255).astype(np.uint8), f"coast_{stem} + lakes_{stem} ({len(land)} + {len(lakes)} polygons)"
+    return (mask * 255).astype(np.uint8), f"{coast_src} + lakes_{stem} ({len(land)} + {len(lakes)} polygons)"
 
 
 def river_shapes(frame):
@@ -368,7 +436,8 @@ def main():
                   "sources": {"elevation": elev_src, "koppen": kop_src, "landMask": land_src, "rivers": "river_tiles"}},
         "attribution": [
             "Elevation: ETOPO 2022 (NOAA NCEI), " + ("30 arc-second" if fine["elev"] else "decimated to the working grid"),
-            "Coastline and lakes: " + ("Terra_Form high-resolution land polygons" if fine["coast"] else "Natural Earth 10 m (public domain)"),
+            ("Coastline: OpenStreetMap land polygons (© OpenStreetMap contributors, ODbL 1.0); lakes: Natural Earth 10 m (public domain)"
+             if "OpenStreetMap" in land_src else "Coastline and lakes: Natural Earth 10 m (public domain)"),
             "Climate: Koppen-Geiger, Beck et al. 2023 (CC BY 4.0)",
             "Rivers: HydroRIVERS v1.0 (CC BY 4.0), channel-reduced by Terra_Form",
         ],

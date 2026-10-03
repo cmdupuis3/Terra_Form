@@ -175,7 +175,8 @@ scripts/
   civ4_wbs_core.js             viewer tile grid -> Civ4 WBSave serializer (inlined in index.html)
   civ4_wbs_test.js             serializer test suite (dual node/browser; no node needed)
   coastline_to_mask.py         land-polygon vector -> equirectangular raster mask
-  reduce_coastline.py          land-polygon vector -> compact JSON for the app
+  reduce_coastline.py          land-polygon vector -> compact JSON for the app (zoomed-out set)
+  build_coast_tiles.py         OSM land polygons -> data/coast_tiles (two-LOD, gzipped binary tiles)
 ```
 
 ## Regenerating the coastline data
@@ -199,6 +200,35 @@ python scripts/reduce_coastline.py ne_50m_land.geojson --eps 0.04 --out coast_re
 Lower `--eps` for higher fidelity (e.g. GSHHG full resolution); raise it for a
 smaller embed.
 
+### Zoomed-in coast: OSM land polygons (`data/coast_tiles/`)
+
+Natural Earth 10m is a 1:10M product: an atoll like Tarawa is five blobs with
+vertices ~1.5 km apart, so once the window is narrower than the vector cutoff the
+app switches to tiles cut from the OpenStreetMap land polygons instead. Two LODs
+share one index (`data/coast_tiles/index.json`):
+
+| lod | cells | tolerance | used when the window is |
+|-----|-------|-----------|-------------------------|
+| `c` | 10°  (36×18)   | ~300 m | ≤ vector cutoff (30°) and > 8° wide |
+| `f` | 2.5° (144×72)  | ~22 m  | ≤ 8° wide (`FINE_COAST_DEG` in index.html) |
+
+Each tile is clipped (with a small overlap so neighbouring fills union without
+a seam), unioned, Douglas-Peucker simplified with a tolerance that grows up to
+3× for low-complexity outlines, stripped of islets below the LOD's resolution,
+quantized, delta/varint encoded and gzipped (format in the script header).
+Cells that are solid land are only listed in the index; cells with no land are
+absent. While a view's tiles are still downloading the other LOD, then the
+Natural Earth set, stands in.
+
+```bash
+pip install pyogrio shapely numpy
+# land-polygons-split-4326.zip from https://osmdata.openstreetmap.de/data/land-polygons.html (~1 GB)
+python scripts/build_coast_tiles.py land-polygons-split-4326/land_polygons.shp --workers 4 --cache presimplified.npz
+```
+
+`--no-adapt` builds with a flat tolerance (to measure what the adaptive term
+saves); `--only 141_35` builds single cells for debugging.
+
 ```bash
 # real elevation -> equirectangular height PNG (embed as ELEV_SRC data: URL)
 python scripts/dem_to_height.py etopo_2022_60s.tif --width 2048 --height 1024 --out elev.png
@@ -213,7 +243,12 @@ serialize time.
 
 ## Data provenance
 
-- Coastline & lakes: Natural Earth 1:10m land + lakes (public domain).
+- Coastline, zoomed in (`data/coast_tiles/`): OpenStreetMap land polygons via
+  osmdata.openstreetmap.de — **© OpenStreetMap contributors, ODbL 1.0**. The
+  tiles are a derivative database and stay under the ODbL (licence and build
+  provenance sit in that directory); maps and saves the app produces from them
+  are "produced works" that only need the credit line.
+- Coastline zoomed out, and lakes: Natural Earth 1:10m land + lakes (public domain).
 - Köppen: Beck et al. (2023) high-resolution (1 km) Köppen-Geiger map
   (`koppen_geiger_0p00833333.tif`, CC BY 4.0, gloh2o.org), area-majority
   downsampled to the 2048×1024 working grid and embedded as the class-index
