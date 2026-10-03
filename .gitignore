@@ -1,0 +1,4 @@
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+graft/
+# python bytecode from running the scripts
+__pycache__/
