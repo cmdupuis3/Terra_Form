@@ -200,12 +200,24 @@ python scripts/reduce_coastline.py ne_50m_land.geojson --eps 0.04 --out coast_re
 Lower `--eps` for higher fidelity (e.g. GSHHG full resolution); raise it for a
 smaller embed.
 
-### Zoomed-in coast: OSM land polygons (`data/coast_tiles/`)
+### Zoomed-in coast and lakes: OSM land polygons + HydroLAKES (`data/coast_tiles/`, `data/lake_tiles/`)
 
 Natural Earth 10m is a 1:10M product: an atoll like Tarawa is five blobs with
 vertices ~1.5 km apart, so once the window is narrower than the vector cutoff the
-app switches to tiles cut from the OpenStreetMap land polygons instead. Two LODs
-share one index (`data/coast_tiles/index.json`):
+app switches to tiles cut from the OpenStreetMap land polygons instead. Lakes
+come from HydroLAKES in the same format (OSM maps Lake Pontchartrain, the
+IJsselmeer and similar lagoons as inland water rather than coastline, and
+Natural Earth's lake set treats them as sea, so the NE lakes can't pair with the
+OSM coast). Lakes under 1 km² (fine LOD) / 10 km² (coarse) are dropped, and
+lake outlines take 2.5× the coast tolerance (~55 m / ~830 m: HydroLAKES
+shorelines are 30 m-spaced fractals that barely simplify at coast precision, and
+a lake edge 55 m off can't move a Civ tile). Coastal lagoons that OSM maps as
+inland water, Natural Earth maps as sea and HydroLAKES lacks (Lagoa dos Patos)
+are recovered as `OSM land − NE land` per cell — parts ≥ 10 km² with a mean
+width ≥ 1 km that aren't a whole OSM island, north of 60°S (OSM's Antarctic
+coastline follows the ice-shelf edge, NE's the grounding line) — and carry NE's
+~1 km outline.
+Both tile sets share the same two LODs and one index layout:
 
 | lod | cells | tolerance | used when the window is |
 |-----|-------|-----------|-------------------------|
@@ -216,14 +228,17 @@ Each tile is clipped (with a small overlap so neighbouring fills union without
 a seam), unioned, Douglas-Peucker simplified with a tolerance that grows up to
 3× for low-complexity outlines, stripped of islets below the LOD's resolution,
 quantized, delta/varint encoded and gzipped (format in the script header).
-Cells that are solid land are only listed in the index; cells with no land are
-absent. While a view's tiles are still downloading the other LOD, then the
-Natural Earth set, stands in.
+Cells the layer covers completely are only listed in the index (`"full"`);
+cells with none of it are absent. While a view's tiles are still downloading
+the other LOD, then the Natural Earth set, stands in.
 
 ```bash
 pip install pyogrio shapely numpy
 # land-polygons-split-4326.zip from https://osmdata.openstreetmap.de/data/land-polygons.html (~1 GB)
 python scripts/build_coast_tiles.py land-polygons-split-4326/land_polygons.shp --workers 4 --cache presimplified.npz
+# HydroLAKES_polys_v10_shp.zip from https://www.hydrosheds.org/products/hydrolakes (~1 GB)
+python scripts/build_coast_tiles.py HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp --kind lakes --workers 4 --cache presimplified_lakes.npz \
+    --diff-land presimplified.npz --diff-ne data/coast_hires.json   # lagoon supplement; needs the land build's cache
 ```
 
 `--no-adapt` builds with a flat tolerance (to measure what the adaptive term
@@ -248,7 +263,9 @@ serialize time.
   tiles are a derivative database and stay under the ODbL (licence and build
   provenance sit in that directory); maps and saves the app produces from them
   are "produced works" that only need the credit line.
-- Coastline zoomed out, and lakes: Natural Earth 1:10m land + lakes (public domain).
+- Lakes, zoomed in (`data/lake_tiles/`): HydroLAKES v1.0 (Messager et al. 2016,
+  hydrosheds.org, **CC BY 4.0**), lakes ≥ 1 km².
+- Coastline and lakes zoomed out: Natural Earth 1:10m land + lakes (public domain).
 - Köppen: Beck et al. (2023) high-resolution (1 km) Köppen-Geiger map
   (`koppen_geiger_0p00833333.tif`, CC BY 4.0, gloh2o.org), area-majority
   downsampled to the 2048×1024 working grid and embedded as the class-index

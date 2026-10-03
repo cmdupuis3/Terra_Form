@@ -312,22 +312,22 @@ def decode_coast_tile(path):
     return polys
 
 
-def coast_tile_polys(frame, lod="f"):
-    """Land polygons under the frame from data/coast_tiles (OSM land polygons, built by
-    scripts/build_coast_tiles.py), or None when the tile set isn't there. Cells the index marks as
-    solid land come back as their cell rectangle; cells absent from the index are open water."""
-    root = os.path.join(DATA, "coast_tiles")
+def vector_tile_polys(frame, tileset, lod="f"):
+    """Polygons under the frame from data/<tileset>/ (coast_tiles = OSM land, lake_tiles = HydroLAKES;
+    both built by scripts/build_coast_tiles.py), or None when the tile set isn't there. Cells the index
+    marks "full" come back as their cell rectangle; cells absent from the index hold none of the layer."""
+    root = os.path.join(DATA, tileset)
     ipath = os.path.join(root, "index.json")
     if not os.path.exists(ipath):
         return None
     idx = json.load(open(ipath, encoding="utf-8"))
     L = idx["lods"].get(lod) or next(iter(idx["lods"].values()))
-    have, land, D = set(L["tiles"]), set(L["land"]), float(L["deg"])
+    have, full, D = set(L["tiles"]), set(L.get("full") or L.get("land") or []), float(L["deg"])
     geoms = []
     for _, r, key in frame.tile_ids(D)[4]:
         if key in have:
             geoms += decode_coast_tile(os.path.join(root, lod, key + "." + L.get("ext", "bin")))
-        elif key in land:
+        elif key in full:
             c = int(key.split("_")[0])
             x0, y1 = -180.0 + c * D, 90.0 - r * D
             geoms.append({"type": "Polygon", "coordinates": [[[x0, y1 - D], [x0 + D, y1 - D], [x0 + D, y1], [x0, y1], [x0, y1 - D]]]})
@@ -336,16 +336,20 @@ def coast_tile_polys(frame, lod="f"):
 
 def build_landmask(frame, fine):
     stem = "hires" if fine else "10m"
-    land = coast_tile_polys(frame) if fine else None
+    land = vector_tile_polys(frame, "coast_tiles") if fine else None
     coast_src = "coast_tiles/f (OpenStreetMap)"
     if land is None:
         land = polys_in_frame(os.path.join(DATA, f"coast_{stem}.json"), frame)
         coast_src = f"coast_{stem}"
-    lakes = polys_in_frame(os.path.join(DATA, f"lakes_{stem}.json"), frame)
+    lakes = vector_tile_polys(frame, "lake_tiles") if fine else None
+    lake_src = "lake_tiles/f (HydroLAKES)"
+    if lakes is None:
+        lakes = polys_in_frame(os.path.join(DATA, f"lakes_{stem}.json"), frame)
+        lake_src = f"lakes_{stem}"
     mask = burn(frame, [(g, 1) for g in land])
     if lakes:
         mask[burn(frame, [(g, 1) for g in lakes]) == 1] = 0
-    return (mask * 255).astype(np.uint8), f"{coast_src} + lakes_{stem} ({len(land)} + {len(lakes)} polygons)"
+    return (mask * 255).astype(np.uint8), f"{coast_src} + {lake_src} ({len(land)} + {len(lakes)} polygons)"
 
 
 def river_shapes(frame):
@@ -436,8 +440,10 @@ def main():
                   "sources": {"elevation": elev_src, "koppen": kop_src, "landMask": land_src, "rivers": "river_tiles"}},
         "attribution": [
             "Elevation: ETOPO 2022 (NOAA NCEI), " + ("30 arc-second" if fine["elev"] else "decimated to the working grid"),
-            ("Coastline: OpenStreetMap land polygons (© OpenStreetMap contributors, ODbL 1.0); lakes: Natural Earth 10 m (public domain)"
-             if "OpenStreetMap" in land_src else "Coastline and lakes: Natural Earth 10 m (public domain)"),
+            ("Coastline: OpenStreetMap land polygons (© OpenStreetMap contributors, ODbL 1.0)"
+             if "OpenStreetMap" in land_src else "Coastline: Natural Earth 10 m (public domain)"),
+            ("Lakes: HydroLAKES v1.0, Messager et al. 2016 (CC BY 4.0)"
+             if "HydroLAKES" in land_src else "Lakes: Natural Earth 10 m (public domain)"),
             "Climate: Koppen-Geiger, Beck et al. 2023 (CC BY 4.0)",
             "Rivers: HydroRIVERS v1.0 (CC BY 4.0), channel-reduced by Terra_Form",
         ],

@@ -55,13 +55,90 @@ LODS = {
 ADAPT_MAX = 3.0      # tolerance multiplier for the smoothest outlines (ratio -> 1)
 MIN_AREA_TOL = 3.0   # drop polygons with area < (MIN_AREA_TOL * tol)^2
 
+# The same pipeline tiles the lake layer (HydroLAKES: lakes are punched out of the land fill, so a cell
+# the layer covers completely is "full" = all lake). Lakes also get an absolute size floor per LOD: a
+# pond that can't move a Civ tile's land fraction at that LOD is just bytes.
+KINDS = {
+    # union: OSM pieces abut along the 1 deg split grid and must be merged; HydroLAKES polygons are disjoint,
+    # and a cascaded union over a Canadian 10 deg cell's 100k+ ponds is what made the first lake run crawl.
+    "land":  dict(out="coast_tiles", min_km2={"c": 0.0, "f": 0.0}, union=True,
+                  source="osmdata.openstreetmap.de land-polygons-split-4326",
+                  attribution="© OpenStreetMap contributors (ODbL 1.0)"),
+    # tol: HydroLAKES outlines are ~30 m-spaced fractal shorelines; at the coast tolerances they barely
+    # simplify (37 MB). A lake edge 55 m off is invisible at any Civ tile size, so lakes get 2.5x the tolerance.
+    "lakes": dict(out="lake_tiles", min_km2={"c": 10.0, "f": 1.0}, union=False, tol={"c": 0.0075, "f": 0.0005},
+                  source="HydroLAKES v1.0 polygons (Messager et al. 2016, hydrosheds.org)",
+                  attribution="HydroLAKES © Messager et al. 2016 (CC BY 4.0)"),
+}
+KM2_PER_DEG2 = 111.32 ** 2   # at the equator; scaled by cos(lat) per polygon
+
+
+def area_km2(geoms):
+    """Approximate area in km2 of each polygon (plate carree area x cos of the bbox centre latitude)."""
+    b = shapely.bounds(geoms)
+    lat = np.deg2rad((b[:, 1] + b[:, 3]) / 2)
+    return shapely.area(geoms) * KM2_PER_DEG2 * np.cos(lat)
+
 _PIECES = None       # per-process: (geoms ndarray, STRtree)
 
+# Lagoon supplement for the lake layer (--diff-land/--diff-ne): places OSM maps as inland water (so its
+# land polygons cover them) that Natural Earth maps as sea and HydroLAKES doesn't carry -- Lagoa dos
+# Patos, for one. Per cell: OSM land minus NE land, keeping parts that are big and thick enough not to be
+# a coastline-generalisation sliver, and dropping any part that is (nearly) a whole OSM component: that
+# is an island NE left out, not a lagoon, and must stay land. The outline is NE's, so ~1 km precision.
+LAGOON_MIN_KM2, LAGOON_MIN_THICK_KM, LAGOON_ISLAND_FRAC = 10.0, 1.0, 0.8
+LAGOON_LAT_MIN = -60.0   # no diff in Antarctica: OSM's coastline follows the ice-shelf edge, NE's the grounding line,
+                         # so the difference there is a million km2 of Ross/Ronne/Amery shelf, not lagoons
+_DIFF = None         # per-process: (osm geoms, osm tree, ne geoms, ne tree)
 
-def load_pieces(shp, presimplify, cache):
-    """Read the shapefile, run one global DP pass at half the fine tolerance (79M -> 22M vertices; cheap,
-    and it makes every later clip/union faster), and cache the result as ragged arrays so worker
-    processes can load it in seconds instead of redoing the 2-minute read+simplify each."""
+
+def _init_diff(osm_cache, ne_json):
+    global _DIFF
+    osm_g, osm_t = load_pieces(None, 0, osm_cache)
+    rings = []
+    for p in json.load(open(ne_json, encoding="utf-8"))["polys"]:
+        if p["r"] and len(p["r"][0]) >= 4:
+            rings.append(shapely.make_valid(Polygon(p["r"][0], [h for h in p["r"][1:] if len(h) >= 4])))
+    ne_g = np.array(rings, dtype=object)
+    _DIFF = (osm_g, osm_t, ne_g, STRtree(ne_g))
+    print(f"[{os.getpid()}] lagoon diff: {len(osm_g)} OSM pieces, {len(ne_g)} NE polygons", flush=True)
+
+
+def lagoon_parts(ob):
+    """Polygons of (OSM land - NE land) inside the box `ob` that look like lagoons (see above)."""
+    osm_g, osm_t, ne_g, ne_t = _DIFF
+    if ob.bounds[3] <= LAGOON_LAT_MIN:
+        return []
+    i = osm_t.query(ob, predicate="intersects")
+    if len(i) == 0:
+        return []
+    osm = shapely.unary_union(shapely.clip_by_rect(osm_g[i], *ob.bounds))
+    j = ne_t.query(ob, predicate="intersects")
+    diff = osm.difference(shapely.unary_union(shapely.clip_by_rect(ne_g[j], *ob.bounds))) if len(j) else osm
+    comps = polygons_of(osm)
+    ctree = STRtree(comps) if comps else None
+    out = []
+    for p in polygons_of(diff):
+        if p.centroid.y < LAGOON_LAT_MIN:
+            continue
+        c = math.cos(math.radians(p.centroid.y))
+        a = p.area * KM2_PER_DEG2 * c
+        if a < LAGOON_MIN_KM2 or a / (p.length * 111.32) < LAGOON_MIN_THICK_KM:
+            continue
+        if ctree is not None:
+            k = ctree.query(p.representative_point(), predicate="within")
+            if len(k) and p.area / comps[k[0]].area > LAGOON_ISLAND_FRAC:
+                continue   # a whole OSM component: an island NE dropped, not a lagoon
+        out.append(p)
+    return out
+
+
+def load_pieces(shp, presimplify, cache, min_km2=0.0):
+    """Read the shapefile, drop polygons under min_km2 (the smallest floor any LOD applies -- for
+    HydroLAKES that is most of the 1.4M ponds), run one global DP pass at half the fine tolerance
+    (79M -> 22M vertices for OSM; cheap, and it makes every later clip/union faster), and cache the
+    result as ragged arrays so worker processes load it in seconds instead of redoing the 2-minute
+    read+simplify each."""
     t = time.time()
     if cache and os.path.exists(cache):
         z = np.load(cache)
@@ -72,6 +149,10 @@ def load_pieces(shp, presimplify, cache):
     import pyogrio
     df = pyogrio.read_dataframe(shp, columns=[], use_arrow=True)
     g = df.geometry.values
+    if min_km2 > 0:
+        n = len(g)
+        g = g[area_km2(g) >= min_km2]
+        print(f"size floor {min_km2} km2: {n} -> {len(g)} polygons", flush=True)
     n0 = int(shapely.get_num_coordinates(g).sum())
     if presimplify > 0:
         g = shapely.simplify(g, presimplify, preserve_topology=True)
@@ -84,9 +165,11 @@ def load_pieces(shp, presimplify, cache):
     return g, STRtree(g)
 
 
-def _init(shp, presimplify, cache):
+def _init(shp, presimplify, cache, min_km2=0.0, diff=None):
     global _PIECES
-    _PIECES = load_pieces(shp, presimplify, cache)
+    _PIECES = load_pieces(shp, presimplify, cache, min_km2)
+    if diff:
+        _init_diff(*diff)
 
 
 # ---------- geometry ----------
@@ -117,34 +200,51 @@ def adaptive_tol(poly, tol):
     return tol * m
 
 
-def build_cell(lod, col, row, adapt=True):
-    """Returns ('water'|'land'|'tile', bytes|None, stats)."""
+def build_cell(lod, col, row, adapt=True, min_km2=0.0, union=True, tol=None):
+    """Returns ('water'|'full'|'tile', bytes|None, stats). 'water' = nothing of this layer in the cell,
+    'full' = the layer covers the whole cell (continent interior for land, mid-Superior for lakes)."""
     P = LODS[lod]
     geoms, tree = _PIECES
-    D, tol, q, ov = P["deg"], P["tol"], P["q"], P["ov"]
+    D, q, ov = P["deg"], P["q"], P["ov"]
+    tol = tol or P["tol"]
     lon0, lat1 = -180.0 + col * D, 90.0 - row * D
     lon1, lat0 = lon0 + D, lat1 - D
     cell = box(lon0, lat0, lon1, lat1)
     ob = box(lon0 - ov, lat0 - ov, lon1 + ov, lat1 + ov)
     idx = tree.query(ob, predicate="intersects")
-    if len(idx) == 0:
+    if len(idx) == 0 and _DIFF is None:
         return "water", None, {}
     clipped = shapely.clip_by_rect(geoms[idx], lon0 - ov, lat0 - ov, lon1 + ov, lat1 + ov)
     clipped = clipped[~shapely.is_empty(clipped)]
-    if len(clipped) == 0:
+    if len(clipped) == 0 and _DIFF is None:
         return "water", None, {}
-    land = shapely.unary_union(clipped)
-    if land.is_empty:
+    if union:
+        land = shapely.unary_union(clipped) if len(clipped) else shapely.Polygon()
+        if land.is_empty and _DIFF is None:
+            return "water", None, {}
+        parts = polygons_of(land)
+    else:   # disjoint input: the pieces are the polygons
+        parts = [p for g in clipped for p in polygons_of(g)]
+        land = None
+    if _DIFF is not None:
+        try:
+            have = shapely.unary_union(parts) if parts else None   # skip lagoons HydroLAKES already carries (Pontchartrain)
+            parts += [p for p in lagoon_parts(ob) if have is None or have.intersection(p).area < 0.5 * p.area]
+        except shapely.errors.GEOSException as e:   # a bad NE ring in an Arctic cell shouldn't cost the cell its lakes
+            print(f"  lagoon diff skipped for {lod} {col}_{row}: {e}", flush=True)
+    if not parts:
         return "water", None, {}
-    # whole cell is land (interior of a continent): no file, flag in the index
-    if land.area >= cell.area * (1 - 1e-9) and land.covers(cell):
-        return "land", None, {}
+    # whole cell is covered (interior of a continent / middle of a great lake): no file, flag in the index
+    if sum(p.area for p in parts) >= cell.area * (1 - 1e-9) and (land or shapely.unary_union(parts)).covers(cell):
+        return "full", None, {}
 
     min_area = (MIN_AREA_TOL * tol) ** 2
     polys, nv = [], 0
-    for poly in polygons_of(land):
+    for poly in parts:
         if poly.area < min_area:
             continue
+        if min_km2 > 0 and poly.area * KM2_PER_DEG2 * math.cos(math.radians(poly.centroid.y)) < min_km2:
+            continue   # below the LOD's size floor (lakes)
         t = adaptive_tol(poly, tol) if adapt else tol
         s = shapely.simplify(poly, t, preserve_topology=True)
         for sp in polygons_of(s):
@@ -213,9 +313,9 @@ def cell_ids(lod):
 
 
 def work(args):
-    lod, col, row, adapt = args
+    lod, col, row, adapt, min_km2, union, tol = args
     try:
-        kind, data, st = build_cell(lod, col, row, adapt)
+        kind, data, st = build_cell(lod, col, row, adapt, min_km2, union, tol)
     except Exception as e:   # one bad cell shouldn't kill a 40-minute run
         return lod, col, row, "error", None, {"error": repr(e)}
     return lod, col, row, kind, data, st
@@ -224,14 +324,23 @@ def work(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("shp")
-    ap.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "..", "data", "coast_tiles"))
+    ap.add_argument("--kind", choices=list(KINDS), default="land", help="land (OSM land polygons) or lakes (HydroLAKES)")
+    ap.add_argument("--out", default="", help="default data/<coast_tiles|lake_tiles> by --kind")
     ap.add_argument("--lods", default="c,f")
     ap.add_argument("--only", default="", help="comma list of col_row ids to build (debug)")
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--no-adapt", action="store_true", help="plain DP (for measuring what the adaptive term saves)")
-    ap.add_argument("--presimplify", type=float, default=LODS["f"]["tol"] / 2)
+    ap.add_argument("--presimplify", type=float, default=-1, help="global DP pass before tiling (default: half the kind's fine tolerance)")
     ap.add_argument("--cache", default="", help="npz cache of the pre-simplified pieces (created on first run; speeds up --workers)")
+    ap.add_argument("--diff-land", default="", help="lakes only: npz cache of the OSM land build, for the lagoon supplement")
+    ap.add_argument("--diff-ne", default="", help="lakes only: Natural Earth land polygons json (data/coast_hires.json)")
     args = ap.parse_args()
+    diff = (args.diff_land, args.diff_ne) if (args.diff_land and args.diff_ne) else None
+    K = KINDS[args.kind]
+    if args.presimplify < 0:
+        args.presimplify = K.get("tol", {}).get("f", LODS["f"]["tol"]) / 2
+    if not args.out:
+        args.out = os.path.join(os.path.dirname(__file__), "..", "data", K["out"])
     lods = [l for l in args.lods.split(",") if l]
     only = set(args.only.split(",")) if args.only else None
     os.makedirs(args.out, exist_ok=True)
@@ -242,19 +351,28 @@ def main():
     for lod in lods:
         for c, r in cell_ids(lod):
             if only is None or f"{c}_{r}" in only:
-                jobs.append((lod, c, r, not args.no_adapt))
-    # heavy cells first so the pool doesn't idle at the end: sort by number of touching pieces
-    print(f"{len(jobs)} cells to build", flush=True)
+                jobs.append((lod, c, r, not args.no_adapt, K["min_km2"][lod], K["union"], K.get("tol", {}).get(lod)))
+    print(f"{len(jobs)} cells to build ({args.kind})", flush=True)
 
-    index = {"version": 1, "source": "osmdata.openstreetmap.de land-polygons-split-4326",
-             "built": date.today().isoformat(),
-             "attribution": "© OpenStreetMap contributors (ODbL 1.0)", "lods": {}}
+    index = {"version": 1, "kind": args.kind, "source": K["source"], "built": date.today().isoformat(),
+             "attribution": K["attribution"], "lods": {}}
+    if diff:
+        index["supplement"] = "lagoons = OSM land minus Natural Earth land (NE outline), >= %g km2, mean width >= %g km" % (LAGOON_MIN_KM2, LAGOON_MIN_THICK_KM)
+    ipath = os.path.join(args.out, "index.json")
+    if only and os.path.exists(ipath):   # partial rebuild: keep every other cell's entry
+        index = json.load(open(ipath, encoding="utf-8"))
+        for lod in lods:
+            L = index["lods"].get(lod)
+            if L:
+                L["tiles"] = [k for k in L["tiles"] if k not in only]
+                L["full"] = [k for k in L["full"] if k not in only]
     for lod in lods:
         P = LODS[lod]
-        index["lods"][lod] = {"deg": P["deg"], "cols": int(round(360 / P["deg"])), "rows": int(round(180 / P["deg"])),
-                              "tol": P["tol"], "q": P["q"], "ext": "bin", "tiles": [], "land": []}
+        index["lods"].setdefault(lod, {"deg": P["deg"], "cols": int(round(360 / P["deg"])), "rows": int(round(180 / P["deg"])),
+                                       "tol": K.get("tol", {}).get(lod, P["tol"]), "q": P["q"], "minKm2": K["min_km2"][lod],
+                                       "ext": "bin", "tiles": [], "full": []})
     t0 = time.time()
-    totals = {lod: {"tiles": 0, "land": 0, "water": 0, "bytes": 0, "verts": 0} for lod in lods}
+    totals = {lod: {"tiles": 0, "full": 0, "water": 0, "bytes": 0, "verts": 0} for lod in lods}
 
     def handle(res):
         lod, col, row, kind, data, st = res
@@ -265,23 +383,24 @@ def main():
                 f.write(data)
             index["lods"][lod]["tiles"].append(key)
             T["tiles"] += 1; T["bytes"] += st["bytes"]; T["verts"] += st["verts"]
-        elif kind == "land":
-            index["lods"][lod]["land"].append(key); T["land"] += 1
+        elif kind == "full":
+            index["lods"][lod]["full"].append(key); T["full"] += 1
         elif kind == "water":
             T["water"] += 1
         else:
             print(f"  !! {lod} {key}: {st.get('error')}", flush=True)
 
+    floor = min(K["min_km2"].values())
     if args.workers > 1:
         if args.cache and not os.path.exists(args.cache):
-            load_pieces(args.shp, args.presimplify, args.cache)   # build the cache once, in the parent
-        with ProcessPoolExecutor(args.workers, initializer=_init, initargs=(args.shp, args.presimplify, args.cache)) as ex:
+            load_pieces(args.shp, args.presimplify, args.cache, floor)   # build the cache once, in the parent
+        with ProcessPoolExecutor(args.workers, initializer=_init, initargs=(args.shp, args.presimplify, args.cache, floor, diff)) as ex:
             for i, res in enumerate(ex.map(work, jobs, chunksize=4)):
                 handle(res)
                 if i % 200 == 0:
                     print(f"  {i}/{len(jobs)}  {time.time()-t0:.0f}s", flush=True)
     else:
-        _init(args.shp, args.presimplify, args.cache)
+        _init(args.shp, args.presimplify, args.cache, floor, diff)
         for i, job in enumerate(jobs):
             handle(work(job))
             if i % 200 == 0:
@@ -290,15 +409,32 @@ def main():
     for lod in lods:
         L = index["lods"][lod]
         L["tiles"].sort(key=lambda k: tuple(map(int, k.split("_"))))
-        L["land"].sort(key=lambda k: tuple(map(int, k.split("_"))))
+        L["full"].sort(key=lambda k: tuple(map(int, k.split("_"))))
     with open(os.path.join(args.out, "index.json"), "w", encoding="utf-8") as f:
         json.dump(index, f, separators=(",", ":"))
-    write_licence(args.out, index)
+    (write_licence if args.kind == "land" else write_licence_lakes)(args.out, index)
     for lod in lods:
         T = totals[lod]
-        print(f"lod {lod}: {T['tiles']} tiles, {T['land']} all-land, {T['water']} water, "
+        print(f"lod {lod}: {T['tiles']} tiles, {T['full']} full, {T['water']} empty, "
               f"{T['verts']:,} verts, {T['bytes']/1e6:.1f} MB gz", flush=True)
     print(f"done in {time.time()-t0:.0f}s -> {args.out}")
+
+
+def write_licence_lakes(out, index):
+    with open(os.path.join(out, "README.txt"), "w", encoding="utf-8") as f:
+        f.write(f"""Lake tiles derived from HydroLAKES
+==================================
+
+Source : {index['source']}  (https://www.hydrosheds.org/products/hydrolakes)
+Built  : {index['built']}  with scripts/build_coast_tiles.py --kind lakes (clip, union, simplify, size floor,
+         quantize, gzip). Lakes under {index['lods'].get('f', {}).get('minKm2', '?')} km2 (fine LOD) /
+         {index['lods'].get('c', {}).get('minKm2', '?')} km2 (coarse LOD) are dropped.
+
+Licence: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
+Attribution: Messager, M.L., Lehner, B., Grill, G., Nedeva, I., Schmitt, O. (2016). Estimating the
+volume and age of water stored in global lakes using a geo-statistical approach. Nature
+Communications 7: 13603. doi:10.1038/ncomms13603
+""")
 
 
 def write_licence(out, index):
