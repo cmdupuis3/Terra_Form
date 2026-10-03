@@ -692,7 +692,7 @@ function fitMapBox(){
   cv.width=Math.max(2,Math.round(mapBox.clientWidth*dpr));
   cv.height=Math.max(2,Math.round(mapBox.clientHeight*dpr));
 }
-function relayout(){ fitMapBox(); clampView(); render(); refreshStats(); updateArNote(); }
+function relayout(){ fitMapBox(); clampView(); if(!landAlphaCanvas)return; render(); refreshStats(); updateArNote(); }   // masks are null until boot builds them (boot then relayouts itself); a resize before that only sizes the canvas
 window.addEventListener('resize',relayout);
 function updateArNote(){document.getElementById('arNote').textContent='viewer '+out.W+':'+out.H+(hexMode?' · hex':'');}
 
