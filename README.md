@@ -325,10 +325,25 @@ distributary become distinct channels ranked independently by the "Show top-N ri
 
 Koppen-weighted keep: a channel is kept if its peak discharge clears a threshold that depends
 on the climate at its terminal (sampled from `data/koppen_2048.png`): arid BW deserts keep the
-smallest rivers (>= ~1 m3/s), semi-arid BS steppes keep small (>= ~10), everywhere else keeps
+smallest rivers (>= ~1 m3/s), semi-arid BS steppes keep small (>= ~10 by default; the build
+below lowers it to 1 and lets the observed-river gate remove the noise), everywhere else keeps
 only the base (>= ~100). This preserves the small desert rivers that are prominent in dry
 regions without ballooning the total. Inland deltas / endorheic sinks are handled naturally —
 a channel is tiled and climate-sampled wherever it drains, ocean or inland.
+
+Observed-river gate (`--verify-lines`): HydroRIVERS is traced by flow-routing a DEM, so in
+sand seas (Rub' al-Khali, Simpson, the Ergs) it emits "rivers" down interdune corridors, with
+modelled discharge that the climate floors and yield/Hack filters cannot tell from a real wadi.
+The gate checks every arid/semi-arid channel against human-mapped lines instead: OSM waterways
+(rivers, named or not, plus named streams; fetched from the Overture Maps GeoParquet by
+`scripts/fetch_osm_waterways.py` into a gitignored `osm_waterways/` cache, ~130 MB) and,
+optionally, Natural Earth rivers. A channel with >= 50% of its vertices within 10 km of such a
+line is verified. Otherwise it needs a proxy score >= 1 from partial evidence, yield, local
+relief (`data/elev_4096.png`) and not-sand colour (`data/sat_2048.png`), so an unmapped mountain
+wadi survives while a flat, sandy, unmapped channel does not. Calibrated on sand seas (all with
+zero OSM support) vs Yemen, Pilbara, Channel Country, Atlas, Zagros and Arizona. Known cost: a
+real river on flat, sandy ground that OSM has not mapped as a waterway is dropped (e.g. Sturt
+Creek, which OSM maps only as a station boundary).
 
 The same set is drawn (blue, 8% tile width) and written to the save — WYSIWYG.
 
@@ -358,10 +373,15 @@ data (Amazon/Louisiana/Ganges/Congo/Europe): zero four-sided tiles remain, hairp
 ~75–90%, and no channel is ever left with a floating fragment.
 
 ```bash
-pip install pyogrio geopandas shapely numpy pillow
+pip install pyogrio geopandas shapely numpy pillow pyarrow requests
+python3 scripts/fetch_osm_waterways.py --out-dir osm_waterways      # ~25 min, once
 python3 scripts/reduce_rivers.py HydroRIVERS_v10.gdb --koppen data/koppen_2048.png \
+    --read-ord 8 --keep-semiarid 1 \
+    --verify-lines osm_waterways ne_10m_rivers_lake_centerlines.shp \
     --out-dir data/river_tiles
 ```
+
+`--read-ord 8` (reaches down to ~0.01 m3/s) peaks at ~7 GB of RAM; 9 does not fit in 16 GB.
 
 ## Features
 
