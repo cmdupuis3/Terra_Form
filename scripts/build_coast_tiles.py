@@ -44,6 +44,7 @@ from datetime import date
 
 import numpy as np
 import shapely
+import historic_lakes
 from shapely import STRtree
 from shapely.geometry import Polygon, MultiPolygon, box
 
@@ -133,9 +134,10 @@ def lagoon_parts(ob):
     return out
 
 
-def load_pieces(shp, presimplify, cache, min_km2=0.0):
+def load_pieces(shp, presimplify, cache, min_km2=0.0, curate=None):
     """Read the shapefile, drop polygons under min_km2 (the smallest floor any LOD applies -- for
-    HydroLAKES that is most of the 1.4M ponds), run one global DP pass at half the fine tolerance
+    HydroLAKES that is most of the 1.4M ponds), apply the lake curation (curate = (where, ne_lakes,
+    historic): see historic_lakes.py), run one global DP pass at half the fine tolerance
     (79M -> 22M vertices for OSM; cheap, and it makes every later clip/union faster), and cache the
     result as ragged arrays so worker processes load it in seconds instead of redoing the 2-minute
     read+simplify each."""
@@ -147,12 +149,20 @@ def load_pieces(shp, presimplify, cache, min_km2=0.0):
         print(f"[{os.getpid()}] loaded {len(g)} cached pieces in {time.time()-t:.1f}s", flush=True)
         return g, STRtree(g)
     import pyogrio
-    df = pyogrio.read_dataframe(shp, columns=[], use_arrow=True)
+    where, ne_lakes, historic = curate or (None, None, None)
+    # OGR matches nothing when the WHERE names a column that isn't read, so read the ones it filters on
+    df = pyogrio.read_dataframe(shp, columns=["Hylak_id", "Lake_type"] if where else [], where=where, use_arrow=True)
     g = df.geometry.values
+    if where:
+        print(f"{where[:60]}...: {len(g)} polygons", flush=True)
     if min_km2 > 0:
         n = len(g)
         g = g[area_km2(g) >= min_km2]
         print(f"size floor {min_km2} km2: {n} -> {len(g)} polygons", flush=True)
+    if ne_lakes:
+        g = historic_lakes.drop_inside(g, ne_lakes)
+    if historic:
+        g = historic_lakes.merge_historic(g, historic)
     n0 = int(shapely.get_num_coordinates(g).sum())
     if presimplify > 0:
         g = shapely.simplify(g, presimplify, preserve_topology=True)
@@ -165,9 +175,9 @@ def load_pieces(shp, presimplify, cache, min_km2=0.0):
     return g, STRtree(g)
 
 
-def _init(shp, presimplify, cache, min_km2=0.0, diff=None):
+def _init(shp, presimplify, cache, min_km2=0.0, diff=None, curate=None):
     global _PIECES
-    _PIECES = load_pieces(shp, presimplify, cache, min_km2)
+    _PIECES = load_pieces(shp, presimplify, cache, min_km2, curate)
     if diff:
         _init_diff(*diff)
 
@@ -334,8 +344,14 @@ def main():
     ap.add_argument("--cache", default="", help="npz cache of the pre-simplified pieces (created on first run; speeds up --workers)")
     ap.add_argument("--diff-land", default="", help="lakes only: npz cache of the OSM land build, for the lagoon supplement")
     ap.add_argument("--diff-ne", default="", help="lakes only: Natural Earth land polygons json (data/coast_hires.json)")
+    ap.add_argument("--keep-reservoirs", action="store_true", help="lakes only: keep HydroLAKES' modern reservoirs")
+    ap.add_argument("--ne-lakes", default="", help="lakes only: ne_10m_lakes.shp; its reservoirs drop the HydroLAKES pieces inside them")
+    ap.add_argument("--historic", default="", help="lakes only: ne_10m_lakes_historic.shp (Aral Sea, Lake Chad... at historic extent)")
     args = ap.parse_args()
     diff = (args.diff_land, args.diff_ne) if (args.diff_land and args.diff_ne) else None
+    curate = None
+    if args.kind == "lakes":
+        curate = (None if args.keep_reservoirs else historic_lakes.hydrolakes_where(), args.ne_lakes or None, args.historic or None)
     K = KINDS[args.kind]
     if args.presimplify < 0:
         args.presimplify = K.get("tol", {}).get("f", LODS["f"]["tol"]) / 2
@@ -358,6 +374,12 @@ def main():
              "attribution": K["attribution"], "lods": {}}
     if diff:
         index["supplement"] = "lagoons = OSM land minus Natural Earth land (NE outline), >= %g km2, mean width >= %g km" % (LAGOON_MIN_KM2, LAGOON_MIN_THICK_KM)
+    if curate and (curate[0] or curate[2]):
+        index["curation"] = "; ".join(x for x in [
+            curate[0] and "modern reservoirs dropped (HydroLAKES Lake_type 2 less natural lakes with a dam%s)"
+                % (", and pieces inside Natural Earth reservoirs" if curate[1] else ""),
+            curate[2] and "historic lakes from Natural Earth ne_10m_lakes_historic (Aral Sea, Lake Chad, Lop Nur, Lake Texcoco)",
+        ] if x) + " -- scripts/historic_lakes.py"
     ipath = os.path.join(args.out, "index.json")
     if only and os.path.exists(ipath):   # partial rebuild: keep every other cell's entry
         index = json.load(open(ipath, encoding="utf-8"))
@@ -393,14 +415,14 @@ def main():
     floor = min(K["min_km2"].values())
     if args.workers > 1:
         if args.cache and not os.path.exists(args.cache):
-            load_pieces(args.shp, args.presimplify, args.cache, floor)   # build the cache once, in the parent
-        with ProcessPoolExecutor(args.workers, initializer=_init, initargs=(args.shp, args.presimplify, args.cache, floor, diff)) as ex:
+            load_pieces(args.shp, args.presimplify, args.cache, floor, curate)   # build the cache once, in the parent
+        with ProcessPoolExecutor(args.workers, initializer=_init, initargs=(args.shp, args.presimplify, args.cache, floor, diff, curate)) as ex:
             for i, res in enumerate(ex.map(work, jobs, chunksize=4)):
                 handle(res)
                 if i % 200 == 0:
                     print(f"  {i}/{len(jobs)}  {time.time()-t0:.0f}s", flush=True)
     else:
-        _init(args.shp, args.presimplify, args.cache, floor, diff)
+        _init(args.shp, args.presimplify, args.cache, floor, diff, curate)
         for i, job in enumerate(jobs):
             handle(work(job))
             if i % 200 == 0:
@@ -429,7 +451,7 @@ Source : {index['source']}  (https://www.hydrosheds.org/products/hydrolakes)
 Built  : {index['built']}  with scripts/build_coast_tiles.py --kind lakes (clip, union, simplify, size floor,
          quantize, gzip). Lakes under {index['lods'].get('f', {}).get('minKm2', '?')} km2 (fine LOD) /
          {index['lods'].get('c', {}).get('minKm2', '?')} km2 (coarse LOD) are dropped.
-
+{("Curation: " + index["curation"] + chr(10) + "         (the historic outlines are Natural Earth, public domain)" + chr(10)) if index.get("curation") else ""}
 Licence: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
 Attribution: Messager, M.L., Lehner, B., Grill, G., Nedeva, I., Schmitt, O. (2016). Estimating the
 volume and age of water stored in global lakes using a geo-statistical approach. Nature

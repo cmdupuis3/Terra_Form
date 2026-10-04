@@ -217,6 +217,27 @@ are recovered as `OSM land − NE land` per cell — parts ≥ 10 km² with a me
 width ≥ 1 km that aren't a whole OSM island, north of 60°S (OSM's Antarctic
 coastline follows the ice-shelf edge, NE's the grounding line) — and carry NE's
 ~1 km outline.
+
+### Historic lakes, no modern reservoirs (`scripts/historic_lakes.py`)
+
+Every lake layer (the HydroLAKES tiles and both Natural Earth sets) shows lakes
+as they were before the modern era. Modern reservoirs are dropped — Lake Volta,
+Nasser, Kariba, the Volga and Angara chains, Powell and Mead, the James Bay and
+Manicouagan projects — so the valleys they flooded are land again. HydroLAKES'
+reservoir flag comes from the GRanD dam database, which also lists the dam on the
+outlet of many natural lakes (Flathead, Red Lake, the Finger Lakes, Hongze), so
+those are kept by an id allowlist. Natural Earth's own "Reservoir" class is a
+second source (HydroLAKES maps some reservoirs at their low year-2000 level and
+splits Lake Powell into a "reservoir" half and a "lake" half), again less the
+regulated natural lakes NE files under it (Mjøsa, Saint-Jean, Te Anau, Zaysan).
+A natural lake raised by a dam keeps its raised outline: the pre-dam shoreline
+isn't in either dataset (Smallwood Reservoir still shows as Michikamau).
+
+Lakes that have since shrunk or vanished come back at their historic extent from
+Natural Earth's `ne_10m_lakes_historic`: the Aral Sea (late 1950s), Lake Chad
+(early 1960s), Lop Nur (early 1970s) and Lake Texcoco (early 1500s). Each
+historic outline is unioned with the modern remnants it covers.
+
 Both tile sets share the same two LODs and one index layout:
 
 | lod | cells | tolerance | used when the window is |
@@ -237,8 +258,15 @@ pip install pyogrio shapely numpy
 # land-polygons-split-4326.zip from https://osmdata.openstreetmap.de/data/land-polygons.html (~1 GB)
 python scripts/build_coast_tiles.py land-polygons-split-4326/land_polygons.shp --workers 4 --cache presimplified.npz
 # HydroLAKES_polys_v10_shp.zip from https://www.hydrosheds.org/products/hydrolakes (~1 GB)
-python scripts/build_coast_tiles.py HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp --kind lakes --workers 4 --cache presimplified_lakes.npz \
-    --diff-land presimplified.npz --diff-ne data/coast_hires.json   # lagoon supplement; needs the land build's cache
+# ne_10m_lakes.zip + ne_10m_lakes_historic.zip from https://www.naturalearthdata.com/downloads/10m-physical-vectors/
+#   --diff-*: lagoon supplement, needs the land build's cache. --ne-lakes/--historic: the curation above
+#   (reservoirs go unless --keep-reservoirs). The cache holds the curated set: delete it after editing
+#   the lists in historic_lakes.py.
+python scripts/build_coast_tiles.py HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp --kind lakes --workers 3 --cache presimplified_lakes.npz \
+    --diff-land presimplified.npz --diff-ne data/coast_hires.json --ne-lakes ne_10m_lakes.shp --historic ne_10m_lakes_historic.shp
+# the same curation for the zoomed-out Natural Earth lake layers (rewrites them in place; idempotent)
+python scripts/historic_lakes.py data/lakes_10m.json data/lakes_hires.json \
+    --hydrolakes HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp --ne-lakes ne_10m_lakes.shp --historic ne_10m_lakes_historic.shp
 ```
 
 `--no-adapt` builds with a flat tolerance (to measure what the adaptive term
@@ -264,8 +292,10 @@ serialize time.
   provenance sit in that directory); maps and saves the app produces from them
   are "produced works" that only need the credit line.
 - Lakes, zoomed in (`data/lake_tiles/`): HydroLAKES v1.0 (Messager et al. 2016,
-  hydrosheds.org, **CC BY 4.0**), lakes ≥ 1 km².
-- Coastline and lakes zoomed out: Natural Earth 1:10m land + lakes (public domain).
+  hydrosheds.org, **CC BY 4.0**), lakes ≥ 1 km², modern reservoirs removed;
+  historic outlines from Natural Earth `ne_10m_lakes_historic` (public domain).
+- Coastline and lakes zoomed out: Natural Earth 1:10m land + lakes (public domain),
+  same curation.
 - Köppen: Beck et al. (2023) high-resolution (1 km) Köppen-Geiger map
   (`koppen_geiger_0p00833333.tif`, CC BY 4.0, gloh2o.org), area-majority
   downsampled to the 2048×1024 working grid and embedded as the class-index
