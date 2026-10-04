@@ -345,6 +345,16 @@ zero OSM support) vs Yemen, Pilbara, Channel Country, Atlas, Zagros and Arizona.
 real river on flat, sandy ground that OSM has not mapped as a waterway is dropped (e.g. Sturt
 Creek, which OSM maps only as a station boundary).
 
+Named-river promotion (`--promote-lines`): the 100 m3/s base floor is right for ranking big
+rivers but loses slow, named lowland rivers that HydroRIVERS models under it (Bayou Teche is
+traced faithfully at 66–79 m3/s). A humid-climate channel between `--promote-floor` (30 m3/s) and
+its floor is kept when >= 50% of it, weighted by reach discharge, lies within 5 km of a *named*
+OSM river (`osm_named_rivers/`, ~145 MB, gitignored; fetched by `fetch_osm_waterways.py
+--min-dry 0 --named-rivers-only`). Weighting by discharge matters at `--read-ord 8`: a channel's
+many ~1 m3/s headwater reaches are mapped as streams, not rivers, and would otherwise outvote the
+river itself. About three quarters of the candidates pass (+6.4k channels), mostly mid-size
+named tributaries filling gaps between the big rivers.
+
 The same set is drawn (blue, 8% tile width) and written to the save — WYSIWYG.
 
 Centerline -> Civ edges (corner-snap): each reach vertex is snapped to the nearest tile
@@ -375,9 +385,11 @@ data (Amazon/Louisiana/Ganges/Congo/Europe): zero four-sided tiles remain, hairp
 ```bash
 pip install pyogrio geopandas shapely numpy pillow pyarrow requests
 python3 scripts/fetch_osm_waterways.py --out-dir osm_waterways      # ~25 min, once
+python3 scripts/fetch_osm_waterways.py --min-dry 0 --named-rivers-only --out-dir osm_named_rivers   # ~25 min, once
 python3 scripts/reduce_rivers.py HydroRIVERS_v10.gdb --koppen data/koppen_2048.png \
     --read-ord 8 --keep-semiarid 1 \
     --verify-lines osm_waterways ne_10m_rivers_lake_centerlines.shp \
+    --promote-lines osm_named_rivers \
     --out-dir data/river_tiles
 ```
 

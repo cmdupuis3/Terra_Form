@@ -149,6 +149,16 @@ def main():
     ap.add_argument("--keep-arid", type=float, default=1.0)
     ap.add_argument("--keep-tundra", type=float, default=130.0, help="floor in tundra (ET) -- DEBUFF above base to thin permafrost streams")
     ap.add_argument("--min-reaches", type=int, default=3, help="drop channels with fewer reaches")
+    ap.add_argument("--promote-lines", nargs="+", default=None,
+                    help="NAMED-RIVER PROMOTION (see the comment at the keep step): named-river references, "
+                         "e.g. the osm_named_rivers/ cache from fetch_osm_waterways.py --min-dry 0 "
+                         "--named-rivers-only. Off when unset.")
+    ap.add_argument("--promote-climates", nargs="+", default=["other"],
+                    help="climate tags whose below-floor channels may be promoted")
+    ap.add_argument("--promote-floor", type=float, default=30.0,
+                    help="never promote a channel whose peak discharge is under this (m3/s)")
+    ap.add_argument("--promote-km", type=float, default=5.0)
+    ap.add_argument("--promote-frac", type=float, default=0.5)
     # --- spurious-channel filters (all judged at the channel OUTLET) ---
     ap.add_argument("--min-upland-skm", type=float, default=10.0,
                     help="drop channels whose OUTLET drains less than this catchment area (km2). "
@@ -328,15 +338,53 @@ def main():
         return args.keep_base, "other"
 
     kept, clim_counts = {}, defaultdict(int)
+    promo = {}                              # below-floor channels a named OSM river may vouch for
+    pclim = set(args.promote_climates)
     for c in cids:
         rs = ch_reaches[c]
         floor, tag = keep_floor(c)
         clim_counts[tag] += 1
-        if max(f["d"] for f in rs) >= floor:
+        peak = max(f["d"] for f in rs)
+        if peak >= floor:
             kept[c] = (rs, ends[c][1])
+        elif args.promote_lines and tag in pclim and peak >= args.promote_floor:
+            promo[c] = (rs, ends[c][1])
     print(f"[keep] {len(kept):,}/{nxt:,} channels  (by climate: {dict(clim_counts)})")
     del feats, ch_reaches, ends             # the unkept channels' reaches go with these
     gc.collect()
+
+    # --- named-river promotion -------------------------------------------------------------------
+    # The base floor (100 m3/s) is right for ranking big rivers, but it loses slow, named lowland
+    # rivers that HydroRIVERS models under it -- Bayou Teche is traced faithfully at 66-79 m3/s.
+    # A channel between --promote-floor and its climate floor is kept if >= --promote-frac of its
+    # vertices (weighted by discharge) lie within --promote-km of a NAMED OSM river: a name means people know it as a
+    # river, which an unnamed DEM valley at the same discharge is not. The radius is tighter than
+    # the desert gate's because humid networks are dense -- a wide one lets a channel borrow a
+    # neighbouring river's name.
+    if promo:
+        import shapely
+        Rp = args.promote_km / 111.32
+        boxes = []
+        for rs, _ in promo.values():
+            a = np.array([p for f in rs for part in f["l"] for p in part], dtype=float)
+            boxes.append(shapely.box(*(a.min(0) - Rp), *(a.max(0) + Rp)))
+        ptree, pcounts = load_reference_lines(args.promote_lines, shapely.STRtree(boxes))
+        del boxes; gc.collect()
+        promoted = 0
+        for c, v in promo.items():
+            pts = np.array([p for f in v[0] for part in f["l"] for p in part], dtype=float)
+            # DISCHARGE-WEIGHTED share: at --read-ord 8 a channel drags in dozens of ~1 m3/s headwater
+            # reaches that OSM maps as (named) STREAMS, not rivers -- they were 58% of Bayou Teche's
+            # vertices but carry almost none of its water. Weighting by reach discharge asks "is this a
+            # named river where it carries its water?"
+            wts = np.array([f["d"] for f in v[0] for part in f["l"] for _ in part], dtype=float)
+            hit = np.zeros(len(pts), bool)
+            hit[ptree.query(shapely.points(pts), predicate="dwithin", distance=Rp)[0]] = True
+            if wts.sum() > 0 and (hit * wts).sum() / wts.sum() >= args.promote_frac:
+                kept[c] = v; promoted += 1
+        print(f"[promote] {promoted:,}/{len(promo):,} channels of {args.promote_floor:g} m3/s up to their floor "
+              f"run along a named river ({sum(pcounts.values()):,} named lines nearby) -> {len(kept):,} channels")
+        del promo, ptree; gc.collect()
 
     # min-reach filter: drop stubby channels
     if args.min_reaches > 1:

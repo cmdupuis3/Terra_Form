@@ -58,12 +58,12 @@ def latest_release():
     return sorted(rel)[-1]
 
 
-def read_block(dset, bbox, dry, simplify_deg):
-    """dry: prepared union of the dry tiles -- lines that never touch one are not kept."""
+def read_block(dset, bbox, dry, simplify_deg, named_rivers_only=False):
+    """dry: prepared union of the covered tiles -- lines that never touch one are not kept."""
     w, s, e, n = bbox
     flt = ((pc.field("bbox", "xmax") >= w) & (pc.field("bbox", "xmin") <= e) &
            (pc.field("bbox", "ymax") >= s) & (pc.field("bbox", "ymin") <= n) &
-           pc.field("class").isin(["river", "stream"]))
+           pc.field("class").isin(["river"] if named_rivers_only else ["river", "stream"]))
     tb = dset.to_table(columns=["class", "names", "is_intermittent", "geometry"], filter=flt)
     geoms = shapely.from_wkb(tb["geometry"].to_numpy(zero_copy_only=False))
     cls = tb["class"].to_pylist()
@@ -73,7 +73,7 @@ def read_block(dset, bbox, dry, simplify_deg):
     for g, k, nm, it in zip(geoms, cls, names, inter):
         if g is None or g.geom_type not in ("LineString", "MultiLineString"):
             continue                           # river AREAS are polygons; the centreline is a separate way
-        if k == "stream" and not nm:
+        if not nm and (k == "stream" or named_rivers_only):
             continue
         if not dry.intersects(g):
             continue
@@ -97,6 +97,9 @@ def main():
     ap.add_argument("--min-dry", type=float, default=0.02, help="min BW/BS share of a tile's land")
     ap.add_argument("--dry-classes", type=int, nargs="+", default=[4, 5, 6, 7])
     ap.add_argument("--simplify-deg", type=float, default=0.003)
+    ap.add_argument("--named-rivers-only", action="store_true",
+                    help="keep only NAMED class=river lines (the promotion references for humid climates; "
+                         "pair with --min-dry 0 to cover all land)")
     args = ap.parse_args()
 
     release = args.release or latest_release()
@@ -104,18 +107,19 @@ def main():
     dset = ds.dataset(BUCKET.format(release=release), filesystem=fs, format="parquet")
     os.makedirs(args.out_dir, exist_ok=True)
 
-    tiles = dry_tiles(args.koppen, args.tile_deg, args.min_dry, args.dry_classes)
+    tiles = [t for t in dry_tiles(args.koppen, args.tile_deg, args.min_dry, args.dry_classes)
+             if t[3] > -60]                    # no rivers worth checking on Antarctica
     dry = shapely.union_all([shapely.box(*t) for t in tiles])
     shapely.prepare(dry)
     B = args.block_deg
     blocks = sorted({(np.floor(t[0] / B) * B, np.floor(t[1] / B) * B) for t in tiles})
     todo = [b for b in blocks if not os.path.exists(os.path.join(args.out_dir, f"{b[0]:g}_{b[1]:g}.json"))]
-    print(f"[tiles] {len(tiles)} dry {args.tile_deg:g}-deg tiles in {len(blocks)} {B:g}-deg blocks, "
+    print(f"[tiles] {len(tiles)} covered {args.tile_deg:g}-deg tiles in {len(blocks)} {B:g}-deg blocks, "
           f"{len(todo)} to fetch (Overture {release})", flush=True)
     for k, (w, s) in enumerate(todo):
         t0 = time.time()
         bbox = (float(w), float(s), float(w + B), float(s + B))
-        recs = read_block(dset, bbox, dry, args.simplify_deg)
+        recs = read_block(dset, bbox, dry, args.simplify_deg, args.named_rivers_only)
         path = os.path.join(args.out_dir, f"{w:g}_{s:g}.json")
         with open(path + ".tmp", "w", encoding="utf-8") as f:
             json.dump({"bbox": bbox, "release": release, "features": recs}, f, separators=(",", ":"),
