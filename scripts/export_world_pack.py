@@ -12,6 +12,15 @@ A world pack is a folder with a manifest.json and a few rasters that the Unity p
   rivers.png     8-bit L, 0 = none, 1 = minor (< 100 m3/s), 2 = medium (100..1000), 3 = major
                  (>= 1000 m3/s) river passing through the cell. Rasterised from data/river_tiles
                  (HydroRIVERS channels, all LOD bands), one cell wide.
+  rivers.bin     the same channels as vectors, for the map's river line (the game draws a river
+                 from the real geometry, not from the raster's staircase): every channel with a
+                 reach of 100 m3/s or more, and the minor channels that run through dry country
+                 (Koppen BW/BS, where the game lays oasis ground along them). Little-endian:
+                 "CWRV", u32 version 1, u32 channels, u32 reaches, u32 vertices; per channel i32 id,
+                 u8 terminal kind (0 unknown, 1 mouth, 2 confluence, 3 sink), u8 class (1..3, the
+                 largest reach), u16 reaches; per reach f32 discharge, u16 vertices, then (f32 lon,
+                 f32 lat) each. A terminal is a confluence when it is a vertex of another channel,
+                 a mouth when the land mask has water under it, a sink otherwise.
 
 --island-expand E (0..1, default 0) is the app's small-island expander: an island under --island-min-deg
 (default 0.15 deg) on its longer side is scaled about its centre E of the way toward that size and burned
@@ -557,6 +566,91 @@ def river_shapes(frame):
     return sorted(shapes, key=lambda gc: gc[1])   # draw major rivers last so they win
 
 
+def river_channels(frame, kop, mask):
+    """The channels under the frame as vectors (rivers.bin, see the module docstring): reaches grouped
+    by channel id, with each channel's terminal classified. Minor channels (every reach under
+    100 m3/s) are kept only where a vertex of theirs lies on a dry Koppen pixel (BW/BS, classes 4..7):
+    those are the ones the game draws, as oasis ground; the rest would be most of the file for nothing.
+    Returns (channels, stats); channels is a list of (id, kind, cls, [(discharge, [[lon, lat], ...]), ...])."""
+    import struct
+    man = json.load(open(os.path.join(DATA, "river_tiles", "manifest.json"), encoding="utf-8"))
+    chans = {}
+    for t in man["tiles"]:
+        path = os.path.join(DATA, "river_tiles", t["id"] + ".json")
+        if not os.path.exists(path) or not frame.touches(t["b"]):
+            continue
+        for f in json.load(open(path, encoding="utf-8"))["features"]:
+            parts = [[[float(x), float(y)] for x, y in line] for line in f["l"] if len(line) >= 2]
+            if parts:
+                chans.setdefault(int(f.get("c", -1)), []).append((float(f.get("d", 0)), parts))
+
+    kh, kw = kop.shape
+    mh, mw = mask.shape
+
+    def kop_at(lon, lat):
+        c = int(((lon - frame.lon_min) % 360.0) / frame.res * kw / frame.w)
+        r = int((frame.lat_max - lat) / frame.res * kh / frame.h)
+        return int(kop[r, c]) if 0 <= r < kh and 0 <= c < kw else 0
+
+    def water_at(lon, lat):
+        c = int(((lon - frame.lon_min) % 360.0) / frame.res)
+        r = int((frame.lat_max - lat) / frame.res)
+        return (mask[r, c] == 0) if 0 <= r < mh and 0 <= c < mw else None
+
+    # Every vertex of every channel as one integer key (1e-5 deg, about a metre), for the confluence test.
+    def key(p):
+        return (int(round((p[0] + 180.0) * 1e5)) << 32) | int(round((p[1] + 90.0) * 1e5))
+
+    kept = []
+    stats = {"channels": len(chans), "minor_dropped": 0, "mouth": 0, "confluence": 0, "sink": 0, "unknown": 0}
+    for cid, reaches in chans.items():
+        peak = max(d for d, _ in reaches)
+        cls = 3 if peak >= 1000 else (2 if peak >= 100 else 1)
+        if cls == 1 and not any(4 <= kop_at(x, y) <= 7 for _, parts in reaches for part in parts for x, y in part):
+            stats["minor_dropped"] += 1
+            continue
+        kept.append((cid, cls, reaches))
+
+    keys_by_channel = {cid: np.fromiter((key(p) for _, parts in reaches for part in parts for p in part), dtype=np.int64)
+                       for cid, _, reaches in kept}
+    all_keys = np.unique(np.concatenate(list(keys_by_channel.values()))) if keys_by_channel else np.zeros(0, np.int64)
+    counts = {}
+    for cid, ks in keys_by_channel.items():
+        for k in np.unique(ks).tolist():
+            counts[k] = counts.get(k, 0) + 1
+
+    out = []
+    for cid, cls, reaches in kept:
+        # The terminal: the end of the reach whose end starts no other reach of this channel.
+        starts = set(key(parts[0][0]) for _, parts in reaches)
+        ends = [parts[-1][-1] for _, parts in reaches if key(parts[-1][-1]) not in starts]
+        term = ends[0] if ends else reaches[-1][1][-1][-1]
+        k = key(term)
+        if counts.get(k, 0) > 1:
+            kind = 2
+        else:
+            w = water_at(term[0], term[1])
+            kind = 0 if w is None else (1 if w else 3)
+        stats[("unknown", "mouth", "confluence", "sink")[kind]] += 1
+        out.append((cid, kind, cls, [(d, [p for part in parts for p in part]) for d, parts in reaches]))
+    return out, stats
+
+
+def write_river_channels(path, channels):
+    """rivers.bin, as the module docstring lays it out. Returns (channels, reaches, vertices)."""
+    import struct
+    n_reach = sum(len(r) for _, _, _, r in channels)
+    n_vert = sum(len(pts) for _, _, _, r in channels for _, pts in r)
+    with open(path, "wb") as f:
+        f.write(b"CWRV" + struct.pack("<IIII", 1, len(channels), n_reach, n_vert))
+        for cid, kind, cls, reaches in channels:
+            f.write(struct.pack("<iBBH", cid, kind, cls, len(reaches)))
+            for d, pts in reaches:
+                f.write(struct.pack("<fH", d, len(pts)))
+                f.write(np.asarray(pts, dtype="<f4").tobytes())
+    return len(channels), n_reach, n_vert
+
+
 # ---------------------------------------------------------------- main
 
 def main():
@@ -617,6 +711,12 @@ def main():
     Image.fromarray(rivers, "L").save(os.path.join(args.out, "rivers.png"), optimize=True)
     print(f"rivers from {len(shapes)} reaches: minor {(rivers == 1).sum()} medium {(rivers == 2).sum()} major {(rivers == 3).sum()} cells")
 
+    channels, cstats = river_channels(frame, kop, mask)
+    n_ch, n_reach, n_vert = write_river_channels(os.path.join(args.out, "rivers.bin"), channels)
+    print(f"river channels: {n_ch} kept of {cstats['channels']} ({cstats['minor_dropped']} minor channels off the drylands dropped), "
+          f"{n_reach} reaches, {n_vert} vertices; terminals: {cstats['mouth']} mouths, {cstats['confluence']} confluences, "
+          f"{cstats['sink']} sinks, {cstats['unknown']} off the frame")
+
     manifest = {
         "format": "culturewars-worldpack",
         "version": 1,
@@ -632,13 +732,15 @@ def main():
             "landMask": {"file": "landmask.png", "encoding": "l8", "width": frame.w, "height": frame.h},
             "rivers": {"file": "rivers.png", "encoding": "index8", "width": frame.w, "height": frame.h,
                        "classes": ["", "minor", "medium", "major"]},
+            "riversVector": {"file": "rivers.bin", "encoding": "channels-bin-v1", "channels": n_ch, "reaches": n_reach, "vertices": n_vert},
             "koppen": {"file": "koppen.png", "encoding": "index8", "width": int(kop.shape[1]), "height": int(kop.shape[0]),
                         "classes": ["" if k is None else k for k in KOPPEN_KEYS]},
         },
         "frame": {"requestedBounds": [w, s, e, n], "ppd": frame.ppd, "snap": args.snap,
                   "islandExpand": args.island_expand, "islandMinDeg": args.island_min_deg, "islandMinAreaKm2": args.island_min_area,
                   "islandIsolationKm": args.island_isolation, "islandRegions": [list(r) for r in regions], "islandMerge": args.island_merge,
-                  "sources": {"elevation": elev_src, "koppen": kop_src, "landMask": land_src, "rivers": "river_tiles"}},
+                  "sources": {"elevation": elev_src, "koppen": kop_src, "landMask": land_src, "rivers": "river_tiles",
+                              "riversVector": "river_tiles (channels >= 100 m3/s, and minor channels through Koppen BW/BS)"}},
         "attribution": [
             "Elevation: ETOPO 2022 (NOAA NCEI), " + ("30 arc-second" if fine["elev"] else "decimated to the working grid"),
             ("Coastline: OpenStreetMap land polygons (© OpenStreetMap contributors, ODbL 1.0)"
