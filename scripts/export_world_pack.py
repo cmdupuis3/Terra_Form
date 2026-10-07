@@ -21,6 +21,12 @@ A world pack is a folder with a manifest.json and a few rasters that the Unity p
                  largest reach), u16 reaches; per reach f32 discharge, u16 vertices, then (f32 lon,
                  f32 lat) each. A terminal is a confluence when it is a vertex of another channel,
                  a mouth when the land mask has water under it, a sink otherwise.
+  playas.bin     the salt pans (data/playas.json, Natural Earth's playas) under the frame as polygons,
+                 for the map's salt crust. Little-endian: "CWPL", u32 version 1, u32 polygons; per
+                 polygon u32 rings; per ring u32 vertices, then (f32 lon, f32 lat) each; the first ring
+                 is the outside, the rest holes, rings not closed. The same polygons are burned back
+                 into landmask.png as LAND after the lakes are punched out: a salt flat takes precedence
+                 over a lake polygon that covers it (Uyuni, the Bonneville flats).
 
 --island-expand E (0..1, default 0) is the app's small-island expander: an island under --island-min-deg
 (default 0.15 deg) on its longer side is scaled about its centre E of the way toward that size and burned
@@ -545,7 +551,15 @@ def build_landmask(frame, fine, island_expand=0.0, island_min_deg=0.15, island_m
                       f"gate-free regions, {gate['rocks']} rocks)")
     if lakes:
         mask[burn(frame, [(g, 1) for g in lakes]) == 1] = 0
-    return (mask * 255).astype(np.uint8), f"{coast_src} + {lake_src} ({n_polys} + {len(lakes)} polygons)"
+    # A salt flat is land whatever the lake layer says of it (the user, 2026-10-07): HydroLAKES holds
+    # Uyuni and parts of the Bonneville flats as lakes, and they came out as water.
+    playas = playa_shapes(frame)
+    playa_cells = 0
+    if playas:
+        burned = burn(frame, [(g, 1) for g in playas]) == 1
+        playa_cells = int((burned & (mask == 0)).sum())
+        mask[burned] = 1
+    return (mask * 255).astype(np.uint8), f"{coast_src} + {lake_src} ({n_polys} + {len(lakes)} polygons); {len(playas)} playas back as land ({playa_cells} cells were lake)"
 
 
 def river_shapes(frame):
@@ -636,6 +650,36 @@ def river_channels(frame, kop, mask):
     return out, stats
 
 
+def playa_shapes(frame):
+    """The salt pans under the frame from data/playas.json, as GeoJSON-like polygons (every ring closed)."""
+    path = os.path.join(DATA, "playas.json")
+    if not os.path.exists(path):
+        return []
+    out = []
+    for p in json.load(open(path, encoding="utf-8"))["polys"]:
+        if not frame.touches(p["b"]):
+            continue
+        rings = [[[float(x), float(y)] for x, y in r] for r in p["r"] if len(r) >= 3]
+        if rings:
+            out.append({"type": "Polygon", "coordinates": [r if r[0] == r[-1] else r + [r[0]] for r in rings]})
+    return out
+
+
+def write_playas(path, playas):
+    """playas.bin, as the module docstring lays it out. Returns the polygon count."""
+    import struct
+    with open(path, "wb") as f:
+        f.write(b"CWPL" + struct.pack("<II", 1, len(playas)))
+        for g in playas:
+            rings = g["coordinates"]
+            f.write(struct.pack("<I", len(rings)))
+            for r in rings:
+                pts = r[:-1] if len(r) > 1 and r[0] == r[-1] else r
+                f.write(struct.pack("<I", len(pts)))
+                f.write(np.asarray(pts, dtype="<f4").tobytes())
+    return len(playas)
+
+
 def write_river_channels(path, channels):
     """rivers.bin, as the module docstring lays it out. Returns (channels, reaches, vertices)."""
     import struct
@@ -711,6 +755,9 @@ def main():
     Image.fromarray(rivers, "L").save(os.path.join(args.out, "rivers.png"), optimize=True)
     print(f"rivers from {len(shapes)} reaches: minor {(rivers == 1).sum()} medium {(rivers == 2).sum()} major {(rivers == 3).sum()} cells")
 
+    n_playas = write_playas(os.path.join(args.out, "playas.bin"), playa_shapes(frame))
+    print(f"playas: {n_playas} salt pans under the frame")
+
     channels, cstats = river_channels(frame, kop, mask)
     n_ch, n_reach, n_vert = write_river_channels(os.path.join(args.out, "rivers.bin"), channels)
     print(f"river channels: {n_ch} kept of {cstats['channels']} ({cstats['minor_dropped']} minor channels off the drylands dropped), "
@@ -733,6 +780,7 @@ def main():
             "rivers": {"file": "rivers.png", "encoding": "index8", "width": frame.w, "height": frame.h,
                        "classes": ["", "minor", "medium", "major"]},
             "riversVector": {"file": "rivers.bin", "encoding": "channels-bin-v1", "channels": n_ch, "reaches": n_reach, "vertices": n_vert},
+            "playas": {"file": "playas.bin", "encoding": "polygons-bin-v1", "polygons": n_playas},
             "koppen": {"file": "koppen.png", "encoding": "index8", "width": int(kop.shape[1]), "height": int(kop.shape[0]),
                         "classes": ["" if k is None else k for k in KOPPEN_KEYS]},
         },
@@ -740,7 +788,8 @@ def main():
                   "islandExpand": args.island_expand, "islandMinDeg": args.island_min_deg, "islandMinAreaKm2": args.island_min_area,
                   "islandIsolationKm": args.island_isolation, "islandRegions": [list(r) for r in regions], "islandMerge": args.island_merge,
                   "sources": {"elevation": elev_src, "koppen": kop_src, "landMask": land_src, "rivers": "river_tiles",
-                              "riversVector": "river_tiles (channels >= 100 m3/s, and minor channels through Koppen BW/BS)"}},
+                              "riversVector": "river_tiles (channels >= 100 m3/s, and minor channels through Koppen BW/BS)",
+                              "playas": "playas.json (Natural Earth 10 m playas), also burned back into landMask as land"}},
         "attribution": [
             "Elevation: ETOPO 2022 (NOAA NCEI), " + ("30 arc-second" if fine["elev"] else "decimated to the working grid"),
             ("Coastline: OpenStreetMap land polygons (© OpenStreetMap contributors, ODbL 1.0)"
@@ -749,6 +798,7 @@ def main():
              if "HydroLAKES" in land_src else "Lakes: Natural Earth 10 m (public domain)"),
             "Climate: Koppen-Geiger, Beck et al. 2023 (CC BY 4.0)",
             "Rivers: HydroRIVERS v1.0 (CC BY 4.0), channel-reduced by Terra_Form",
+            "Salt pans: Natural Earth 10 m playas (public domain)",
         ],
     }
     with open(os.path.join(args.out, "manifest.json"), "w", encoding="utf-8") as f:
