@@ -238,6 +238,25 @@ Natural Earth's `ne_10m_lakes_historic`: the Aral Sea (late 1950s), Lake Chad
 (early 1960s), Lop Nur (early 1970s) and Lake Texcoco (early 1500s). Each
 historic outline is unioned with the modern remnants it covers.
 
+### Rivers are not lakes (`scripts/river_lakes.py`)
+
+HydroLAKES also carries water that is river: widenings of a big river's channel,
+side channels and arms threaded on the main stem, braided reaches digitised as
+polygons. Punched out of the land they sit on the river as lakes that are not
+there (the Montreal reach of the St Lawrence was a dashed chain of them). With
+`--rivers`, a polygon leaves the lake layer when a HydroRIVERS channel of 100 m³/s
+or more runs through it end to end (reach length inside ≥ 0.7 of its long axis),
+it is thin for that river (area over channel length under `max(1.5 km,
+0.08 km × √Q)`: 2.5 km at 1,000 m³/s, 8 km at 10,000), and the water does not
+stay (HydroLAKES residence time under 30 days: a channel turns over in hours or
+days, a lake the river runs through — the Arrow Lakes, Kamloops, Winokapau — holds
+it for months). Named lakes the numbers would drop are kept by `RIVER_LAKE_KEEP` (the
+St Lawrence's Saint-Pierre, Saint-François and Saint-Louis). The dropped rows go
+to `data/lake_tiles/river_reaches.csv`; the script run on its own prints the
+drops, the keeps and the near misses for review. `scripts/audit_lake_rivers.py`
+screens an exported world pack's inland water for thin river-threaded pieces,
+before and after.
+
 Both tile sets share the same two LODs and one index layout:
 
 | lod | cells | tolerance | used when the window is |
@@ -263,7 +282,11 @@ python scripts/build_coast_tiles.py land-polygons-split-4326/land_polygons.shp -
 #   (reservoirs go unless --keep-reservoirs). The cache holds the curated set: delete it after editing
 #   the lists in historic_lakes.py.
 python scripts/build_coast_tiles.py HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp --kind lakes --workers 3 --cache presimplified_lakes.npz \
-    --diff-land presimplified.npz --diff-ne data/coast_hires.json --ne-lakes ne_10m_lakes.shp --historic ne_10m_lakes_historic.shp
+    --diff-land presimplified.npz --diff-ne data/coast_hires.json --ne-lakes ne_10m_lakes.shp --historic ne_10m_lakes_historic.shp \
+    --rivers data/river_tiles
+# --rivers: HydroLAKES polygons that are river reaches go too (scripts/river_lakes.py, below); the script
+# run on its own prints what the rule drops, what it keeps by name and the near misses, for review
+python scripts/river_lakes.py HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp --rivers data/river_tiles
 # the same curation for the zoomed-out Natural Earth lake layers (rewrites them in place; idempotent)
 python scripts/historic_lakes.py data/lakes_10m.json data/lakes_hires.json \
     --hydrolakes HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp --ne-lakes ne_10m_lakes.shp --historic ne_10m_lakes_historic.shp

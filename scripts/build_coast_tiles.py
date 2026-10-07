@@ -45,6 +45,7 @@ from datetime import date
 import numpy as np
 import shapely
 import historic_lakes
+import river_lakes
 from shapely import STRtree
 from shapely.geometry import Polygon, MultiPolygon, box
 
@@ -149,16 +150,26 @@ def load_pieces(shp, presimplify, cache, min_km2=0.0, curate=None):
         print(f"[{os.getpid()}] loaded {len(g)} cached pieces in {time.time()-t:.1f}s", flush=True)
         return g, STRtree(g)
     import pyogrio
-    where, ne_lakes, historic = curate or (None, None, None)
+    where, ne_lakes, historic, rivers = (tuple(curate) + (None,) * 4)[:4] if curate else (None, None, None, None)
     # OGR matches nothing when the WHERE names a column that isn't read, so read the ones it filters on
-    df = pyogrio.read_dataframe(shp, columns=["Hylak_id", "Lake_type"] if where else [], where=where, use_arrow=True)
+    columns = river_lakes.ATTR_COLS if rivers else (["Hylak_id", "Lake_type"] if where else [])
+    df = pyogrio.read_dataframe(shp, columns=columns, where=where, use_arrow=True)
     g = df.geometry.values
     if where:
         print(f"{where[:60]}...: {len(g)} polygons", flush=True)
     if min_km2 > 0:
         n = len(g)
-        g = g[area_km2(g) >= min_km2]
+        big = area_km2(g) >= min_km2
+        g, df = g[big], df[big]
         print(f"size floor {min_km2} km2: {n} -> {len(g)} polygons", flush=True)
+    if rivers:
+        # Polygons that are river, not lake (river_lakes.py); what went is written beside the tiles.
+        river_dir, report = rivers
+        drop, rows = river_lakes.river_reaches(g, river_lakes.attrs_of(df), river_lakes.load_reaches(river_dir))
+        print(f"river reaches: {int(drop.sum())} polygons dropped, {sum(r['Lake_area'] for r in rows if r['dropped']):.0f} km2", flush=True)
+        if report:
+            river_lakes.write_report(rows, report)
+        g = g[~drop]
     if ne_lakes:
         g = historic_lakes.drop_inside(g, ne_lakes)
     if historic:
@@ -312,7 +323,7 @@ def encode(lod, olon, olat, q, polys):
             for dx, dy in d.tolist():
                 varint(body, zig(dx)); varint(body, zig(dy))
     out += body
-    return gzip.compress(bytes(out), compresslevel=9)
+    return gzip.compress(bytes(out), compresslevel=9, mtime=0)   # no timestamp in the header: an unchanged cell rebuilds to the same bytes
 
 
 # ---------- driver ----------
@@ -347,16 +358,18 @@ def main():
     ap.add_argument("--keep-reservoirs", action="store_true", help="lakes only: keep HydroLAKES' modern reservoirs")
     ap.add_argument("--ne-lakes", default="", help="lakes only: ne_10m_lakes.shp; its reservoirs drop the HydroLAKES pieces inside them")
     ap.add_argument("--historic", default="", help="lakes only: ne_10m_lakes_historic.shp (Aral Sea, Lake Chad... at historic extent)")
+    ap.add_argument("--rivers", default="", help="lakes only: data/river_tiles; HydroLAKES polygons that are river reaches are dropped (scripts/river_lakes.py)")
     args = ap.parse_args()
     diff = (args.diff_land, args.diff_ne) if (args.diff_land and args.diff_ne) else None
-    curate = None
-    if args.kind == "lakes":
-        curate = (None if args.keep_reservoirs else historic_lakes.hydrolakes_where(), args.ne_lakes or None, args.historic or None)
     K = KINDS[args.kind]
     if args.presimplify < 0:
         args.presimplify = K.get("tol", {}).get("f", LODS["f"]["tol"]) / 2
     if not args.out:
         args.out = os.path.join(os.path.dirname(__file__), "..", "data", K["out"])
+    curate = None
+    if args.kind == "lakes":
+        rivers = (args.rivers, os.path.join(args.out, "river_reaches.csv")) if args.rivers else None
+        curate = (None if args.keep_reservoirs else historic_lakes.hydrolakes_where(), args.ne_lakes or None, args.historic or None, rivers)
     lods = [l for l in args.lods.split(",") if l]
     only = set(args.only.split(",")) if args.only else None
     os.makedirs(args.out, exist_ok=True)
@@ -374,12 +387,14 @@ def main():
              "attribution": K["attribution"], "lods": {}}
     if diff:
         index["supplement"] = "lagoons = OSM land minus Natural Earth land (NE outline), >= %g km2, mean width >= %g km" % (LAGOON_MIN_KM2, LAGOON_MIN_THICK_KM)
-    if curate and (curate[0] or curate[2]):
+    if curate and (curate[0] or curate[2] or curate[3]):
         index["curation"] = "; ".join(x for x in [
             curate[0] and "modern reservoirs dropped (HydroLAKES Lake_type 2 less natural lakes with a dam%s)"
                 % (", and pieces inside Natural Earth reservoirs" if curate[1] else ""),
             curate[2] and "historic lakes from Natural Earth ne_10m_lakes_historic (Aral Sea, Lake Chad, Lop Nur, Lake Texcoco)",
-        ] if x) + " -- scripts/historic_lakes.py"
+            curate[3] and "river reaches dropped (a %g m3/s channel through, thinner than the river's ceiling, water held under %g days; river_reaches.csv)"
+                % (river_lakes.MIN_Q, river_lakes.RES_MAX_DAYS),
+        ] if x) + " -- scripts/historic_lakes.py, scripts/river_lakes.py"
     ipath = os.path.join(args.out, "index.json")
     if only and os.path.exists(ipath):   # partial rebuild: keep every other cell's entry
         index = json.load(open(ipath, encoding="utf-8"))
