@@ -1,0 +1,728 @@
+name,lat,lon,country,eras,significance,kind,confidence
+Brattahlid,61.155,-45.517,Greenland,M,3,ruin,high
+Gardar (Igaliku),60.993,-45.428,Greenland,M,2,religious,high
+Hvalsey,60.826,-45.779,Greenland,M,2,ruin,high
+Nuuk (Godthåb),64.175,-51.738,Greenland,E;N,3,capital,high
+Ilulissat (Jakobshavn),69.219,-51.099,Greenland,E;N,2,port,high
+Qaqortoq (Julianehåb),60.718,-46.035,Greenland,E;N,2,port,high
+Sisimiut (Holsteinsborg),66.939,-53.672,Greenland,E;N,1,port,high
+Qaanaaq (Thule),77.467,-69.228,Greenland,N,1,port,high
+L'Anse aux Meadows,51.596,-55.532,Canada,M,3,ruin,high
+Quebec City (Stadacona),46.814,-71.208,Canada,M;E;N,4,capital,high
+Montreal (Hochelaga),45.502,-73.567,Canada,M;E;N,4,city,high
+Toronto,43.653,-79.383,Canada,E;N,4,city,high
+Ottawa (Bytown),45.421,-75.697,Canada,N,3,capital,high
+Kingston (Fort Frontenac),44.231,-76.486,Canada,E;N,3,fortress,high
+Halifax,44.649,-63.575,Canada,E;N,4,port,high
+Louisbourg,45.892,-59.985,Canada,E,3,fortress,high
+Port-Royal (Annapolis Royal),44.741,-65.516,Canada,E,3,fortress,high
+Saint John,45.273,-66.063,Canada,E;N,2,port,high
+Fredericton,45.963,-66.643,Canada,N,2,capital,high
+Charlottetown,46.238,-63.129,Canada,E;N,2,capital,high
+St. John's,47.562,-52.713,Canada,E;N,3,port,high
+Ferryland,47.021,-52.878,Canada,E,1,ruin,high
+Trois-Rivières,46.343,-72.543,Canada,E;N,2,city,high
+Tadoussac,48.144,-69.716,Canada,E,2,port,high
+Sault Ste. Marie,46.522,-84.336,Canada,E;N,2,mission,high
+Sainte-Marie among the Hurons,44.740,-79.845,Canada,E,2,mission,high
+Winnipeg (Fort Garry),49.895,-97.138,Canada,E;N,3,city,high
+York Factory,57.000,-92.300,Canada,E;N,2,market,high
+Churchill (Prince of Wales Fort),58.768,-94.165,Canada,E;N,2,fortress,high
+Moose Factory,51.258,-80.609,Canada,E,1,market,high
+Fort Albany,52.222,-81.651,Canada,E,1,market,high
+Regina,50.445,-104.619,Canada,N,2,capital,high
+Saskatoon,52.133,-106.670,Canada,N,1,city,high
+Batoche,52.753,-106.117,Canada,N,2,fortress,high
+Edmonton (Fort Edmonton),53.546,-113.494,Canada,E;N,3,capital,high
+Calgary,51.045,-114.057,Canada,N,3,city,high
+Fort Chipewyan,58.709,-111.157,Canada,E;N,1,market,high
+Rocky Mountain House,52.376,-114.922,Canada,E;N,1,market,high
+Cumberland House,53.958,-102.283,Canada,E,1,market,high
+Vancouver,49.283,-123.121,Canada,N,4,port,high
+Victoria (Fort Victoria),48.428,-123.365,Canada,N,3,capital,high
+Fort Langley,49.168,-122.577,Canada,N,1,market,high
+Fort St. James,54.443,-124.253,Canada,N,1,market,high
+Barkerville,53.069,-121.516,Canada,N,2,mining,high
+Dawson City,64.060,-139.433,Canada,N,2,mining,high
+Whitehorse,60.721,-135.057,Canada,N,2,capital,high
+Yellowknife,62.454,-114.372,Canada,N,1,capital,high
+Iqaluit (Frobisher Bay),63.749,-68.517,Canada,N,1,capital,high
+Head-Smashed-In Buffalo Jump,49.749,-113.624,Canada,A;C;M,2,ruin,high
+SGang Gwaay (Ninstints),52.095,-131.220,Canada,M;E,2,ruin,high
+Gitwangak (Kitwanga Fort),55.113,-128.045,Canada,M;E,1,fortress,high
+Hamilton,43.256,-79.871,Canada,N,2,city,high
+London (Ontario),42.984,-81.246,Canada,N,1,city,high
+Niagara-on-the-Lake (Newark),43.255,-79.071,Canada,E;N,2,fortress,high
+Sudbury,46.490,-81.010,Canada,N,1,mining,high
+Thunder Bay (Fort William),48.382,-89.246,Canada,E;N,2,market,high
+Gaspé,48.831,-64.487,Canada,E,1,port,high
+Lunenburg,44.377,-64.309,Canada,E;N,1,port,high
+Sydney (Nova Scotia),46.137,-60.195,Canada,N,1,port,high
+Red Bay,51.733,-56.433,Canada,E,1,port,high
+Grand Pré,45.118,-64.308,Canada,E,1,city,high
+Kinngait (Cape Dorset),64.231,-76.540,Canada,A;C;M,1,ruin,high
+Port au Choix,50.700,-57.360,Canada,A;C,1,ruin,high
+Cahokia,38.655,-90.062,United States,M,4,ruin,high
+Moundville,33.006,-87.631,United States,M,3,ruin,high
+Etowah,34.126,-84.808,United States,M,3,ruin,high
+Poverty Point,32.637,-91.406,United States,A,3,ruin,high
+Spiro Mounds,35.312,-94.568,United States,M,3,ruin,high
+Hopewell Mound City (Chillicothe),39.376,-83.005,United States,C,3,ruin,high
+Newark Earthworks,40.042,-82.436,United States,C,2,ruin,high
+Serpent Mound,39.025,-83.430,United States,C;M,2,religious,high
+Grave Creek Mound (Moundsville),39.917,-80.744,United States,A;C,1,ruin,high
+Aztalan,43.066,-88.862,United States,M,2,ruin,high
+Angel Mounds,37.945,-87.455,United States,M,2,ruin,high
+Kincaid Mounds,37.083,-88.482,United States,M,1,ruin,high
+Ocmulgee (Macon),32.837,-83.608,United States,M,2,ruin,high
+Town Creek Mound,35.187,-79.864,United States,M,1,ruin,high
+Emerald Mound,31.642,-91.248,United States,M,2,religious,high
+Grand Village of the Natchez,31.531,-91.389,United States,M;E,2,ruin,high
+Winterville Mounds,33.491,-91.063,United States,M,1,ruin,high
+Lake Jackson Mounds,30.503,-84.308,United States,M,1,ruin,high
+Crystal River,28.909,-82.631,United States,C;M,1,ruin,high
+Toltec Mounds (Arkansas),34.647,-92.065,United States,M,1,ruin,high
+Parkin (Casqui),35.277,-90.556,United States,M;E,1,ruin,high
+Watson Brake,32.400,-92.100,United States,A,1,ruin,low
+Pinson Mounds,35.500,-88.700,United States,C,1,ruin,high
+Kolomoki Mounds,31.470,-84.930,United States,C;M,1,ruin,high
+Nanih Waiya,32.919,-89.013,United States,A;M,1,religious,high
+Mound Key (Calusa),26.428,-81.878,United States,M;E,1,ruin,high
+Caddo Mounds (Texas),31.597,-95.150,United States,M,1,ruin,high
+Kituwa,35.440,-83.398,United States,A;C;M,1,religious,high
+Knife River Villages,47.350,-101.385,United States,M;E,1,ruin,high
+Chaco Canyon (Pueblo Bonito),36.061,-107.962,United States,M,4,ruin,high
+Mesa Verde (Cliff Palace),37.168,-108.473,United States,M,3,ruin,high
+Aztec Ruins,36.836,-107.999,United States,M,2,ruin,high
+Hovenweep,37.385,-109.077,United States,M,1,ruin,high
+Casa Grande (Hohokam),32.995,-111.533,United States,M,2,ruin,high
+Snaketown,33.187,-111.920,United States,C;M,2,ruin,high
+Pueblo Grande (Phoenix),33.446,-111.986,United States,M,1,ruin,high
+Wupatki,35.520,-111.371,United States,M,1,ruin,high
+Canyon de Chelly,36.133,-109.467,United States,M,1,ruin,high
+Gila Cliff Dwellings (Mogollon),33.227,-108.272,United States,M,1,ruin,high
+Gran Quivira (Salinas Pueblos),34.260,-106.092,United States,M;E,1,ruin,high
+Taos Pueblo,36.439,-105.546,United States,M;E;N,3,city,high
+Acoma Pueblo,34.896,-107.582,United States,M;E;N,3,city,high
+Zuni Pueblo (Halona),35.072,-108.851,United States,M;E;N,2,city,high
+Oraibi (Hopi),35.871,-110.627,United States,M;E;N,2,city,high
+Pecos Pueblo,35.549,-105.688,United States,M;E,2,ruin,high
+Bandelier (Tyuonyi),35.779,-106.271,United States,M,1,ruin,high
+Ozette,48.158,-124.670,United States,M;E,2,ruin,high
+Point Hope (Ipiutak),68.347,-166.808,United States,C;M,1,ruin,high
+Celilo Falls (The Dalles),45.650,-120.970,United States,A;C;M;E,2,market,high
+Onondaga,42.980,-76.140,United States,M;E,2,city,low
+Ganondagan,42.962,-77.420,United States,E,1,ruin,high
+New York,40.713,-74.006,United States,E;N,5,port,high
+Boston,42.360,-71.059,United States,E;N,4,port,high
+Philadelphia,39.953,-75.165,United States,E;N,4,city,high
+Charleston,32.777,-79.931,United States,E;N,4,port,high
+New Orleans,29.951,-90.072,United States,E;N,4,port,high
+Jamestown,37.209,-76.777,United States,E,3,ruin,high
+Williamsburg,37.271,-76.707,United States,E,2,capital,high
+Plymouth,41.958,-70.668,United States,E,3,city,high
+St. Augustine,29.895,-81.314,United States,E;N,3,fortress,high
+Santa Fe,35.687,-105.938,United States,E;N,3,capital,high
+San Antonio,29.425,-98.494,United States,E;N,3,mission,high
+El Paso,31.759,-106.487,United States,E;N,2,city,high
+Albuquerque,35.084,-106.650,United States,E;N,2,city,high
+Tucson (San Xavier del Bac),32.222,-110.975,United States,E;N,2,mission,high
+Tumacácori,31.568,-111.051,United States,E,1,mission,high
+San Diego,32.716,-117.161,United States,E;N,3,mission,high
+Los Angeles,34.054,-118.243,United States,E;N,4,city,high
+San Francisco,37.775,-122.419,United States,E;N,4,port,high
+Monterey,36.600,-121.895,United States,E;N,2,capital,high
+Santa Barbara,34.421,-119.698,United States,E;N,1,mission,high
+San Juan Capistrano,33.502,-117.663,United States,E,1,mission,high
+Carmel Mission,36.543,-121.919,United States,E,1,mission,high
+Sonoma,38.292,-122.458,United States,E;N,1,mission,high
+Fort Ross,38.514,-123.245,United States,N,1,fortress,high
+San Jose (California),37.339,-121.895,United States,E;N,2,city,high
+Sacramento,38.582,-121.494,United States,N,2,capital,high
+Coloma (Sutter's Mill),38.800,-120.892,United States,N,1,mining,high
+Bodie,38.212,-119.012,United States,N,1,mining,high
+Virginia City (Nevada),39.310,-119.650,United States,N,2,mining,high
+Las Vegas,36.170,-115.140,United States,N,2,city,high
+Salt Lake City,40.761,-111.891,United States,N,3,capital,high
+Denver,39.739,-104.990,United States,N,3,city,high
+Leadville,39.251,-106.293,United States,N,1,mining,high
+Bent's Fort,38.040,-103.430,United States,N,1,market,high
+Tombstone,31.713,-110.068,United States,N,1,mining,high
+Yuma,32.725,-114.624,United States,E;N,1,fortress,high
+Phoenix,33.448,-112.074,United States,N,2,city,high
+Los Alamos,35.881,-106.304,United States,N,2,city,high
+Portland (Oregon),45.515,-122.679,United States,N,2,port,high
+Astoria,46.188,-123.831,United States,N,2,port,high
+Fort Vancouver,45.626,-122.655,United States,N,2,market,high
+Seattle,47.606,-122.332,United States,N,3,port,high
+Fort Laramie,42.213,-104.557,United States,N,1,fortress,high
+Fort Union Trading Post,47.999,-104.041,United States,N,1,market,high
+Deadwood,44.377,-103.730,United States,N,1,mining,high
+Butte,46.004,-112.535,United States,N,2,mining,high
+Saint Paul (Fort Snelling),44.954,-93.090,United States,N,2,city,high
+Grand Portage,47.963,-89.684,United States,E,1,market,high
+Michilimackinac,45.787,-84.730,United States,E;N,2,fortress,high
+Detroit,42.331,-83.046,United States,E;N,3,city,high
+Chicago,41.878,-87.630,United States,N,4,city,high
+Milwaukee,43.039,-87.906,United States,N,1,city,high
+Green Bay (La Baye),44.513,-88.013,United States,E;N,1,market,high
+Kaskaskia,37.922,-89.916,United States,E,1,capital,high
+Ste. Genevieve,37.981,-90.042,United States,E,1,city,high
+St. Louis,38.627,-90.199,United States,E;N,3,city,high
+Kansas City (Westport),39.100,-94.579,United States,N,2,city,high
+Independence (Missouri),39.091,-94.416,United States,N,1,market,high
+Nauvoo,40.550,-91.385,United States,N,1,city,high
+Omaha,41.257,-95.935,United States,N,1,city,high
+Vincennes,38.677,-87.529,United States,E,1,fortress,high
+Fort Wayne (Kekionga),41.079,-85.139,United States,E;N,1,fortress,high
+Cincinnati,39.103,-84.512,United States,N,2,city,high
+Louisville,38.253,-85.759,United States,N,2,city,high
+Pittsburgh (Fort Pitt),40.441,-79.996,United States,E;N,3,city,high
+Cleveland,41.499,-81.694,United States,N,2,city,high
+Buffalo,42.886,-78.878,United States,N,2,port,high
+Fort Niagara,43.263,-79.063,United States,E,1,fortress,high
+Fort Ticonderoga,43.841,-73.387,United States,E,2,fortress,high
+Albany (Fort Orange),42.653,-73.757,United States,E;N,3,capital,high
+Providence,41.824,-71.413,United States,E;N,2,city,high
+Newport (Rhode Island),41.490,-71.313,United States,E;N,2,port,high
+Hartford,41.764,-72.685,United States,E;N,2,capital,high
+New Haven,41.308,-72.928,United States,E;N,2,city,high
+Salem (Massachusetts),42.519,-70.897,United States,E;N,2,port,high
+Lowell,42.633,-71.316,United States,N,2,city,high
+Portsmouth (New Hampshire),43.072,-70.763,United States,E,1,port,high
+Portland (Maine),43.661,-70.255,United States,E;N,1,port,high
+Baltimore,39.290,-76.612,United States,E;N,3,port,high
+Annapolis,38.978,-76.492,United States,E;N,2,capital,high
+St. Mary's City,38.187,-76.432,United States,E,1,ruin,high
+Washington,38.895,-77.037,United States,N,4,capital,high
+Richmond,37.541,-77.436,United States,E;N,3,capital,high
+Norfolk,36.851,-76.286,United States,E;N,2,port,high
+Harpers Ferry,39.325,-77.740,United States,N,1,city,high
+Fort Christina (Wilmington),39.739,-75.540,United States,E,1,fortress,high
+Bethlehem (Pennsylvania),40.626,-75.370,United States,E,1,religious,high
+Lancaster (Pennsylvania),40.038,-76.306,United States,E;N,1,city,high
+Roanoke Island,35.937,-75.710,United States,E,1,ruin,high
+New Bern,35.108,-77.044,United States,E,1,capital,high
+Savannah,32.081,-81.091,United States,E;N,3,port,high
+Atlanta,33.749,-84.388,United States,N,3,city,high
+New Echota,34.539,-84.907,United States,N,1,capital,high
+Pensacola,30.421,-87.217,United States,E;N,2,port,high
+Mobile,30.695,-88.040,United States,E;N,2,port,high
+Biloxi,30.396,-88.885,United States,E,1,port,high
+Natchez,31.560,-91.403,United States,E;N,2,city,high
+Vicksburg,32.353,-90.878,United States,N,1,fortress,high
+Memphis,35.150,-90.049,United States,N,2,city,high
+Nashville,36.163,-86.782,United States,N,2,capital,high
+Birmingham (Alabama),33.521,-86.802,United States,N,1,city,high
+Montgomery,32.367,-86.300,United States,N,1,capital,high
+Miami,25.774,-80.194,United States,N,3,city,high
+Key West,24.556,-81.780,United States,N,1,port,high
+Jacksonville (Fort Caroline),30.332,-81.656,United States,E;N,1,fortress,high
+Cape Canaveral,28.489,-80.578,United States,N,2,port,high
+Houston,29.760,-95.370,United States,N,3,city,high
+Galveston,29.301,-94.798,United States,N,2,port,high
+Dallas,32.777,-96.797,United States,N,2,city,high
+Austin,30.267,-97.743,United States,N,2,capital,high
+Goliad (La Bahía),28.651,-97.390,United States,E,1,mission,high
+Nacogdoches,31.604,-94.656,United States,E,1,mission,high
+Tahlequah,35.915,-94.970,United States,N,1,capital,high
+Arkansas Post,34.022,-91.348,United States,E,1,fortress,high
+Sitka (Novo-Arkhangelsk),57.053,-135.330,United States,E;N,3,capital,high
+Kodiak (Pavlovsk),57.790,-152.407,United States,E;N,2,port,high
+Juneau,58.302,-134.420,United States,N,2,capital,high
+Nome,64.501,-165.407,United States,N,2,mining,high
+Utqiagvik (Barrow),71.291,-156.789,United States,M;E;N,1,city,high
+Anchorage,61.218,-149.900,United States,N,2,city,high
+Fairbanks,64.838,-147.716,United States,N,2,mining,high
+Skagway,59.458,-135.314,United States,N,1,port,high
+Unalaska (Dutch Harbor),53.874,-166.537,United States,E;N,1,port,high
+Fort Yukon,66.565,-145.274,United States,N,1,market,high
+San Lorenzo Tenochtitlán,17.751,-94.761,Mexico,A,3,ruin,high
+La Venta,18.104,-94.040,Mexico,A,3,ruin,high
+Tres Zapotes,18.467,-95.433,Mexico,A;C,2,ruin,high
+Chalcatzingo,18.678,-98.771,Mexico,A,2,ruin,high
+Tlatilco,19.470,-99.230,Mexico,A,1,ruin,low
+Cuicuilco,19.302,-99.182,Mexico,A;C,2,ruin,high
+Teotihuacan,19.692,-98.844,Mexico,C,5,ruin,high
+Cholula,19.058,-98.302,Mexico,C;M;E;N,4,religious,high
+Monte Albán,17.044,-96.768,Mexico,A;C;M,4,ruin,high
+San José Mogote,17.150,-96.780,Mexico,A,1,ruin,high
+Mitla,16.922,-96.360,Mexico,M,2,religious,high
+Yagul,16.959,-96.439,Mexico,M,1,ruin,high
+Zaachila,16.952,-96.749,Mexico,M,1,city,high
+Tilantongo,17.270,-97.330,Mexico,M,1,city,low
+Tututepec,16.130,-97.600,Mexico,M,1,city,low
+Cantona,19.550,-97.490,Mexico,C;M,1,ruin,high
+Xochicalco,18.804,-99.296,Mexico,C;M,2,ruin,high
+Cacaxtla,19.245,-98.340,Mexico,C;M,2,ruin,high
+Tula (Tollan),20.064,-99.343,Mexico,M,4,capital,high
+Mexico City (Tenochtitlan),19.433,-99.133,Mexico,M;E;N,5,capital,high
+Texcoco,19.512,-98.883,Mexico,M;E,3,city,high
+Chalco,19.264,-98.897,Mexico,M,1,city,high
+Tlaxcala,19.318,-98.238,Mexico,M;E;N,3,city,high
+Huexotzinco,19.160,-98.400,Mexico,M,1,city,high
+Calixtlahuaca,19.337,-99.690,Mexico,M,1,ruin,high
+Teotenango,19.110,-99.600,Mexico,M,1,ruin,high
+Malinalco,18.948,-99.495,Mexico,M,1,religious,high
+Tepoztlán,18.985,-99.100,Mexico,M;E,1,religious,high
+Cuernavaca (Cuauhnáhuac),18.924,-99.222,Mexico,M;E;N,2,city,high
+Tzintzuntzan,19.628,-101.579,Mexico,M,4,capital,high
+Pátzcuaro,19.516,-101.609,Mexico,M;E,2,city,high
+Ihuatzio,19.572,-101.565,Mexico,M,1,ruin,high
+El Tajín,20.448,-97.378,Mexico,C;M,3,ruin,high
+Tamtoc,21.930,-98.880,Mexico,C;M,1,ruin,high
+Cempoala,19.447,-96.408,Mexico,M;E,2,city,high
+La Quemada,22.452,-102.834,Mexico,C;M,2,ruin,high
+Alta Vista (Chalchihuites),23.479,-103.961,Mexico,C,1,ruin,high
+Paquimé (Casas Grandes),30.375,-107.957,Mexico,M,3,ruin,high
+Guachimontones,20.699,-103.835,Mexico,C,2,ruin,high
+Ixtlán del Río,21.040,-104.360,Mexico,C;M,1,ruin,high
+Palenque,17.484,-92.046,Mexico,C,3,ruin,high
+Yaxchilán,16.897,-90.964,Mexico,C,2,ruin,high
+Bonampak,16.704,-91.065,Mexico,C,1,ruin,high
+Toniná,16.902,-92.009,Mexico,C,2,ruin,high
+Calakmul,18.106,-89.811,Mexico,C,4,ruin,high
+Becán,18.516,-89.467,Mexico,C,1,ruin,high
+Edzná,19.598,-90.229,Mexico,C;M,2,ruin,high
+Uxmal,20.360,-89.771,Mexico,M,3,ruin,high
+Kabah,20.249,-89.651,Mexico,M,1,ruin,high
+Chichén Itzá,20.683,-88.569,Mexico,M,4,religious,high
+Mayapán,20.630,-89.461,Mexico,M,4,capital,high
+Dzibilchaltún,21.092,-89.597,Mexico,C;M,1,ruin,high
+Izamal,20.933,-89.018,Mexico,C;M;E,2,religious,high
+Ek' Balam,20.891,-88.136,Mexico,C;M,1,ruin,high
+Cobá,20.495,-87.736,Mexico,C;M,2,ruin,high
+Tulum,20.215,-87.429,Mexico,M,2,port,high
+San Gervasio (Cozumel),20.571,-86.847,Mexico,M,1,religious,high
+Comalcalco,18.280,-93.205,Mexico,C,1,ruin,high
+Dzibanché,18.640,-88.760,Mexico,C,1,ruin,high
+Chetumal,18.500,-88.296,Mexico,M;N,1,port,high
+Izapa,14.929,-92.180,Mexico,A;C,2,religious,high
+Chiapa de Corzo,16.707,-93.013,Mexico,A;C;E,1,city,high
+Veracruz,19.174,-96.134,Mexico,E;N,4,port,high
+Puebla,19.043,-98.198,Mexico,E;N,3,city,high
+Oaxaca (Antequera),17.060,-96.725,Mexico,E;N,3,city,high
+Guadalajara,20.676,-103.347,Mexico,E;N,4,city,high
+Zacatecas,22.771,-102.583,Mexico,E;N,3,mining,high
+Guanajuato,21.019,-101.257,Mexico,E;N,3,mining,high
+San Luis Potosí,22.156,-100.985,Mexico,E;N,2,mining,high
+Taxco,18.556,-99.605,Mexico,E;N,3,mining,high
+Pachuca,20.117,-98.733,Mexico,E;N,2,mining,high
+Querétaro,20.588,-100.390,Mexico,E;N,3,city,high
+Morelia (Valladolid),19.706,-101.195,Mexico,E;N,2,city,high
+Acapulco,16.853,-99.882,Mexico,E;N,4,port,high
+Campeche,19.845,-90.524,Mexico,E;N,3,port,high
+Mérida (Yucatán),20.967,-89.624,Mexico,M;E;N,3,city,high
+Valladolid (Yucatán),20.690,-88.202,Mexico,E;N,1,city,high
+Villahermosa,17.989,-92.930,Mexico,E;N,1,city,high
+San Cristóbal de las Casas,16.737,-92.638,Mexico,E;N,2,city,high
+Monterrey,25.686,-100.316,Mexico,E;N,3,city,high
+Saltillo,25.423,-101.005,Mexico,E;N,2,city,high
+Parras,25.440,-102.180,Mexico,E,1,city,high
+Durango,24.023,-104.653,Mexico,E;N,2,city,high
+Chihuahua,28.633,-106.069,Mexico,E;N,2,city,high
+Hidalgo del Parral,26.932,-105.667,Mexico,E;N,1,mining,high
+Ciudad Juárez (Paso del Norte),31.690,-106.424,Mexico,E;N,2,city,high
+Matamoros,25.869,-97.503,Mexico,N,1,port,high
+Tampico,22.233,-97.861,Mexico,N,2,port,high
+Mazatlán,23.249,-106.411,Mexico,N,2,port,high
+Culiacán,24.800,-107.394,Mexico,E;N,1,city,high
+Hermosillo,29.073,-110.956,Mexico,E;N,1,city,high
+Álamos,27.027,-108.940,Mexico,E,1,mining,high
+Guaymas,27.918,-110.898,Mexico,N,1,port,high
+Loreto (Baja California),26.012,-111.348,Mexico,E,2,mission,high
+La Paz (Baja California),24.142,-110.313,Mexico,E;N,1,port,high
+Santa Rosalía,27.336,-112.266,Mexico,N,1,mining,high
+Tijuana,32.515,-117.038,Mexico,N,1,city,high
+Colima,19.243,-103.725,Mexico,E;N,1,city,high
+Tepic,21.504,-104.894,Mexico,E;N,1,city,high
+San Blas,21.540,-105.285,Mexico,E,1,port,high
+Aguascalientes,21.882,-102.296,Mexico,E;N,1,city,high
+San Miguel de Allende,20.914,-100.744,Mexico,E;N,2,city,high
+Dolores Hidalgo,21.156,-100.932,Mexico,E;N,1,city,high
+León (Guanajuato),21.122,-101.683,Mexico,N,1,city,high
+Toluca,19.287,-99.657,Mexico,E;N,1,city,high
+Xalapa,19.543,-96.910,Mexico,E;N,1,city,high
+Tlacotalpan,18.613,-95.661,Mexico,E;N,1,port,high
+Tehuantepec,16.322,-95.240,Mexico,M;E,1,city,high
+Real de Catorce,23.690,-100.887,Mexico,E;N,1,mining,high
+Sombrerete,23.634,-103.640,Mexico,E,1,mining,high
+Tikal,17.222,-89.623,Guatemala,C,4,ruin,high
+El Mirador,17.755,-89.920,Guatemala,A;C,3,ruin,high
+Nakbé,17.675,-89.838,Guatemala,A,1,ruin,high
+Uaxactún,17.394,-89.634,Guatemala,C,2,ruin,high
+Kaminaljuyú,14.633,-90.550,Guatemala,A;C,3,ruin,high
+Guatemala City,14.634,-90.507,Guatemala,E;N,3,capital,high
+Antigua Guatemala,14.557,-90.734,Guatemala,E,4,capital,high
+Quiriguá,15.270,-89.040,Guatemala,C,3,ruin,high
+Piedras Negras,17.164,-91.260,Guatemala,C,2,ruin,high
+Ceibal (Seibal),16.512,-90.062,Guatemala,A;C;M,2,ruin,high
+Dos Pilas,16.443,-90.283,Guatemala,C,1,ruin,high
+Cancuén,15.931,-89.950,Guatemala,C,1,ruin,high
+Naranjo,17.131,-89.253,Guatemala,C,1,ruin,high
+Yaxhá,17.077,-89.402,Guatemala,C,1,ruin,high
+Takalik Abaj,14.636,-91.734,Guatemala,A;C,2,ruin,high
+Iximché,14.736,-90.996,Guatemala,M;E,2,capital,high
+Q'umarkaj (Utatlán),15.024,-91.173,Guatemala,M,2,capital,high
+Zaculeu,15.334,-91.498,Guatemala,C;M,1,fortress,high
+Mixco Viejo,14.871,-90.662,Guatemala,M,1,fortress,high
+Flores (Nojpetén),16.930,-89.892,Guatemala,M;E,2,city,high
+Quetzaltenango (Xelajú),14.835,-91.518,Guatemala,M;E;N,2,city,high
+Chichicastenango,14.944,-91.111,Guatemala,E;N,1,market,high
+Caracol,16.764,-89.118,Belize,C,3,ruin,high
+Lamanai,17.751,-88.654,Belize,A;C;M,2,ruin,high
+Altun Ha,17.764,-88.347,Belize,C,1,ruin,high
+Xunantunich,17.089,-89.141,Belize,C,1,ruin,high
+Belize City,17.498,-88.188,Belize,E;N,2,port,high
+Joya de Cerén,13.828,-89.360,El Salvador,C,3,ruin,high
+Tazumal (Chalchuapa),13.980,-89.675,El Salvador,C;M,2,ruin,high
+Cihuatán,13.978,-89.160,El Salvador,M,1,ruin,high
+San Salvador,13.692,-89.218,El Salvador,E;N,3,capital,high
+Suchitoto,13.938,-89.028,El Salvador,E,1,city,high
+Copán,14.839,-89.142,Honduras,C,3,ruin,high
+Comayagua,14.460,-87.643,Honduras,E;N,2,capital,high
+Tegucigalpa,14.072,-87.192,Honduras,E;N,3,capital,high
+Trujillo (Honduras),15.917,-85.954,Honduras,E,2,port,high
+Gracias,14.588,-88.581,Honduras,E,1,city,high
+Omoa,15.774,-88.038,Honduras,E,1,fortress,high
+León (Nicaragua),12.435,-86.878,Nicaragua,E;N,3,city,high
+León Viejo,12.397,-86.613,Nicaragua,E,2,ruin,high
+Granada (Nicaragua),11.930,-85.956,Nicaragua,E;N,3,city,high
+Managua,12.137,-86.251,Nicaragua,N,2,capital,high
+Bluefields,12.014,-83.764,Nicaragua,E;N,1,port,high
+Guayabo,9.973,-83.690,Costa Rica,C;M,1,ruin,high
+Cartago (Costa Rica),9.864,-83.919,Costa Rica,E;N,2,capital,high
+San José (Costa Rica),9.928,-84.091,Costa Rica,N,2,capital,high
+Panama Viejo,9.007,-79.487,Panama,E,4,ruin,high
+Panama City (Casco Viejo),8.952,-79.535,Panama,E;N,4,capital,high
+Portobelo,9.554,-79.653,Panama,E,3,port,high
+Nombre de Dios,9.583,-79.467,Panama,E,1,port,high
+Colón,9.359,-79.901,Panama,N,2,port,high
+Natá,8.333,-80.517,Panama,E,1,city,high
+El Caño (Sitio Conte),8.400,-80.450,Panama,C;M,1,ruin,high
+Havana,23.136,-82.359,Cuba,E;N,5,port,high
+Santiago de Cuba,20.021,-75.829,Cuba,E;N,3,port,high
+Baracoa,20.347,-74.496,Cuba,E,1,port,high
+Trinidad (Cuba),21.804,-79.984,Cuba,E,2,city,high
+Camagüey (Puerto Príncipe),21.381,-77.917,Cuba,E;N,2,city,high
+Matanzas,23.041,-81.577,Cuba,E;N,1,port,high
+Bayamo,20.379,-76.643,Cuba,E;N,1,city,high
+Santo Domingo,18.486,-69.931,Dominican Republic,E;N,4,capital,high
+La Isabela,19.890,-71.083,Dominican Republic,E,1,ruin,high
+Puerto Plata,19.797,-70.689,Dominican Republic,E;N,1,port,high
+Santiago de los Caballeros,19.451,-70.697,Dominican Republic,E;N,1,city,high
+Concepción de la Vega,19.222,-70.529,Dominican Republic,E,1,ruin,high
+Cap-Haïtien (Cap-Français),19.758,-72.204,Haiti,E;N,3,port,high
+Port-au-Prince,18.539,-72.335,Haiti,E;N,3,capital,high
+Milot (Citadelle Laferrière),19.573,-72.244,Haiti,N,2,fortress,high
+Jacmel,18.234,-72.535,Haiti,E;N,1,port,high
+Léogâne (Yaguana),18.511,-72.634,Haiti,M;E,1,city,high
+En Bas Saline,19.690,-72.140,Haiti,M,1,ruin,low
+Gonaïves,19.448,-72.689,Haiti,N,1,city,high
+Tortuga,20.055,-72.790,Haiti,E,1,fortress,high
+San Juan,18.466,-66.106,Puerto Rico,E;N,4,fortress,high
+Caguana,18.296,-66.782,Puerto Rico,M,2,religious,high
+Ponce,18.011,-66.614,Puerto Rico,E;N,1,city,high
+Kingston,17.997,-76.793,Jamaica,E;N,3,port,high
+Port Royal,17.937,-76.841,Jamaica,E,3,port,high
+Spanish Town,17.991,-76.957,Jamaica,E,2,capital,high
+Sevilla la Nueva (St. Ann's Bay),18.430,-77.200,Jamaica,E,1,ruin,high
+Nassau,25.060,-77.345,Bahamas,E;N,2,port,high
+San Salvador Island (Guanahani),24.050,-74.500,Bahamas,E,1,port,low
+Bridgetown,13.097,-59.616,Barbados,E;N,3,port,high
+Port of Spain,10.667,-61.517,Trinidad and Tobago,E;N,2,port,high
+St. George's (Grenada),12.053,-61.752,Grenada,E;N,2,port,high
+Kingstown,13.158,-61.225,Saint Vincent and the Grenadines,E;N,1,port,high
+Castries,14.010,-60.987,Saint Lucia,E;N,1,port,high
+Fort-de-France,14.616,-61.059,Martinique,E;N,2,port,high
+Saint-Pierre (Martinique),14.744,-61.176,Martinique,E;N,2,port,high
+Basse-Terre,15.998,-61.726,Guadeloupe,E;N,2,capital,high
+Pointe-à-Pitre,16.241,-61.533,Guadeloupe,E;N,1,port,high
+Roseau,15.301,-61.388,Dominica,E;N,1,port,high
+St. John's (Antigua),17.118,-61.845,Antigua and Barbuda,E;N,2,port,high
+English Harbour,17.007,-61.763,Antigua and Barbuda,E,1,fortress,high
+Basseterre,17.302,-62.726,Saint Kitts and Nevis,E;N,2,port,high
+Brimstone Hill,17.347,-62.838,Saint Kitts and Nevis,E,1,fortress,high
+Charlestown (Nevis),17.138,-62.622,Saint Kitts and Nevis,E,1,port,high
+Plymouth (Montserrat),16.706,-62.216,Montserrat,E;N,1,port,high
+Oranjestad (Sint Eustatius),17.483,-62.983,Sint Eustatius,E,2,port,high
+Philipsburg,18.026,-63.046,Sint Maarten,E;N,1,port,high
+Gustavia,17.897,-62.850,Saint Barthélemy,E,1,port,high
+Road Town,18.428,-64.618,British Virgin Islands,E;N,1,port,high
+Charlotte Amalie,18.342,-64.931,United States Virgin Islands,E;N,2,port,high
+Christiansted,17.746,-64.703,United States Virgin Islands,E;N,1,port,high
+Willemstad,12.109,-68.935,Curaçao,E;N,3,port,high
+Oranjestad (Aruba),12.519,-70.037,Aruba,E;N,1,port,high
+George Town (Cayman),19.287,-81.367,Cayman Islands,E;N,1,port,high
+St. George's (Bermuda),32.382,-64.678,Bermuda,E;N,2,port,high
+Hamilton (Bermuda),32.294,-64.782,Bermuda,N,1,port,high
+Bogotá (Bacatá),4.711,-74.072,Colombia,M;E;N,4,capital,high
+Tunja (Hunza),5.535,-73.367,Colombia,M;E;N,3,city,high
+Sogamoso (Suamox),5.715,-72.933,Colombia,M;E,2,religious,high
+Guatavita,4.978,-73.778,Colombia,M,1,religious,high
+Zipaquirá,5.022,-74.005,Colombia,M;E;N,1,mining,high
+Villa de Leyva,5.633,-73.524,Colombia,E,1,city,high
+Cartagena,10.391,-75.479,Colombia,E;N,4,port,high
+Santa Marta,11.241,-74.199,Colombia,E;N,2,port,high
+Ciudad Perdida (Teyuna),11.040,-73.925,Colombia,M,3,ruin,high
+Riohacha,11.544,-72.907,Colombia,E,1,port,high
+Barranquilla,10.964,-74.797,Colombia,N,3,port,high
+Mompox,9.242,-74.426,Colombia,E,2,port,high
+Santa María la Antigua del Darién,8.210,-77.120,Colombia,E,1,ruin,low
+San Agustín,1.883,-76.270,Colombia,A;C;M,3,religious,high
+Tierradentro,2.580,-76.030,Colombia,C;M,2,religious,high
+Popayán,2.444,-76.615,Colombia,E;N,3,city,high
+Cali,3.452,-76.532,Colombia,E;N,3,city,high
+Calima (Darién),3.930,-76.490,Colombia,A;C;M,1,ruin,low
+Medellín,6.244,-75.581,Colombia,E;N,3,city,high
+Santa Fe de Antioquia,6.556,-75.827,Colombia,E,2,city,high
+Pasto,1.214,-77.278,Colombia,E;N,2,city,high
+Tumaco (La Tolita-Tumaco),1.800,-78.780,Colombia,A;C,1,ruin,high
+Pamplona (Colombia),7.376,-72.648,Colombia,E,1,city,high
+Honda,5.206,-74.737,Colombia,E,1,port,high
+Socorro,6.467,-73.267,Colombia,E,1,city,high
+Quito,-0.220,-78.512,Ecuador,M;E;N,4,capital,high
+Caranqui (Ibarra),0.330,-78.120,Ecuador,M;E;N,2,city,high
+Cochasquí,0.055,-78.303,Ecuador,M,1,ruin,high
+Otavalo,0.234,-78.263,Ecuador,M;E;N,1,market,high
+Ingapirca,-2.545,-78.874,Ecuador,M,2,ruin,high
+Cuenca (Tomebamba),-2.900,-79.005,Ecuador,M;E;N,3,city,high
+Guayaquil,-2.190,-79.887,Ecuador,E;N,3,port,high
+Riobamba (Liribamba),-1.665,-78.654,Ecuador,M;E;N,2,city,high
+Loja,-3.993,-79.204,Ecuador,E;N,1,city,high
+Zaruma,-3.691,-79.611,Ecuador,E,1,mining,high
+Manta (Jocay),-0.962,-80.713,Ecuador,M;E;N,1,port,high
+Valdivia (Ecuador),-1.950,-80.750,Ecuador,A,2,ruin,high
+Real Alto,-2.330,-80.650,Ecuador,A,1,ruin,high
+La Tolita,1.200,-79.050,Ecuador,A;C,2,ruin,high
+Agua Blanca (Manteño),-1.520,-80.750,Ecuador,M,1,ruin,low
+Portoviejo,-1.055,-80.455,Ecuador,E,1,city,high
+Caral,-10.893,-77.520,Peru,A,4,ruin,high
+Cerro Sechín,-9.479,-78.265,Peru,A,2,ruin,high
+Chankillo,-9.560,-78.233,Peru,A,1,religious,high
+El Brujo (Huaca Prieta),-7.910,-79.300,Peru,A;C,2,ruin,high
+Kotosh,-9.933,-76.283,Peru,A,1,religious,high
+Chavín de Huántar,-9.593,-77.178,Peru,A;C,4,religious,high
+Kuntur Wasi,-7.129,-78.806,Peru,A,1,religious,high
+Paracas (Cerro Colorado),-13.843,-76.253,Peru,A;C,2,ruin,high
+Cahuachi (Nazca),-14.819,-75.117,Peru,C,3,religious,high
+Huacas de Moche,-8.134,-78.994,Peru,C,4,religious,high
+Sipán,-6.776,-79.608,Peru,C,3,ruin,high
+Pampa Grande,-6.783,-79.467,Peru,C;M,1,ruin,high
+Batán Grande (Sicán),-6.550,-79.700,Peru,M,3,religious,high
+Túcume,-6.517,-79.850,Peru,M,2,religious,high
+Chan Chan,-8.106,-79.075,Peru,M,4,capital,high
+Trujillo (Peru),-8.112,-79.029,Peru,E;N,3,city,high
+Pashash (Recuay),-8.400,-77.990,Peru,C,1,ruin,low
+Huaraz,-9.527,-77.528,Peru,C;E;N,1,city,high
+Kuélap,-6.419,-77.923,Peru,M,3,fortress,high
+Chachapoyas,-6.230,-77.869,Peru,E;N,1,city,high
+Cajamarca,-7.164,-78.511,Peru,M;E;N,3,city,high
+Marcahuamachuco,-7.780,-78.080,Peru,C;M,1,ruin,high
+Pachacamac,-12.257,-76.900,Peru,C;M,4,religious,high
+Lima,-12.046,-77.043,Peru,E;N,5,capital,high
+Callao,-12.056,-77.118,Peru,E;N,2,port,high
+Wari (Huari),-13.067,-74.197,Peru,M,4,capital,high
+Ayacucho (Huamanga),-13.158,-74.224,Peru,E;N,3,city,high
+Pikillacta,-13.616,-71.717,Peru,M,1,ruin,high
+Cusco,-13.532,-71.967,Peru,M;E;N,5,capital,high
+Ollantaytambo,-13.258,-72.263,Peru,M,3,fortress,high
+Pisac,-13.421,-71.847,Peru,M,2,ruin,high
+Machu Picchu,-13.163,-72.545,Peru,M,3,ruin,high
+Vilcabamba (Espíritu Pampa),-12.870,-73.120,Peru,M;E,3,ruin,low
+Choquequirao,-13.392,-72.871,Peru,M,2,ruin,high
+Raqchi,-14.173,-71.371,Peru,M,1,religious,high
+Vilcashuamán,-13.653,-73.952,Peru,M,2,city,high
+Huánuco Pampa,-9.823,-76.818,Peru,M,2,city,high
+Tambo Colorado,-13.700,-75.830,Peru,M,1,city,high
+La Centinela (Chincha),-13.400,-76.170,Peru,M,1,ruin,high
+Puno,-15.840,-70.028,Peru,E;N,1,port,high
+Sillustani,-15.722,-70.158,Peru,M,1,religious,high
+Pukara,-15.045,-70.367,Peru,A;C,2,ruin,high
+Arequipa,-16.409,-71.537,Peru,E;N,3,city,high
+Cerro Baúl,-17.110,-70.850,Peru,M,1,fortress,high
+Huancavelica,-12.786,-74.976,Peru,E,2,mining,high
+Jauja,-11.775,-75.498,Peru,M;E,1,capital,high
+Cerro de Pasco,-10.683,-76.256,Peru,E;N,1,mining,high
+Ica,-14.068,-75.729,Peru,E;N,1,city,high
+Piura,-5.195,-80.633,Peru,E;N,2,city,high
+Tumbes,-3.567,-80.452,Peru,M;E,2,city,high
+Paita,-5.089,-81.114,Peru,E,1,port,high
+Chiclayo,-6.771,-79.841,Peru,N,1,city,high
+Tacna,-18.014,-70.253,Peru,N,1,city,high
+Iquitos,-3.749,-73.253,Peru,N,2,port,high
+Tiwanaku,-16.555,-68.673,Bolivia,C;M,4,religious,high
+Potosí,-19.584,-65.753,Bolivia,E;N,5,mining,high
+Porco,-19.820,-65.980,Bolivia,M;E,1,mining,high
+Sucre (La Plata),-19.034,-65.262,Bolivia,E;N,3,capital,high
+La Paz,-16.496,-68.134,Bolivia,E;N,3,capital,high
+Cochabamba,-17.394,-66.157,Bolivia,E;N,2,city,high
+Oruro,-17.966,-67.106,Bolivia,E;N,2,mining,high
+Santa Cruz de la Sierra,-17.784,-63.182,Bolivia,E;N,2,city,high
+Tarija,-21.535,-64.730,Bolivia,E;N,1,city,high
+Copacabana,-16.166,-69.086,Bolivia,M;E,2,religious,high
+Isla del Sol,-16.020,-69.170,Bolivia,M,1,religious,high
+Samaipata (El Fuerte),-18.178,-63.819,Bolivia,C;M,2,religious,high
+Chiripa,-16.483,-68.850,Bolivia,A;C,1,ruin,low
+Incallajta,-17.610,-65.420,Bolivia,M,1,fortress,high
+Trinidad (Beni),-14.834,-64.904,Bolivia,E;N,1,mission,high
+Loma Salvatierra (Llanos de Mojos),-14.860,-64.600,Bolivia,C;M,1,ruin,low
+San José de Chiquitos,-17.847,-60.747,Bolivia,E,2,mission,high
+Caracas,10.481,-66.904,Venezuela,E;N,4,capital,high
+La Guaira,10.600,-66.933,Venezuela,E;N,1,port,high
+Cumaná,10.457,-64.168,Venezuela,E;N,2,port,high
+Araya,10.573,-64.253,Venezuela,E,1,fortress,high
+Nueva Cádiz (Cubagua),10.820,-64.170,Venezuela,E,1,ruin,high
+La Asunción (Margarita),11.033,-63.863,Venezuela,E,1,city,high
+Coro,11.405,-69.673,Venezuela,E;N,2,city,high
+Maracaibo,10.654,-71.643,Venezuela,E;N,3,port,high
+Valencia (Venezuela),10.162,-68.008,Venezuela,E;N,2,city,high
+Puerto Cabello,10.473,-68.012,Venezuela,E;N,1,port,high
+Barquisimeto,10.064,-69.347,Venezuela,E;N,1,city,high
+El Tocuyo,9.787,-69.794,Venezuela,E,1,city,high
+Mérida (Venezuela),8.590,-71.145,Venezuela,E;N,1,city,high
+Ciudad Bolívar (Angostura),8.129,-63.541,Venezuela,E;N,2,city,high
+Georgetown,6.801,-58.155,Guyana,E;N,2,port,high
+Kyk-Over-Al,6.390,-58.690,Guyana,E,1,fortress,high
+Paramaribo,5.852,-55.204,Suriname,E;N,2,port,high
+Jodensavanne,5.433,-54.983,Suriname,E,1,ruin,high
+Cayenne,4.933,-52.330,French Guiana,E;N,2,port,high
+Kourou,5.160,-52.650,French Guiana,N,1,port,high
+Saint-Laurent-du-Maroni,5.500,-54.030,French Guiana,N,1,city,high
+Rio de Janeiro,-22.907,-43.173,Brazil,E;N,5,port,high
+São Paulo,-23.551,-46.633,Brazil,E;N,4,city,high
+Salvador da Bahia,-12.972,-38.502,Brazil,E;N,4,port,high
+Ouro Preto (Vila Rica),-20.386,-43.504,Brazil,E;N,4,mining,high
+Recife,-8.054,-34.881,Brazil,E;N,3,port,high
+Olinda,-8.009,-34.855,Brazil,E;N,3,city,high
+Belém,-1.456,-48.502,Brazil,E;N,3,port,high
+Manaus,-3.119,-60.022,Brazil,E;N,3,port,high
+São Luís,-2.530,-44.303,Brazil,E;N,3,port,high
+Quilombo dos Palmares (Serra da Barriga),-9.168,-36.100,Brazil,E,3,fortress,high
+Mariana,-20.378,-43.416,Brazil,E;N,2,mining,high
+Sabará,-19.886,-43.806,Brazil,E,1,mining,high
+Diamantina,-18.241,-43.600,Brazil,E;N,2,mining,high
+São João del-Rei,-21.136,-44.262,Brazil,E;N,2,mining,high
+Tiradentes,-21.110,-44.178,Brazil,E,1,city,high
+Congonhas,-20.500,-43.858,Brazil,E,1,religious,high
+Belo Horizonte,-19.917,-43.934,Brazil,N,2,capital,high
+Lagoa Santa,-19.627,-43.893,Brazil,A,1,ruin,high
+Vitória,-20.319,-40.338,Brazil,E;N,2,port,high
+Santos,-23.961,-46.333,Brazil,E;N,2,port,high
+São Vicente,-23.963,-46.392,Brazil,E,2,city,high
+Paraty,-23.218,-44.713,Brazil,E,2,port,high
+Petrópolis,-22.505,-43.179,Brazil,N,1,city,high
+Campos dos Goytacazes,-21.752,-41.330,Brazil,E;N,1,city,high
+Campinas,-22.906,-47.061,Brazil,N,1,city,high
+Aparecida,-22.847,-45.230,Brazil,N,1,religious,high
+Cananéia,-25.015,-47.927,Brazil,E,1,port,high
+Curitiba,-25.429,-49.271,Brazil,E;N,2,city,high
+Paranaguá,-25.520,-48.509,Brazil,E;N,1,port,high
+Florianópolis (Desterro),-27.595,-48.548,Brazil,E;N,2,port,high
+São Francisco do Sul,-26.243,-48.638,Brazil,E,1,port,high
+Laguna,-28.482,-48.781,Brazil,E,1,port,high
+Blumenau,-26.919,-49.066,Brazil,N,1,city,high
+Porto Alegre,-30.033,-51.230,Brazil,E;N,3,port,high
+Rio Grande,-32.035,-52.099,Brazil,E;N,1,port,high
+Pelotas,-31.772,-52.342,Brazil,N,1,city,high
+São Miguel das Missões,-28.550,-54.556,Brazil,E,2,mission,high
+Goiás (Vila Boa),-15.934,-50.140,Brazil,E,2,mining,high
+Pirenópolis,-15.851,-48.959,Brazil,E,1,mining,high
+Cuiabá,-15.601,-56.097,Brazil,E;N,2,mining,high
+Vila Bela da Santíssima Trindade,-15.007,-59.950,Brazil,E,1,capital,high
+Brasília,-15.794,-47.882,Brazil,N,4,capital,high
+Corumbá,-19.009,-57.653,Brazil,E;N,1,port,high
+Porto Seguro,-16.449,-39.064,Brazil,E,2,port,high
+Ilhéus,-14.788,-39.049,Brazil,E;N,1,port,high
+Cachoeira,-12.600,-38.967,Brazil,E,1,city,high
+Lençóis,-12.563,-41.390,Brazil,N,1,mining,high
+Canudos,-9.900,-39.000,Brazil,N,1,religious,low
+São Cristóvão,-11.015,-37.206,Brazil,E,1,city,high
+Maceió,-9.666,-35.735,Brazil,N,1,port,high
+Marechal Deodoro,-9.711,-35.896,Brazil,E,1,city,high
+Penedo,-10.290,-36.586,Brazil,E,1,city,high
+João Pessoa (Filipeia),-7.115,-34.861,Brazil,E;N,2,city,high
+Igarassu,-7.834,-34.906,Brazil,E,1,city,high
+Natal,-5.795,-35.209,Brazil,E;N,2,port,high
+Fortaleza,-3.717,-38.543,Brazil,E;N,2,port,high
+Juazeiro do Norte,-7.213,-39.315,Brazil,N,1,religious,high
+Oeiras,-7.025,-42.131,Brazil,E,1,capital,high
+Serra da Capivara,-8.700,-42.550,Brazil,A,1,ruin,low
+Alcântara,-2.408,-44.415,Brazil,E,1,city,high
+Fernando de Noronha,-3.854,-32.424,Brazil,E;N,1,fortress,high
+Santarém (Tapajós),-2.443,-54.708,Brazil,A;C;M;E;N,2,port,high
+Marajó (Teso dos Bichos),-0.900,-49.500,Brazil,C;M,2,ruin,low
+Kuhikugu (Upper Xingu),-12.400,-53.200,Brazil,M,1,ruin,low
+Fordlândia,-3.830,-55.495,Brazil,N,1,city,high
+Macapá,0.035,-51.066,Brazil,E;N,1,fortress,high
+Barcelos (Mariuá),-0.975,-62.924,Brazil,E,1,mission,high
+Forte Príncipe da Beira,-12.420,-64.420,Brazil,E,1,fortress,high
+Santiago,-33.449,-70.669,Chile,E;N,4,capital,high
+Valparaíso,-33.047,-71.613,Chile,E;N,3,port,high
+La Serena,-29.903,-71.252,Chile,E;N,2,city,high
+Coquimbo,-29.953,-71.344,Chile,E;N,1,port,high
+Concepción (Chile),-36.827,-73.050,Chile,E;N,2,city,high
+Valdivia (Chile),-39.814,-73.246,Chile,E;N,2,fortress,high
+Villarrica,-39.283,-72.228,Chile,E;N,1,fortress,high
+Castro (Chiloé),-42.480,-73.762,Chile,E;N,1,city,high
+Ancud,-41.869,-73.830,Chile,E;N,1,fortress,high
+Copiapó,-27.366,-70.332,Chile,E;N,1,mining,high
+Antofagasta,-23.650,-70.400,Chile,N,2,port,high
+Iquique,-20.214,-70.152,Chile,N,2,port,high
+Arica,-18.478,-70.321,Chile,E;N,2,port,high
+San Pedro de Atacama,-22.911,-68.200,Chile,M;E,1,city,high
+Chuquicamata,-22.300,-68.900,Chile,N,2,mining,high
+Humberstone,-20.206,-69.795,Chile,N,1,mining,high
+Punta Arenas,-53.163,-70.908,Chile,N,2,port,high
+Puerto Montt,-41.469,-72.942,Chile,N,1,port,high
+Monte Verde,-41.510,-73.200,Chile,A,1,ruin,high
+Sewell,-34.083,-70.383,Chile,N,1,mining,high
+Lota,-37.090,-73.158,Chile,N,1,mining,high
+Talca,-35.426,-71.655,Chile,E;N,1,city,high
+Chillán,-36.606,-72.103,Chile,E;N,1,city,high
+Osorno,-40.574,-73.133,Chile,E;N,1,city,high
+Rancagua,-34.170,-70.741,Chile,E;N,1,city,high
+Buenos Aires,-34.604,-58.382,Argentina,E;N,5,capital,high
+La Plata,-34.921,-57.955,Argentina,N,2,capital,high
+Luján,-34.570,-59.105,Argentina,E;N,1,religious,high
+Córdoba (Argentina),-31.420,-64.188,Argentina,E;N,3,city,high
+Alta Gracia,-31.653,-64.428,Argentina,E,1,mission,high
+Santa Fe (Argentina),-31.633,-60.700,Argentina,E;N,2,city,high
+Rosario,-32.945,-60.651,Argentina,N,2,port,high
+Puerto Gaboto (Sancti Spiritus),-32.433,-60.817,Argentina,E,1,fortress,high
+Paraná,-31.733,-60.530,Argentina,N,1,capital,high
+Mendoza,-32.889,-68.846,Argentina,E;N,2,city,high
+San Juan (Argentina),-31.537,-68.525,Argentina,E;N,1,city,high
+San Luis,-33.302,-66.337,Argentina,E;N,1,city,high
+San Miguel de Tucumán,-26.808,-65.217,Argentina,E;N,2,city,high
+Salta,-24.783,-65.412,Argentina,E;N,2,city,high
+Jujuy,-24.186,-65.297,Argentina,E;N,1,city,high
+Tilcara (Pucará),-23.577,-65.396,Argentina,M,1,fortress,high
+Humahuaca,-23.205,-65.350,Argentina,E;N,1,city,high
+Quilmes (Ruins),-26.467,-66.037,Argentina,M;E,1,ruin,high
+El Shincal de Quimivil,-27.683,-67.167,Argentina,M,1,city,high
+Santiago del Estero,-27.784,-64.267,Argentina,E;N,1,city,high
+Catamarca,-28.470,-65.785,Argentina,E;N,1,city,high
+La Rioja (Argentina),-29.413,-66.856,Argentina,E;N,1,city,high
+Corrientes,-27.469,-58.830,Argentina,E;N,2,city,high
+San Ignacio Miní,-27.256,-55.535,Argentina,E,2,mission,high
+Carmen de Patagones,-40.799,-62.989,Argentina,E;N,1,city,high
+Bahía Blanca,-38.718,-62.266,Argentina,N,1,port,high
+Rawson (Chubut),-43.300,-65.102,Argentina,N,1,city,high
+Comodoro Rivadavia,-45.865,-67.483,Argentina,N,1,mining,high
+Ushuaia,-54.802,-68.303,Argentina,N,1,port,high
+Stanley,-51.693,-57.857,Falkland Islands,N,1,port,high
+Port Louis (Falklands),-51.550,-58.133,Falkland Islands,E,1,fortress,high
+Montevideo,-34.901,-56.164,Uruguay,E;N,3,capital,high
+Colonia del Sacramento,-34.472,-57.844,Uruguay,E;N,3,fortress,high
+Paysandú,-32.321,-58.076,Uruguay,E;N,1,city,high
+Santo Domingo Soriano,-33.400,-58.333,Uruguay,E,1,mission,high
+Asunción,-25.282,-57.635,Paraguay,E;N,3,capital,high
+Trinidad de Paraná,-27.133,-55.700,Paraguay,E,2,mission,high
+Jesús de Tavarangue,-27.049,-55.753,Paraguay,E,1,mission,high
+Encarnación,-27.330,-55.867,Paraguay,E;N,1,city,high
+Villarrica (Paraguay),-25.783,-56.450,Paraguay,E;N,1,city,high
+Concepción (Paraguay),-23.406,-57.434,Paraguay,E;N,1,city,high
+Humaitá,-27.067,-58.517,Paraguay,N,1,fortress,high
+Yaguarón,-25.561,-57.283,Paraguay,E,1,mission,high
+Caacupé,-25.386,-57.141,Paraguay,E;N,1,religious,high

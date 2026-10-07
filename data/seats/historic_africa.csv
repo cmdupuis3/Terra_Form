@@ -1,0 +1,428 @@
+name,lat,lon,country,eras,significance,kind,confidence
+Nouakchott,18.086,-15.975,Mauritania,N,3,capital,high
+Chinguetti,20.463,-12.362,Mauritania,M;E;N,3,religious,high
+Ouadane,20.930,-11.620,Mauritania,M;E,3,city,high
+Tichitt,18.449,-9.504,Mauritania,A;M;E,3,city,high
+Walata,17.295,-7.025,Mauritania,M;E,3,city,high
+Awdaghust (Tegdaoust),17.417,-10.417,Mauritania,M,3,ruin,low
+Koumbi Saleh,15.767,-7.967,Mauritania,M,3,ruin,high
+Azougui,20.550,-13.100,Mauritania,M,2,ruin,low
+Atar,20.518,-13.049,Mauritania,E;N,2,oasis,high
+Nouadhibou,20.931,-17.035,Mauritania,N,2,port,high
+Timbuktu,16.776,-3.008,Mali,M;E;N,5,city,high
+Gao,16.272,-0.045,Mali,M;E;N,4,city,high
+Djenné,13.906,-4.555,Mali,M;E;N,4,city,high
+Djenné-Djenno,13.890,-4.540,Mali,C;M,4,ruin,high
+Bamako,12.639,-8.003,Mali,N,3,capital,high
+Ségou,13.435,-6.265,Mali,E;N,3,capital,high
+Kangaba,11.933,-8.417,Mali,M;E,2,religious,high
+Hamdallahi,14.333,-4.050,Mali,N,2,capital,low
+Mopti,14.494,-4.197,Mali,N,2,port,high
+Sikasso,11.317,-5.667,Mali,N,2,fortress,high
+Kayes,14.447,-11.444,Mali,N,2,city,high
+Kidal,18.441,1.408,Mali,N,1,oasis,high
+Essouk-Tadmekka,18.883,1.050,Mali,M,3,ruin,low
+Araouane,18.904,-3.527,Mali,E;N,1,oasis,high
+Bandiagara,14.350,-3.611,Mali,N,2,city,high
+Nioro du Sahel,15.230,-9.588,Mali,E;N,2,city,high
+Dia,14.083,-4.950,Mali,C;M,2,ruin,low
+Kukiya,15.450,0.733,Mali,M,2,ruin,low
+Niamey,13.512,2.112,Niger,N,3,capital,high
+Agadez,16.973,7.991,Niger,M;E;N,3,city,high
+Bilma,18.686,12.917,Niger,M;E;N,3,oasis,high
+Zinder,13.805,8.988,Niger,E;N,3,city,high
+Maradi,13.500,7.102,Niger,N,2,city,high
+Tahoua,14.890,5.265,Niger,N,1,city,high
+Birni-N'Konni,13.797,5.254,Niger,E;N,1,city,high
+Dosso,13.049,3.194,Niger,N,1,city,high
+Assodé,17.583,8.633,Niger,M;E,2,ruin,low
+Fachi,18.108,11.572,Niger,E;N,1,oasis,high
+Say,13.100,2.367,Niger,N,1,religious,high
+In-Gall,16.783,6.933,Niger,E;N,1,oasis,high
+N'Djamena,12.107,15.044,Chad,N,3,capital,high
+Njimi,13.967,14.750,Chad,M,3,ruin,low
+Mao,14.121,15.313,Chad,E;N,2,city,high
+Abéché,13.829,20.832,Chad,E;N,3,city,high
+Ouara,14.133,21.050,Chad,E,2,ruin,low
+Massenya,11.400,16.170,Chad,E;N,2,capital,high
+Faya-Largeau,17.917,19.106,Chad,N,2,oasis,high
+Moundou,8.567,16.083,Chad,N,1,city,high
+Sarh,9.150,18.383,Chad,N,1,city,high
+Bol,13.467,14.717,Chad,N,1,city,high
+Kano,12.000,8.517,Nigeria,M;E;N,5,city,high
+Katsina,12.991,7.602,Nigeria,M;E;N,3,city,high
+Zaria,11.067,7.700,Nigeria,M;E;N,3,city,high
+Daura,13.033,8.317,Nigeria,M;E;N,2,city,high
+Alkalawa,13.467,5.650,Nigeria,E,2,ruin,low
+Sokoto,13.063,5.243,Nigeria,N,3,capital,high
+Gwandu,12.500,4.650,Nigeria,N,2,capital,low
+Birnin Kebbi,12.453,4.197,Nigeria,E;N,2,city,high
+Argungu,12.743,4.525,Nigeria,E;N,1,city,high
+Ngazargamu,13.150,11.967,Nigeria,M;E,3,ruin,low
+Kukawa,12.925,13.567,Nigeria,N,3,capital,high
+Maiduguri,11.833,13.150,Nigeria,N,3,city,high
+Dikwa,12.040,13.919,Nigeria,N,2,fortress,high
+Hadejia,12.450,10.040,Nigeria,E;N,1,city,high
+Bauchi,10.312,9.844,Nigeria,N,2,city,high
+Yola,9.208,12.482,Nigeria,N,2,city,high
+Jos,9.917,8.900,Nigeria,N,2,mining,high
+Kaduna,10.520,7.440,Nigeria,N,2,city,high
+Abuja,9.057,7.495,Nigeria,N,3,capital,high
+Lokoja,7.802,6.733,Nigeria,N,2,port,high
+Bida,9.083,6.017,Nigeria,E;N,2,city,high
+Idah,7.117,6.733,Nigeria,M;E;N,2,capital,high
+Ilorin,8.500,4.550,Nigeria,E;N,3,city,high
+Old Oyo (Oyo-Ile),8.967,4.283,Nigeria,M;E,4,ruin,low
+Oyo,7.850,3.933,Nigeria,N,2,city,high
+Ibadan,7.378,3.947,Nigeria,N,3,city,high
+Ife,7.483,4.567,Nigeria,M;E;N,4,religious,high
+Benin City,6.335,5.627,Nigeria,M;E;N,4,capital,high
+Lagos,6.455,3.394,Nigeria,E;N,5,port,high
+Badagry,6.417,2.883,Nigeria,E;N,2,port,high
+Abeokuta,7.150,3.350,Nigeria,N,2,city,high
+Ijebu-Ode,6.820,3.917,Nigeria,M;E;N,2,city,high
+Owo,7.196,5.587,Nigeria,M;E,2,city,high
+Osogbo,7.767,4.567,Nigeria,N,2,religious,high
+Igbo-Ukwu,6.017,7.017,Nigeria,M,3,ruin,high
+Nri,6.150,6.983,Nigeria,M;E,2,religious,low
+Onitsha,6.167,6.783,Nigeria,E;N,2,market,high
+Arochukwu,5.383,7.917,Nigeria,E;N,2,religious,high
+Calabar,4.950,8.325,Nigeria,E;N,3,port,high
+Bonny,4.433,7.167,Nigeria,E;N,2,port,high
+Port Harcourt,4.817,7.000,Nigeria,N,2,port,high
+Enugu,6.450,7.500,Nigeria,N,2,mining,high
+Warri,5.517,5.750,Nigeria,E;N,2,port,high
+Nok,9.500,8.033,Nigeria,A;C,3,ruin,low
+Wukari,7.867,9.783,Nigeria,E;N,1,city,high
+Sukur,10.740,13.570,Nigeria,E;N,2,religious,high
+Bussa,10.183,4.517,Nigeria,E;N,1,city,low
+Abomey,7.183,1.983,Benin,E;N,3,capital,high
+Ouidah,6.367,2.083,Benin,E;N,3,port,high
+Porto-Novo,6.497,2.605,Benin,E;N,2,capital,high
+Cotonou,6.367,2.433,Benin,N,2,port,high
+Allada,6.650,2.150,Benin,E,1,city,high
+Nikki,9.933,3.200,Benin,E;N,1,city,high
+Ketu,7.358,2.600,Benin,M;E,2,city,high
+Lomé,6.133,1.217,Togo,N,2,capital,high
+Notsé,6.950,1.167,Togo,E,1,city,high
+Aného,6.233,1.600,Togo,E;N,1,port,high
+Kumasi,6.688,-1.624,Ghana,E;N,4,capital,high
+Elmina,5.083,-1.350,Ghana,E;N,3,fortress,high
+Cape Coast,5.106,-1.247,Ghana,E;N,3,fortress,high
+Accra,5.556,-0.197,Ghana,E;N,3,capital,high
+Begho,7.967,-2.467,Ghana,M;E,3,ruin,low
+Bono Manso,7.683,-1.950,Ghana,M;E,3,ruin,low
+Techiman,7.583,-1.933,Ghana,E;N,2,market,high
+Salaga,8.550,-0.517,Ghana,E;N,2,market,high
+Yendi,9.433,-0.017,Ghana,E;N,2,capital,high
+Tamale,9.400,-0.833,Ghana,N,2,city,high
+Wa,10.067,-2.500,Ghana,E;N,1,city,high
+Nalerigu,10.527,-0.370,Ghana,E;N,1,city,high
+Larabanga,9.217,-1.858,Ghana,M;E,1,religious,high
+Anomabu,5.167,-1.117,Ghana,E;N,2,fortress,high
+Axim,4.867,-2.233,Ghana,E;N,2,fortress,high
+Keta,5.917,0.983,Ghana,E;N,1,port,high
+Sekondi-Takoradi,4.933,-1.750,Ghana,N,2,port,high
+Kong,9.150,-4.617,Côte d'Ivoire,E;N,3,city,high
+Bondoukou,8.033,-2.800,Côte d'Ivoire,E;N,2,city,high
+Abidjan,5.345,-4.024,Côte d'Ivoire,N,3,port,high
+Grand-Bassam,5.200,-3.733,Côte d'Ivoire,N,2,port,high
+Yamoussoukro,6.820,-5.277,Côte d'Ivoire,N,2,capital,high
+Korhogo,9.458,-5.633,Côte d'Ivoire,N,1,city,high
+Ouagadougou,12.371,-1.520,Burkina Faso,E;N,3,capital,high
+Bobo-Dioulasso,11.178,-4.297,Burkina Faso,N,2,city,high
+Ouahigouya,13.583,-2.417,Burkina Faso,E;N,2,city,high
+Tenkodogo,11.783,-0.367,Burkina Faso,M;E,1,city,high
+Loropéni,10.283,-3.583,Burkina Faso,M;E,2,ruin,high
+Fada N'Gourma,12.062,0.358,Burkina Faso,E;N,1,city,high
+Dakar,14.693,-17.447,Senegal,N,3,capital,high
+Gorée,14.667,-17.400,Senegal,E;N,3,port,high
+Saint-Louis,16.033,-16.500,Senegal,E;N,3,port,high
+Joal-Fadiouth,14.167,-16.833,Senegal,E;N,1,port,high
+Touba,14.850,-15.883,Senegal,N,2,religious,high
+Kaolack,14.150,-16.067,Senegal,N,1,city,high
+Ziguinchor,12.583,-16.267,Senegal,N,1,port,high
+Podor,16.650,-14.967,Senegal,E;N,1,fortress,high
+Banjul,13.454,-16.579,Gambia,N,2,capital,high
+James Island (Kunta Kinteh),13.317,-16.360,Gambia,E;N,2,fortress,high
+Janjanbureh,13.533,-14.767,Gambia,N,1,city,high
+Wassu,13.683,-14.883,Gambia,A;C,2,religious,high
+Bissau,11.863,-15.598,Guinea-Bissau,E;N,2,capital,high
+Cacheu,12.267,-16.167,Guinea-Bissau,E;N,2,port,high
+Conakry,9.538,-13.678,Guinea,N,2,capital,high
+Niani,11.383,-8.383,Guinea,M,3,capital,high
+Kankan,10.383,-9.300,Guinea,E;N,2,city,high
+Timbo,10.633,-11.883,Guinea,E;N,2,capital,high
+Labé,11.317,-12.283,Guinea,E;N,1,city,high
+Freetown,8.484,-13.234,Sierra Leone,N,3,port,high
+Bunce Island,8.567,-13.033,Sierra Leone,E,2,fortress,high
+Bonthe,7.526,-12.505,Sierra Leone,E;N,1,port,high
+Monrovia,6.313,-10.801,Liberia,N,2,capital,high
+Harper,4.375,-7.717,Liberia,N,1,port,high
+Cidade Velha,14.917,-23.605,Cape Verde,E;N,3,port,high
+Praia,14.933,-23.513,Cape Verde,N,2,capital,high
+Mindelo,16.886,-24.988,Cape Verde,N,1,port,high
+Yaoundé,3.867,11.517,Cameroon,N,2,capital,high
+Douala,4.050,9.700,Cameroon,E;N,3,port,high
+Foumban,5.717,10.900,Cameroon,E;N,2,capital,high
+Ngaoundéré,7.317,13.583,Cameroon,N,1,city,high
+Garoua,9.300,13.400,Cameroon,N,1,city,high
+Maroua,10.583,14.317,Cameroon,N,1,city,high
+Logone-Birni,11.783,15.100,Cameroon,E;N,3,city,high
+Bafut,6.083,10.100,Cameroon,E;N,1,capital,high
+Bangui,4.361,18.555,Central African Republic,N,2,capital,high
+Ndélé,8.400,20.650,Central African Republic,N,1,city,high
+Bangassou,4.733,22.817,Central African Republic,N,1,city,high
+Brazzaville,-4.267,15.283,Republic of the Congo,N,3,capital,high
+Loango,-4.650,11.800,Republic of the Congo,M;E,3,capital,low
+Pointe-Noire,-4.783,11.867,Republic of the Congo,N,2,port,high
+Mbé,-3.317,15.883,Republic of the Congo,E;N,1,capital,low
+Libreville,0.417,9.467,Gabon,N,2,capital,high
+Port-Gentil,-0.717,8.783,Gabon,N,1,port,high
+Lambaréné,-0.700,10.233,Gabon,N,1,city,high
+Malabo,3.750,8.783,Equatorial Guinea,N,2,capital,high
+São Tomé,0.336,6.731,São Tomé and Príncipe,E;N,2,port,high
+Kinshasa,-4.325,15.322,Democratic Republic of the Congo,N,4,capital,high
+Lubumbashi,-11.667,27.483,Democratic Republic of the Congo,N,3,mining,high
+Kisangani,0.517,25.200,Democratic Republic of the Congo,N,2,city,high
+Boma,-5.850,13.050,Democratic Republic of the Congo,E;N,2,port,high
+Matadi,-5.817,13.450,Democratic Republic of the Congo,N,1,port,high
+Kananga,-5.900,22.417,Democratic Republic of the Congo,N,1,city,high
+Mbuji-Mayi,-6.133,23.600,Democratic Republic of the Congo,N,1,mining,high
+Mushenge (Nsheng),-4.783,21.017,Democratic Republic of the Congo,E;N,2,capital,low
+Sanga (Upemba),-8.500,26.500,Democratic Republic of the Congo,M,2,ruin,low
+Musumba,-8.350,22.583,Democratic Republic of the Congo,E;N,2,capital,low
+Kasongo,-4.450,26.667,Democratic Republic of the Congo,N,1,city,high
+Nyangwe,-4.233,26.183,Democratic Republic of the Congo,N,1,market,high
+Bukavu,-2.500,28.850,Democratic Republic of the Congo,N,1,city,high
+Goma,-1.683,29.233,Democratic Republic of the Congo,N,1,city,high
+Mbandaka,0.050,18.267,Democratic Republic of the Congo,N,1,city,high
+Luanda,-8.839,13.234,Angola,E;N,3,port,high
+Mbanza Kongo,-6.267,14.250,Angola,M;E;N,4,capital,high
+Benguela,-12.578,13.407,Angola,E;N,2,port,high
+Huambo,-12.767,15.733,Angola,N,1,city,high
+Massangano,-9.633,14.233,Angola,E,1,fortress,low
+Pungo Andongo,-9.667,15.583,Angola,E,1,fortress,low
+Cabinda,-5.550,12.200,Angola,E;N,1,port,high
+Kasanje,-9.600,17.700,Angola,E,1,capital,low
+Khartoum,15.551,32.532,Sudan,N,3,capital,high
+Omdurman,15.650,32.483,Sudan,N,2,city,high
+Soba,15.517,32.683,Sudan,M,2,ruin,high
+Sennar,13.550,33.633,Sudan,E;N,3,capital,high
+El Obeid,13.183,30.217,Sudan,N,2,city,high
+El Fasher,13.633,25.350,Sudan,E;N,2,capital,high
+Nyala,12.050,24.883,Sudan,N,1,city,high
+Kassala,15.450,36.400,Sudan,N,1,city,high
+Wad Madani,14.400,33.517,Sudan,N,1,city,high
+Juba,4.850,31.600,South Sudan,N,2,capital,high
+Malakal,9.533,31.650,South Sudan,N,1,city,high
+Wau,7.700,28.000,South Sudan,N,1,city,high
+Fashoda (Kodok),9.883,32.117,South Sudan,E;N,1,capital,high
+Asmara,15.333,38.933,Eritrea,N,3,capital,high
+Massawa,15.608,39.450,Eritrea,M;E;N,3,port,high
+Adulis,15.263,39.660,Eritrea,C,3,ruin,high
+Qohaito,14.967,39.450,Eritrea,C,2,ruin,low
+Matara,14.767,39.417,Eritrea,C,2,ruin,low
+Debarwa,15.100,38.833,Eritrea,M;E,1,capital,high
+Keren,15.783,38.450,Eritrea,N,1,city,high
+Assab,13.010,42.740,Eritrea,N,1,port,high
+Dahlak Kebir,15.650,40.150,Eritrea,M,1,port,low
+Aksum,14.130,38.717,Ethiopia,C;M,5,religious,high
+Yeha,14.283,39.017,Ethiopia,A;C,3,ruin,high
+Lalibela,12.033,39.033,Ethiopia,M,3,religious,high
+Gondar,12.600,37.467,Ethiopia,E;N,4,capital,high
+Harar,9.313,42.118,Ethiopia,M;E;N,4,city,high
+Addis Ababa,9.025,38.750,Ethiopia,N,4,capital,high
+Debre Damo,14.367,39.283,Ethiopia,M,3,religious,high
+Ankober,9.583,39.733,Ethiopia,E;N,3,capital,high
+Debre Birhan,9.683,39.533,Ethiopia,M;E,2,city,high
+Dire Dawa,9.600,41.867,Ethiopia,N,2,city,high
+Mek'ele,13.497,39.475,Ethiopia,N,2,city,high
+Adwa,14.167,38.900,Ethiopia,N,2,city,high
+Jimma,7.667,36.833,Ethiopia,E;N,2,capital,high
+Bahir Dar,11.600,37.383,Ethiopia,N,2,city,high
+Dessie,11.133,39.633,Ethiopia,N,1,city,high
+Magdala,11.233,39.333,Ethiopia,N,2,fortress,low
+Debre Libanos,9.700,38.850,Ethiopia,M;E,2,religious,high
+Tiya,8.433,38.617,Ethiopia,M,2,ruin,high
+Bonga,7.267,36.233,Ethiopia,E;N,1,capital,high
+Gorgora,12.233,37.300,Ethiopia,E,1,city,low
+Negash,13.883,39.600,Ethiopia,M,2,religious,high
+Gambela,8.250,34.583,Ethiopia,N,1,port,high
+Sheikh Hussein,7.750,40.700,Ethiopia,M;E,1,religious,low
+Djibouti,11.588,43.145,Djibouti,N,2,port,high
+Tadjoura,11.783,42.883,Djibouti,M;E;N,2,port,high
+Obock,11.967,43.283,Djibouti,N,1,port,high
+Mogadishu,2.047,45.318,Somalia,M;E;N,4,port,high
+Berbera,10.433,45.017,Somalia,M;E;N,3,port,high
+Zeila,11.350,43.467,Somalia,M;E,3,port,high
+Hargeisa,9.560,44.065,Somalia,N,2,city,high
+Barawa,1.113,44.030,Somalia,M;E;N,2,port,high
+Merca,1.717,44.767,Somalia,M;E,2,port,high
+Kismayo,-0.358,42.545,Somalia,N,2,port,high
+Bosaso,11.283,49.183,Somalia,N,1,port,high
+Ras Hafun (Opone),10.433,51.267,Somalia,C,2,ruin,high
+Maydh,11.000,47.100,Somalia,M,1,religious,low
+Hobyo,5.350,48.533,Somalia,N,1,port,high
+Baidoa,3.117,43.650,Somalia,N,1,city,high
+Mombasa,-4.050,39.667,Kenya,M;E;N,5,port,high
+Malindi,-3.217,40.117,Kenya,M;E;N,3,port,high
+Gedi,-3.309,40.017,Kenya,M,3,ruin,high
+Lamu,-2.269,40.902,Kenya,M;E;N,3,port,high
+Pate,-2.100,41.050,Kenya,M;E,3,city,low
+Manda,-2.267,40.933,Kenya,M,3,ruin,low
+Shanga,-2.167,41.083,Kenya,M,3,ruin,low
+Siyu,-2.067,41.117,Kenya,E;N,1,fortress,low
+Kilifi (Mnarani),-3.633,39.850,Kenya,M;E,1,ruin,high
+Witu,-2.383,40.433,Kenya,N,1,city,high
+Nairobi,-1.286,36.817,Kenya,N,4,capital,high
+Kisumu,-0.100,34.750,Kenya,N,2,port,high
+Nakuru,-0.283,36.067,Kenya,N,1,city,high
+Thimlich Ohinga,-0.883,34.300,Kenya,M;E,2,ruin,low
+Kilwa Kisiwani,-8.958,39.508,Tanzania,M;E,5,ruin,high
+Songo Mnara,-9.033,39.567,Tanzania,M,2,ruin,low
+Kilwa Kivinje,-8.750,39.400,Tanzania,N,1,port,high
+Zanzibar,-6.165,39.199,Tanzania,E;N,5,port,high
+Unguja Ukuu,-6.317,39.350,Tanzania,M,2,ruin,low
+Kizimkazi,-6.433,39.467,Tanzania,M,1,religious,high
+Dar es Salaam,-6.792,39.208,Tanzania,N,3,port,high
+Bagamoyo,-6.433,38.900,Tanzania,N,3,port,high
+Tabora,-5.017,32.800,Tanzania,N,2,market,high
+Ujiji,-4.917,29.683,Tanzania,N,2,market,high
+Pangani,-5.433,38.983,Tanzania,E;N,2,port,high
+Tanga,-5.067,39.100,Tanzania,N,2,port,high
+Chake Chake,-5.250,39.767,Tanzania,E;N,1,city,high
+Ras Mkumbuu,-5.183,39.650,Tanzania,M,2,ruin,low
+Dodoma,-6.173,35.742,Tanzania,N,2,capital,high
+Mwanza,-2.517,32.900,Tanzania,N,2,port,high
+Arusha,-3.367,36.683,Tanzania,N,2,city,high
+Engaruka,-2.983,35.967,Tanzania,E,2,ruin,low
+Mikindani,-10.283,40.117,Tanzania,M;E;N,2,port,high
+Lindi,-10.000,39.717,Tanzania,N,1,port,high
+Kalenga,-7.800,35.583,Tanzania,N,1,fortress,low
+Kua (Juani),-7.950,39.750,Tanzania,M;E,1,ruin,low
+Bweranyange,-1.733,31.033,Tanzania,E;N,1,capital,low
+Bukoba,-1.333,31.817,Tanzania,N,1,port,high
+Kampala,0.313,32.581,Uganda,E;N,3,capital,high
+Entebbe,0.050,32.467,Uganda,N,1,city,high
+Jinja,0.433,33.200,Uganda,N,1,city,high
+Mbarara,-0.600,30.650,Uganda,N,1,city,high
+Hoima,1.433,31.350,Uganda,E;N,2,capital,high
+Masindi,1.683,31.717,Uganda,N,1,city,high
+Bigo bya Mugenyi,0.150,31.250,Uganda,M,2,ruin,low
+Mubende,0.558,31.395,Uganda,M;E,1,religious,high
+Fort Portal,0.667,30.267,Uganda,N,1,city,high
+Kigali,-1.950,30.059,Rwanda,N,2,capital,high
+Nyanza,-2.350,29.750,Rwanda,E;N,2,capital,high
+Butare,-2.600,29.733,Rwanda,N,1,city,high
+Gitega,-3.428,29.925,Burundi,E;N,2,capital,high
+Bujumbura,-3.383,29.367,Burundi,N,2,port,high
+Muramvya,-3.267,29.617,Burundi,E,1,capital,high
+Mozambique Island,-15.033,40.733,Mozambique,M;E;N,3,port,high
+Sofala,-20.150,34.733,Mozambique,M;E,4,port,high
+Angoche,-16.233,39.900,Mozambique,M;E,2,port,high
+Quelimane,-17.878,36.888,Mozambique,E;N,2,port,high
+Tete,-16.157,33.587,Mozambique,E;N,2,city,high
+Sena,-17.450,35.033,Mozambique,E;N,2,city,high
+Zumbo,-15.617,30.433,Mozambique,E;N,2,market,high
+Ibo,-12.342,40.602,Mozambique,E;N,2,fortress,high
+Chibuene,-22.050,35.333,Mozambique,M,2,ruin,low
+Inhambane,-23.865,35.383,Mozambique,E;N,2,port,high
+Maputo,-25.966,32.583,Mozambique,E;N,3,capital,high
+Beira,-19.833,34.850,Mozambique,N,2,port,high
+Manyikeni,-22.150,35.000,Mozambique,M,1,ruin,low
+Great Zimbabwe,-20.267,30.933,Zimbabwe,M,5,ruin,high
+Khami,-20.150,28.383,Zimbabwe,E,3,ruin,high
+Danangombe,-19.933,29.333,Zimbabwe,E,3,ruin,low
+Naletale,-19.883,29.517,Zimbabwe,E,2,ruin,low
+Bulawayo,-20.150,28.583,Zimbabwe,N,3,city,high
+Harare,-17.829,31.053,Zimbabwe,N,3,capital,high
+Matobo (Njelele),-20.500,28.500,Zimbabwe,E;N,2,religious,low
+Mutare,-18.967,32.667,Zimbabwe,N,1,city,high
+Ingombe Ilede,-16.167,28.750,Zambia,M,2,ruin,low
+Lusaka,-15.417,28.283,Zambia,N,2,capital,high
+Livingstone,-17.850,25.867,Zambia,N,1,city,high
+Kabwe,-14.433,28.450,Zambia,N,1,mining,high
+Ndola,-12.967,28.633,Zambia,N,1,mining,high
+Lealui,-15.217,23.017,Zambia,E;N,2,capital,low
+Mwansabombwe (Kazembe),-9.817,28.750,Zambia,E;N,2,capital,high
+Chipata,-13.633,32.650,Zambia,N,1,city,high
+Lilongwe,-13.983,33.783,Malawi,N,2,capital,high
+Blantyre,-15.786,35.006,Malawi,N,2,city,high
+Zomba,-15.383,35.333,Malawi,N,1,capital,high
+Nkhotakota,-12.917,34.300,Malawi,N,2,market,high
+Karonga,-9.933,33.933,Malawi,N,1,city,high
+Livingstonia,-10.600,34.117,Malawi,N,1,religious,high
+Gaborone,-24.658,25.912,Botswana,N,2,capital,high
+Shoshong,-23.033,26.517,Botswana,N,1,city,high
+Serowe,-22.383,26.717,Botswana,N,2,city,high
+Molepolole,-24.400,25.500,Botswana,N,1,city,high
+Tsodilo,-18.767,21.750,Botswana,A,1,religious,high
+Francistown,-21.167,27.517,Botswana,N,1,mining,high
+Windhoek,-22.560,17.083,Namibia,N,3,capital,high
+Walvis Bay,-22.957,14.505,Namibia,N,2,port,high
+Lüderitz,-26.648,15.159,Namibia,N,2,port,high
+Swakopmund,-22.683,14.533,Namibia,N,1,port,high
+Okahandja,-21.983,16.917,Namibia,N,1,city,high
+Rehoboth,-23.317,17.083,Namibia,N,1,city,high
+Cape Town,-33.925,18.424,South Africa,E;N,4,port,high
+Robben Island,-33.807,18.371,South Africa,E;N,2,fortress,high
+Stellenbosch,-33.933,18.860,South Africa,E;N,2,city,high
+Swellendam,-34.023,20.440,South Africa,E;N,1,city,high
+Genadendal,-34.033,19.550,South Africa,E;N,1,religious,high
+Mossel Bay,-34.183,22.133,South Africa,E;N,1,port,high
+Graaff-Reinet,-32.252,24.541,South Africa,E;N,2,city,high
+Grahamstown,-33.310,26.526,South Africa,N,2,city,high
+Port Elizabeth,-33.958,25.600,South Africa,N,3,port,high
+East London,-33.015,27.912,South Africa,N,2,port,high
+Mthatha,-31.589,28.784,South Africa,N,1,city,high
+Durban,-29.858,31.029,South Africa,N,4,port,high
+Pietermaritzburg,-29.617,30.392,South Africa,N,2,capital,high
+Ulundi,-28.333,31.417,South Africa,N,2,capital,high
+kwaBulawayo (Shaka),-28.900,31.450,South Africa,N,3,capital,low
+Mgungundlovu,-28.433,31.267,South Africa,N,2,capital,low
+Kimberley,-28.738,24.764,South Africa,N,3,mining,high
+Pretoria,-25.746,28.188,South Africa,N,3,capital,high
+Johannesburg,-26.204,28.047,South Africa,N,4,city,high
+Bloemfontein,-29.117,26.217,South Africa,N,3,capital,high
+Mapungubwe,-22.200,29.383,South Africa,M,3,ruin,high
+Thulamela,-22.433,31.100,South Africa,M;E,2,ruin,low
+Kuruman,-27.450,23.433,South Africa,N,3,religious,high
+Dithakong,-27.050,23.800,South Africa,E;N,2,ruin,low
+Kaditshwene,-25.417,26.283,South Africa,E;N,2,ruin,low
+Potchefstroom,-26.715,27.097,South Africa,N,1,capital,high
+Thaba Nchu,-29.217,26.833,South Africa,N,1,city,high
+Mahikeng,-25.865,25.644,South Africa,N,2,city,high
+Barberton,-25.783,31.050,South Africa,N,1,mining,high
+Phalaborwa,-23.950,31.133,South Africa,M;E;N,1,mining,low
+Dzata,-22.850,30.300,South Africa,E,1,ruin,low
+Maseru,-29.317,27.483,Lesotho,N,2,capital,high
+Thaba Bosiu,-29.350,27.700,Lesotho,N,3,fortress,high
+Mbabane,-26.317,31.133,Eswatini,N,2,capital,high
+Lobamba,-26.450,31.200,Eswatini,N,1,capital,high
+Antananarivo,-18.879,47.508,Madagascar,E;N,3,capital,high
+Ambohimanga,-18.758,47.563,Madagascar,E;N,3,religious,high
+Mahajanga,-15.717,46.317,Madagascar,E;N,3,port,high
+Toamasina,-18.150,49.400,Madagascar,N,3,port,high
+Fianarantsoa,-21.450,47.083,Madagascar,N,2,city,high
+Toliara,-23.350,43.667,Madagascar,N,2,port,high
+Mahilaka,-13.983,47.967,Madagascar,M,3,ruin,low
+Vohémar,-13.367,50.000,Madagascar,M;E,2,port,high
+Antsiranana,-12.267,49.283,Madagascar,N,2,port,high
+Fort-Dauphin (Tôlanaro),-25.033,46.983,Madagascar,E;N,2,fortress,high
+Nosy Be (Hell-Ville),-13.400,48.267,Madagascar,N,1,port,high
+Île Sainte-Marie,-16.917,49.900,Madagascar,E;N,2,port,high
+Antsirabe,-19.867,47.033,Madagascar,N,1,city,high
+Morondava,-20.283,44.283,Madagascar,N,1,port,high
+Marovoay,-16.100,46.633,Madagascar,E,1,capital,low
+Foulpointe,-17.683,49.517,Madagascar,E;N,1,fortress,high
+Moroni,-11.700,43.250,Comoros,E;N,2,capital,high
+Mutsamudu,-12.167,44.400,Comoros,E;N,2,port,high
+Domoni,-12.250,44.533,Comoros,M;E,1,city,high
+Dzaoudzi,-12.783,45.267,Mayotte,N,1,fortress,high
+Port Louis,-20.164,57.504,Mauritius,E;N,3,port,high
+Mahébourg,-20.408,57.700,Mauritius,E;N,1,port,high
+Port Mathurin,-19.683,63.417,Mauritius,N,1,port,high
+Saint-Denis,-20.882,55.450,Réunion,E;N,2,capital,high
+Saint-Paul,-21.000,55.267,Réunion,E,1,port,high
+Victoria,-4.620,55.455,Seychelles,N,2,capital,high

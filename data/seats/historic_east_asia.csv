@@ -1,0 +1,664 @@
+name,lat,lon,country,eras,significance,kind,confidence
+Jiahu,33.600,113.667,China,A,1,ruin,low
+Peiligang,34.420,113.650,China,A,1,ruin,low
+Cishan,36.683,114.133,China,A,1,ruin,low
+Yangshao,34.780,111.780,China,A,2,ruin,low
+Dadiwan,35.017,105.900,China,A,2,ruin,low
+Majiayao,35.380,103.860,China,A,1,ruin,low
+Qijia,35.470,103.570,China,A,1,ruin,low
+Taosi,35.880,111.500,China,A,3,ruin,high
+Shimao,38.567,110.333,China,A,3,ruin,low
+Erlitou,34.700,112.690,China,A,3,ruin,high
+Zhengzhou,34.747,113.625,China,A;C;M;E;N,4,city,high
+Anyang,36.097,114.393,China,A;M;E;N,4,city,high
+Panlongcheng,30.880,114.350,China,A,2,ruin,low
+Sanxingdui,31.000,104.200,China,A,3,ruin,high
+Liangzhu,30.400,119.983,China,A,3,ruin,high
+Hemudu,29.967,121.350,China,A,2,ruin,high
+Niuheliang,41.333,119.500,China,A,2,ruin,low
+Dawenkou,36.017,117.150,China,A,1,ruin,low
+Chengziya,36.730,117.400,China,A,2,ruin,low
+Shijiahe,30.750,113.083,China,A,2,ruin,low
+Xinglongwa,42.500,120.100,China,A,1,ruin,low
+Baodun,30.400,103.800,China,A,1,ruin,low
+Wucheng,28.000,115.400,China,A,1,ruin,low
+Dayangzhou,27.750,115.400,China,A,1,ruin,low
+Zhouyuan,34.450,107.800,China,A,2,ruin,low
+Lintong,34.380,109.270,China,A;C,3,ruin,high
+Zhoukoudian,39.690,115.920,China,A,2,ruin,high
+Liulihe,39.610,116.000,China,A,1,ruin,low
+Lingshou,38.310,114.380,China,A;C,1,ruin,low
+Chengtoushan,29.700,111.650,China,A,1,ruin,low
+Lijiashan,24.300,102.750,China,A;C,1,ruin,low
+Shizhaishan,24.670,102.600,China,A;C,2,ruin,low
+Qufu,35.597,116.991,China,A;C;M;E;N,4,religious,high
+Linzi,36.850,118.300,China,A;C,3,ruin,high
+Handan,36.625,114.490,China,A;C;M;E;N,3,city,high
+Xinzheng,34.395,113.740,China,A;C,2,city,high
+Houma,35.620,111.350,China,A,2,ruin,high
+Yan Xiadu,39.350,115.500,China,A;C,2,ruin,low
+Yongcheng (Fengxiang),34.520,107.400,China,A;C,2,ruin,high
+Xianyang,34.330,108.705,China,A;C;N,4,capital,high
+Jinancheng,30.420,112.180,China,A;C,3,ruin,low
+Jingzhou,30.335,112.240,China,C;M;E;N,3,city,high
+Shouxian,32.580,116.780,China,A;C;M,2,city,high
+Huaiyang,33.730,114.880,China,A;C,2,city,high
+Shaoxing,30.000,120.580,China,A;C;M;E;N,3,city,high
+Tai'an,36.190,117.120,China,A;C;M;E;N,3,religious,high
+Zhaoge,35.600,114.200,China,A,1,ruin,low
+Shangqiu,34.415,115.650,China,A;C;M;E,3,city,high
+Dengfeng,34.455,113.030,China,A;M;E,2,religious,high
+Puyang,35.760,115.030,China,A;C,1,city,high
+Zhuolu,40.370,115.220,China,A,1,ruin,low
+Xing'an,25.610,110.670,China,A;C,1,ruin,high
+Daming,36.280,115.150,China,M,2,city,high
+Xi'an,34.265,108.945,China,A;C;M;E;N,5,capital,high
+Luoyang,34.620,112.455,China,A;C;M;E;N,5,capital,high
+Kaifeng,34.797,114.310,China,A;C;M;E;N,5,capital,high
+Beijing,39.905,116.395,China,A;C;M;E;N,5,capital,high
+Nanjing,32.060,118.795,China,C;M;E;N,5,capital,high
+Hangzhou,30.250,120.170,China,C;M;E;N,5,capital,high
+Guangzhou,23.130,113.260,China,C;M;E;N,5,port,high
+Datong,40.080,113.300,China,C;M;E;N,4,capital,high
+Taiyuan,37.870,112.550,China,A;C;M;E;N,4,city,high
+Chengdu,30.660,104.065,China,A;C;M;E;N,4,city,high
+Wuhan,30.590,114.305,China,C;M;E;N,4,city,high
+Yangzhou,32.395,119.415,China,C;M;E;N,4,city,high
+Suzhou,31.300,120.620,China,A;C;M;E;N,4,city,high
+Quanzhou,24.875,118.675,China,M;E;N,4,port,high
+Dunhuang,40.140,94.660,China,C;M;E;N,4,city,high
+Kashgar,39.470,75.990,China,C;M;E;N,4,city,high
+Turpan,42.950,89.190,China,C;M;E;N,4,city,high
+Gaochang,42.855,89.530,China,C;M,3,ruin,high
+Jiaohe,42.950,89.065,China,C;M,3,ruin,high
+Lhasa,29.650,91.130,China,M;E;N,4,capital,high
+Shangdu,42.360,116.180,China,M,4,ruin,high
+Shenyang,41.805,123.430,China,M;E;N,4,capital,high
+Hohhot,40.840,111.750,China,E;N,3,city,high
+Kaiping,22.375,112.700,China,E;N,3,city,high
+Ningbo,29.870,121.550,China,M;E;N,3,port,high
+Wenzhou,28.000,120.670,China,M;E;N,3,port,high
+Ye,36.290,114.400,China,C;M,3,ruin,high
+Khara-Khoto,41.765,101.145,China,M,3,ruin,high
+Tianjin,39.130,117.200,China,E;N,4,port,high
+Shanghai,31.230,121.470,China,M;E;N,5,port,high
+Chongqing,29.560,106.550,China,A;C;M;E;N,4,city,high
+Changsha,28.230,112.940,China,A;C;M;E;N,4,city,high
+Nanchang,28.680,115.860,China,C;M;E;N,3,city,high
+Fuzhou,26.075,119.300,China,C;M;E;N,4,port,high
+Xiamen,24.480,118.090,China,E;N,3,port,high
+Zhangzhou,24.515,117.650,China,M;E;N,3,port,high
+Chaozhou,23.660,116.620,China,M;E;N,3,city,high
+Shantou,23.355,116.680,China,N,2,port,high
+Zhaoqing,23.050,112.470,China,M;E;N,2,city,high
+Foshan,23.020,113.120,China,M;E;N,3,market,high
+Macau,22.200,113.545,China,E;N,4,port,high
+Hong Kong,22.280,114.160,China,N,4,port,high
+Shenzhen,22.545,114.060,China,N,3,city,high
+Haikou,20.040,110.330,China,M;E;N,2,port,high
+Sanya (Yazhou),18.250,109.510,China,M;E;N,2,port,high
+Danzhou,19.520,109.580,China,M,1,city,high
+Nanning,22.815,108.320,China,C;M;E;N,3,city,high
+Guilin,25.275,110.290,China,C;M;E;N,3,city,high
+Wuzhou,23.480,111.280,China,C;M;E;N,2,city,high
+Liuzhou,24.325,109.410,China,C;M;E;N,2,city,high
+Beihai,21.480,109.120,China,N,2,port,high
+Hepu,21.660,109.200,China,C,2,port,high
+Kunming,25.040,102.710,China,M;E;N,3,city,high
+Dali,25.690,100.160,China,M;E;N,4,capital,high
+Lijiang,26.870,100.230,China,M;E;N,3,city,high
+Weishan,25.230,100.300,China,M,1,city,high
+Jinghong,22.010,100.800,China,M;E;N,2,city,high
+Tengchong,25.020,98.490,China,M;E;N,2,market,high
+Baoshan,25.110,99.160,China,C;M;E;N,2,city,high
+Zhaotong,27.340,103.720,China,C;M,1,city,high
+Qujing,25.490,103.800,China,C;M;E,2,city,high
+Jianshui,23.620,102.830,China,M;E,2,city,high
+Gyalthang (Shangri-La),27.830,99.700,China,E;N,1,religious,high
+Pu'er,22.780,100.970,China,E;N,1,market,high
+Gejiu,23.360,103.160,China,E;N,1,mining,high
+Huize,26.420,103.300,China,E,1,mining,high
+Guiyang,26.650,106.630,China,M;E;N,3,city,high
+Zunyi,27.720,106.930,China,M;E;N,2,city,high
+Hailongtun,27.800,106.820,China,M;E,1,fortress,low
+Anshun,26.250,105.950,China,E;N,1,city,high
+Zhenyuan,27.050,108.420,China,E;N,1,city,high
+Lanzhou,36.060,103.830,China,C;M;E;N,3,city,high
+Tianshui,34.580,105.720,China,A;C;M;E;N,3,city,high
+Wuwei,37.930,102.635,China,C;M;E;N,3,city,high
+Zhangye,38.935,100.450,China,C;M;E;N,3,city,high
+Jiuquan,39.740,98.510,China,C;M;E;N,2,city,high
+Jiayuguan,39.800,98.270,China,M;E;N,2,fortress,high
+Yumen Pass,40.355,93.865,China,C,2,fortress,high
+Yangguan,39.930,94.070,China,C,1,fortress,low
+Suoyang City,40.250,96.200,China,M,1,ruin,low
+Guazhou,40.520,95.780,China,M;E,1,city,high
+Linxia,35.600,103.210,China,M;E;N,2,market,high
+Longxi,35.000,104.630,China,C;M,1,city,high
+Pingliang,35.540,106.680,China,M;E,1,city,high
+Bingling,35.800,103.050,China,M,1,religious,low
+Xining,36.620,101.780,China,C;M;E;N,3,city,high
+Kumbum,36.490,101.570,China,E;N,2,religious,high
+Labrang,35.200,102.510,China,E;N,2,religious,high
+Rebkong (Tongren),35.520,102.020,China,E;N,1,religious,high
+Jyekundo (Yushu),33.000,97.010,China,E;N,1,market,high
+Yinchuan,38.470,106.270,China,M;E;N,3,capital,high
+Lingwu,38.100,106.330,China,C;M,1,city,high
+Guyuan,36.000,106.250,China,C;M,1,city,high
+Zhongwei,37.500,105.190,China,E,1,city,high
+Tongwancheng,37.995,108.850,China,C;M,2,ruin,low
+Yulin (Shaanxi),38.280,109.730,China,E;N,1,fortress,high
+Yan'an,36.590,109.490,China,M;E;N,2,city,high
+Hanzhong,33.070,107.030,China,A;C;M;E;N,3,city,high
+Baoji,34.360,107.240,China,A;C;M;E;N,2,city,high
+Huashan,34.480,110.080,China,A;C;M;E;N,2,religious,high
+Tongguan,34.550,110.260,China,C;M;E,2,fortress,high
+Hancheng,35.480,110.440,China,C;M;E,1,city,high
+Famen Temple,34.440,107.900,China,M,2,religious,high
+Qianling,34.570,108.220,China,M,1,ruin,low
+Huangling,35.580,109.260,China,A;N,1,religious,high
+Pingyao,37.200,112.180,China,M;E;N,3,city,high
+Wutai Shan,38.990,113.590,China,M;E;N,3,religious,high
+Yanmen Pass,39.180,112.900,China,C;M,2,fortress,low
+Linfen,36.080,111.520,China,A;C;M;E;N,2,city,high
+Yuncheng,35.030,111.000,China,A;C;M;E,2,market,high
+Changzhi,36.190,113.120,China,C;M;E,2,city,high
+Yingxian,39.560,113.190,China,M,1,religious,high
+Hunyuan,39.700,113.690,China,M;E,1,religious,high
+Shijiazhuang,38.040,114.510,China,N,2,city,high
+Zhengding,38.150,114.570,China,C;M;E,3,city,high
+Dingzhou,38.520,114.990,China,M,1,market,high
+Baoding,38.870,115.460,China,M;E;N,3,city,high
+Xingtai,37.070,114.500,China,A;C;M,2,city,high
+Cangzhou,38.300,116.840,China,M;E,1,city,high
+Dezhou,37.440,116.360,China,M;E,2,city,high
+Linqing,36.840,115.710,China,E,2,market,high
+Liaocheng,36.460,115.980,China,M;E,2,city,high
+Jinan,36.650,117.120,China,C;M;E;N,4,city,high
+Qingzhou,36.690,118.480,China,C;M;E,2,city,high
+Qingdao,36.070,120.380,China,N,3,port,high
+Jiaozhou,36.260,120.030,China,M,1,port,high
+Yantai,37.460,121.450,China,E;N,2,port,high
+Penglai,37.810,120.760,China,M;E,2,port,high
+Weihai,37.510,122.120,China,N,2,port,high
+Laizhou,37.180,119.940,China,C;M,1,city,high
+Jimo,36.390,120.450,China,C,1,city,high
+Jining,35.420,116.590,China,M;E,2,city,high
+Zoucheng,35.400,117.000,China,A;C,1,religious,high
+Xuzhou,34.260,117.190,China,A;C;M;E;N,3,city,high
+Huai'an,33.610,119.020,China,M;E,3,city,high
+Zhenjiang,32.190,119.450,China,C;M;E;N,3,port,high
+Changzhou,31.810,119.970,China,M;E,2,city,high
+Wuxi,31.570,120.300,China,M;E;N,2,city,high
+Nantong,32.000,120.860,China,E;N,1,city,high
+Lianyungang,34.600,119.220,China,M;E,1,port,high
+Taicang,31.450,121.100,China,M,2,port,high
+Jiaxing,30.750,120.750,China,M;E,1,city,high
+Huzhou,30.870,120.090,China,M;E,1,city,high
+Putuoshan,30.000,122.390,China,M;E;N,2,religious,high
+Dinghai,30.020,122.100,China,E;N,1,port,high
+Tiantai,29.140,121.030,China,M,2,religious,high
+Linhai,28.860,121.140,China,M,1,city,high
+Quzhou,28.970,118.870,China,M;E,1,city,high
+Jinhua,29.080,119.650,China,M;E,1,city,high
+Longquan,28.080,119.140,China,M,1,market,high
+Hefei,31.860,117.280,China,C;M;E;N,2,city,high
+Anqing,30.510,117.050,China,E;N,2,city,high
+Shexian,29.870,118.430,China,M;E,2,market,high
+Wuhu,31.350,118.380,China,E;N,2,port,high
+Bozhou,33.850,115.780,China,C;M,1,city,high
+Jiuhuashan,30.480,117.800,China,M;E,2,religious,high
+Fengyang,32.870,117.560,China,M,2,ruin,high
+Tongling,30.950,117.810,China,A;C,1,mining,high
+Jingdezhen,29.270,117.180,China,M;E;N,3,market,high
+Jiujiang,29.700,116.000,China,C;M;E;N,2,port,high
+Lushan,29.560,115.980,China,M;E,1,religious,high
+Ganzhou,25.830,114.930,China,M;E,2,city,high
+Ji'an (Jiangxi),27.110,114.970,China,M,1,city,high
+Jinggangshan,26.580,114.170,China,N,1,fortress,high
+Ruijin,25.880,116.030,China,N,1,city,high
+Longhushan,28.100,117.000,China,M,1,religious,high
+Putian,25.450,119.000,China,M;E,1,city,high
+Meizhou Island,25.080,119.100,China,M;E;N,2,religious,low
+Jian'ou,27.030,118.320,China,M,1,city,high
+Changting,25.840,116.360,China,M;E,1,city,high
+Yongding,24.720,116.730,China,E,1,city,high
+Chengcun (Minyue),27.750,118.030,China,C,1,ruin,low
+Yuegang,24.400,117.650,China,E,2,port,low
+Dehua,25.500,118.240,China,M;E,1,market,high
+Meizhou,24.290,116.120,China,E;N,1,city,high
+Shaoguan,24.810,113.590,China,C;M;E,2,city,high
+Huizhou (Guangdong),23.110,114.420,China,M;E,1,city,high
+Zhanjiang,21.270,110.360,China,N,1,port,high
+Xuwen,20.330,110.170,China,C,1,port,high
+Leizhou,20.910,110.100,China,M,1,city,high
+Xinhui,22.460,113.030,China,M,1,city,high
+Humen,22.820,113.670,China,N,1,fortress,high
+Nanxiong,25.120,114.300,China,M;E,1,fortress,high
+Baise,23.900,106.620,China,N,1,city,high
+Youyi Pass (Pingxiang),22.100,106.750,China,M;E;N,1,fortress,high
+Jintian,23.430,110.080,China,N,1,city,low
+Xiangyang,32.010,112.120,China,C;M;E,3,fortress,high
+Yichang,30.690,111.290,China,C;N,2,port,high
+Suizhou,31.690,113.380,China,A,1,ruin,high
+Ezhou,30.390,114.890,China,C,1,city,high
+Wudangshan,32.400,111.000,China,M;E,2,religious,low
+Yueyang,29.370,113.090,China,C;M;E,2,city,high
+Hengyang,26.890,112.570,China,M;E,2,city,high
+Nanyue Hengshan,27.250,112.700,China,M;E,1,religious,low
+Fenghuang,27.950,109.600,China,E,1,city,high
+Changde,29.030,111.680,China,C;M,1,city,high
+Yongzhou,26.420,111.610,China,C;M,1,city,high
+Leshan,29.550,103.770,China,M,2,religious,high
+Emeishan,29.520,103.330,China,M;E,2,religious,high
+Mianyang,31.470,104.680,China,C;M,1,city,high
+Guangyuan,32.440,105.840,China,M,1,city,high
+Jianmen Pass,32.200,105.500,China,C;M,1,fortress,low
+Langzhong,31.560,105.970,China,C;M;E,2,city,high
+Yibin,28.760,104.630,China,C;M;E,2,port,high
+Zigong,29.340,104.780,China,E;N,2,mining,high
+Luzhou,28.870,105.440,China,M;E,1,port,high
+Dazu,29.700,105.720,China,M,2,religious,high
+Diaoyucheng (Hechuan),29.980,106.270,China,M,2,fortress,high
+Baidicheng (Fengjie),31.020,109.470,China,C;M,1,fortress,high
+Wanzhou,30.810,108.400,China,M;E,1,port,high
+Dartsedo (Kangding),30.050,101.960,China,E;N,2,market,high
+Dege,31.810,98.580,China,E;N,1,religious,high
+Litang,30.000,100.270,China,E,1,religious,high
+Songpan,32.650,103.600,China,M;E,1,fortress,high
+Xichang,27.900,102.270,China,C;M;E,1,city,high
+Dujiangyan,31.000,103.620,China,A;C;M,2,city,high
+Ya'an,30.010,103.040,China,E;N,1,market,high
+Shigatse,29.270,88.880,China,M;E;N,3,city,high
+Gyantse,28.920,89.600,China,M;E;N,2,fortress,high
+Sakya,28.900,88.020,China,M,3,religious,high
+Tsaparang,31.470,79.680,China,M;E,3,ruin,low
+Tholing,31.480,79.800,China,M,2,religious,low
+Chamdo,31.140,97.170,China,E;N,2,city,high
+Samye,29.330,91.500,China,M,2,religious,high
+Tsetang,29.240,91.770,China,M,2,city,high
+Purang,30.300,81.180,China,M;E,1,market,high
+Yarkand,38.410,77.240,China,M;E;N,3,city,high
+Khotan,37.110,79.930,China,C;M;E;N,3,city,high
+Niya,37.980,82.700,China,C,2,ruin,low
+Loulan,40.520,89.840,China,C,3,ruin,low
+Miran,39.230,88.980,China,C;M,2,ruin,low
+Kucha,41.720,82.940,China,C;M;E;N,3,city,high
+Subashi,41.900,83.000,China,C;M,1,ruin,low
+Aksu,41.170,80.260,China,C;M;E;N,2,city,high
+Hami,42.830,93.510,China,C;M;E;N,3,city,high
+Karashahr,42.060,86.570,China,C;M,2,city,high
+Korla,41.730,86.150,China,M;N,1,city,high
+Urumqi,43.830,87.620,China,E;N,3,city,high
+Beiting (Beshbalik),44.080,89.180,China,M,2,ruin,low
+Ghulja (Yining),43.910,81.330,China,E;N,3,city,high
+Almaliq,44.200,80.500,China,M,2,ruin,low
+Tacheng (Chuguchak),46.750,82.980,China,E;N,2,market,high
+Altay,47.850,88.140,China,N,1,city,high
+Tashkurgan,37.770,75.230,China,C;M;E,2,fortress,high
+Karghalik (Yecheng),37.880,77.410,China,M,1,city,high
+Charklik (Ruoqiang),39.020,88.170,China,C;M,1,city,high
+Dandan Oilik,37.780,81.080,China,C;M,1,ruin,low
+Maralbashi (Bachu),39.780,78.550,China,M;E,1,city,high
+Barkol,43.600,93.000,China,E,1,fortress,high
+Qitai (Guchengzi),44.020,89.600,China,E,1,market,high
+Bugur (Luntai),41.780,84.250,China,C,1,ruin,low
+Lukchun (Shanshan),42.860,90.210,China,C;M,1,city,high
+Uqturpan,41.210,79.230,China,E,1,fortress,high
+Cherchen (Qiemo),38.140,85.530,China,C;M,1,city,high
+Baotou,40.660,109.840,China,N,2,city,high
+Yingchang,43.300,116.600,China,M,1,ruin,low
+Liao Zhongjing (Ningcheng),41.600,119.370,China,M,3,ruin,low
+Liao Shangjing (Lindong),43.980,119.400,China,M,3,ruin,low
+Chifeng,42.270,118.960,China,A;N,2,city,high
+Dolonnor,42.200,116.480,China,E,2,religious,high
+Bayan Obo,41.770,109.970,China,N,1,mining,high
+Hailar,49.210,119.740,China,N,2,city,high
+Manzhouli,49.600,117.430,China,N,2,market,high
+Chaoyang (Liaoning),41.570,120.450,China,C;M,2,city,high
+Shengle,40.450,111.800,China,C,1,ruin,low
+Bailingmiao,41.700,110.430,China,E;N,1,religious,low
+Harbin,45.750,126.650,China,N,3,city,high
+Acheng (Jin Shangjing),45.500,126.970,China,M,3,ruin,high
+Jilin,43.840,126.550,China,E;N,3,city,high
+Ningguta,44.340,129.470,China,E,2,fortress,high
+Longquanfu (Balhae Upper Capital),44.110,129.200,China,M,3,ruin,low
+Dalian,38.910,121.600,China,N,3,port,high
+Lushun (Port Arthur),38.810,121.250,China,N,3,fortress,high
+Jinzhou (Liaoning),41.100,121.130,China,M;E,2,city,high
+Liaoyang,41.270,123.170,China,C;M;E,3,city,high
+Hetu Ala,41.720,125.060,China,E,2,ruin,low
+Fushun,41.870,123.960,China,N,2,mining,high
+Yingkou,40.670,122.230,China,N,2,port,high
+Dandong,40.120,124.390,China,N,2,port,high
+Gungnae (Ji'an),41.120,126.190,China,C;M,3,capital,high
+Jolbon (Huanren),41.270,125.360,China,C,2,ruin,low
+Changchun,43.880,125.320,China,N,3,capital,high
+Nong'an,44.430,125.180,China,M,1,city,high
+Qiqihar,47.350,123.920,China,E;N,2,city,high
+Aigun,50.260,127.470,China,E,2,fortress,high
+Yanji,42.900,129.500,China,N,1,city,high
+Hunchun,42.860,130.370,China,M;N,1,city,high
+Dunhua,43.370,128.230,China,M,1,ruin,high
+Shanhaiguan,40.000,119.750,China,E,3,fortress,high
+Chengde,40.970,117.930,China,E,3,capital,high
+Zhangjiakou (Kalgan),40.770,114.880,China,E;N,3,market,high
+Xuanhua,40.600,115.030,China,M;E,1,fortress,high
+Tangshan,39.630,118.180,China,N,2,mining,high
+Xingcheng (Ningyuan),40.620,120.730,China,E,2,fortress,high
+Juyongguan,40.290,116.080,China,M;E,2,fortress,high
+Nanyang,32.990,112.530,China,C;M;E,3,city,high
+Xinyang,32.150,114.090,China,M,1,city,high
+Xuchang,34.040,113.850,China,C,2,capital,high
+Zhaoxian,37.750,114.770,China,M,1,city,high
+Tainan,22.990,120.210,Taiwan,E;N,4,port,high
+Taipei,25.040,121.560,Taiwan,E;N,4,capital,high
+Lukang,24.060,120.430,Taiwan,E;N,3,port,high
+Keelung,25.130,121.740,Taiwan,E;N,3,port,high
+Tamsui,25.170,121.440,Taiwan,E;N,2,fortress,high
+Kaohsiung,22.630,120.300,Taiwan,N,3,port,high
+Taichung,24.150,120.670,Taiwan,N,2,city,high
+Hsinchu,24.800,120.970,Taiwan,E;N,2,city,high
+Chiayi,23.480,120.450,Taiwan,E;N,1,city,high
+Changhua,24.080,120.540,Taiwan,E;N,1,city,high
+Magong (Penghu),23.570,119.580,Taiwan,E;N,2,port,high
+Kinmen,24.440,118.330,Taiwan,E;N,2,fortress,high
+Karakorum,47.200,102.850,Mongolia,M;E,5,capital,high
+Ordu-Baliq (Khar Balgas),47.430,102.660,Mongolia,M,4,ruin,high
+Avarga,47.170,109.150,Mongolia,M,3,ruin,low
+Ulaanbaatar (Urga),47.920,106.920,Mongolia,E;N,4,capital,high
+Uliastai,47.740,96.850,Mongolia,E;N,3,city,high
+Khovd,48.000,91.640,Mongolia,E;N,3,fortress,high
+Ulaangom,49.980,92.070,Mongolia,N,1,city,high
+Tsetserleg,47.480,101.450,Mongolia,E;N,2,religious,high
+Amarbayasgalant,49.480,105.080,Mongolia,E,2,religious,high
+Erdenet,49.030,104.080,Mongolia,N,1,mining,high
+Choibalsan,48.070,114.530,Mongolia,N,1,city,high
+Altanbulag (Maimaicheng),50.320,106.480,Mongolia,E;N,2,market,high
+Khar Bukh Balgas,47.880,103.770,Mongolia,M,1,ruin,low
+Dadal,49.020,111.600,Mongolia,M,1,religious,low
+Burkhan Khaldun,48.750,108.650,Mongolia,M,2,religious,low
+Noyon Uul,48.430,106.280,Mongolia,A;C,1,ruin,low
+Manzushir (Zuunmod),47.700,106.950,Mongolia,E,1,religious,high
+Ongi Monastery,45.340,103.900,Mongolia,E,1,religious,low
+Moron,49.630,100.160,Mongolia,N,1,city,high
+Olgii,48.970,89.960,Mongolia,N,1,city,high
+Tuvkhun,47.070,102.300,Mongolia,E,1,religious,low
+Khoshoo Tsaidam,47.560,102.800,Mongolia,M,2,ruin,high
+Kherlen Bars,48.120,113.950,Mongolia,M,1,ruin,low
+Dalanzadgad,43.570,104.430,Mongolia,N,1,city,high
+Sainshand,44.890,110.140,Mongolia,N,1,city,high
+Pyongyang,39.020,125.750,North Korea,A;C;M;E;N,4,capital,high
+Kaesong,37.970,126.555,North Korea,M;E;N,4,capital,high
+Hamhung,39.920,127.540,North Korea,M;E;N,2,city,high
+Wonsan,39.150,127.440,North Korea,N,2,port,high
+Sinuiju,40.100,124.400,North Korea,N,1,city,high
+Uiju,40.200,124.530,North Korea,M;E,2,fortress,high
+Anju,39.620,125.660,North Korea,M;E,1,fortress,high
+Chongjin,41.800,129.780,North Korea,N,1,port,high
+Kanggye,40.970,126.590,North Korea,E;N,1,city,high
+Nampo,38.730,125.410,North Korea,N,1,port,high
+Haeju,38.040,125.710,North Korea,M;E,1,city,high
+Myohyangsan,40.000,126.250,North Korea,M;E,1,religious,low
+Anak,38.500,125.500,North Korea,C,1,ruin,low
+Seoul,37.565,126.980,South Korea,C;M;E;N,4,capital,high
+Gyeongju,35.840,129.210,South Korea,A;C;M;E;N,4,capital,high
+Gongju,36.450,127.120,South Korea,C;M;E,3,capital,high
+Buyeo,36.280,126.910,South Korea,C;M,3,capital,high
+Gimhae,35.230,128.880,South Korea,C,2,city,high
+Busan,35.180,129.075,South Korea,M;E;N,3,port,high
+Jeonju,35.820,127.150,South Korea,M;E;N,3,city,high
+Gangneung,37.750,128.875,South Korea,M;E,2,city,high
+Jeju,33.500,126.530,South Korea,M;E;N,3,port,high
+Incheon,37.455,126.705,South Korea,N,3,port,high
+Suwon,37.265,127.030,South Korea,E;N,2,fortress,high
+Ganghwa,37.745,126.485,South Korea,M;E;N,3,fortress,high
+Chuncheon,37.880,127.730,South Korea,N,1,city,high
+Wonju,37.340,127.920,South Korea,M;E,1,city,high
+Cheongju,36.640,127.490,South Korea,M;E;N,2,city,high
+Chungju,36.990,127.930,South Korea,C;M,1,city,high
+Daejeon,36.350,127.385,South Korea,N,2,city,high
+Daegu,35.870,128.600,South Korea,M;E;N,3,city,high
+Andong,36.570,128.730,South Korea,M;E,2,city,high
+Sangju,36.410,128.160,South Korea,M;E,1,city,high
+Haeinsa,35.800,128.100,South Korea,M,2,religious,high
+Tongdosa,35.490,129.065,South Korea,M,1,religious,high
+Ulsan,35.540,129.310,South Korea,A;N,2,port,high
+Pohang,36.020,129.365,South Korea,N,1,port,high
+Jinju,35.180,128.085,South Korea,E,2,fortress,high
+Tongyeong,34.855,128.430,South Korea,E,2,port,high
+Yeosu,34.760,127.660,South Korea,E;N,2,port,high
+Suncheon,34.950,127.490,South Korea,M;E,1,city,high
+Naju,35.020,126.720,South Korea,M;E,2,city,high
+Gwangju,35.160,126.850,South Korea,M;E;N,3,city,high
+Mokpo,34.790,126.390,South Korea,N,2,port,high
+Jindo,34.485,126.265,South Korea,M,1,fortress,high
+Cheonghaejin (Wando),34.310,126.750,South Korea,M,2,port,high
+Gunsan,35.970,126.710,South Korea,N,1,port,high
+Iksan,35.950,126.960,South Korea,C,2,ruin,high
+Namhansanseong,37.480,127.180,South Korea,E,1,fortress,high
+Buseoksa (Yeongju),36.800,128.620,South Korea,M,1,religious,high
+Ulleungdo,37.500,130.870,South Korea,M,1,port,high
+Cheorwon,38.150,127.310,South Korea,M,1,ruin,low
+Gochang,35.440,126.700,South Korea,A,1,ruin,high
+Tokyo,35.685,139.690,Japan,M;E;N,5,capital,high
+Kyoto,35.010,135.770,Japan,M;E;N,5,capital,high
+Osaka,34.690,135.500,Japan,C;M;E;N,4,city,high
+Nara,34.685,135.805,Japan,M;E;N,4,capital,high
+Asuka,34.470,135.820,Japan,C;M,3,capital,high
+Fujiwara-kyo,34.500,135.805,Japan,M,3,ruin,high
+Nagaoka-kyo,34.925,135.700,Japan,M,2,ruin,high
+Kuni-kyo,34.750,135.850,Japan,M,1,ruin,low
+Otsu,35.005,135.865,Japan,M;E;N,3,city,high
+Kamakura,35.320,139.550,Japan,M;E;N,4,capital,high
+Yoshinogari,33.325,130.385,Japan,A;C,2,ruin,high
+Dazaifu,33.515,130.525,Japan,M,3,city,high
+Fukuoka (Hakata),33.590,130.400,Japan,C;M;E;N,4,port,high
+Nagasaki,32.750,129.880,Japan,E;N,4,port,high
+Hirado,33.370,129.555,Japan,E,3,port,high
+Sakai,34.575,135.480,Japan,M;E,3,port,high
+Kanazawa,36.560,136.655,Japan,E;N,3,city,high
+Sendai,38.270,140.870,Japan,E;N,3,city,high
+Hiraizumi,38.990,141.110,Japan,M,3,city,high
+Odawara,35.265,139.160,Japan,M;E,2,fortress,high
+Nagoya,35.180,136.905,Japan,E;N,3,city,high
+Hiroshima,34.385,132.455,Japan,E;N,3,city,high
+Kagoshima,31.595,130.555,Japan,M;E;N,3,port,high
+Kumamoto,32.800,130.705,Japan,E;N,3,fortress,high
+Matsue,35.470,133.050,Japan,E;N,2,city,high
+Izumo,35.400,132.690,Japan,A;C;M;E;N,3,religious,high
+Ise,34.490,136.710,Japan,A;C;M;E;N,3,religious,high
+Nikko,36.750,139.600,Japan,M;E;N,2,religious,high
+Hakodate,41.770,140.730,Japan,E;N,3,port,high
+Sapporo,43.060,141.350,Japan,N,3,city,high
+Matsumae,41.430,140.110,Japan,E;N,2,fortress,high
+Shuri (Naha),26.215,127.720,Japan,M;E;N,4,capital,high
+Nakijin,26.690,127.930,Japan,M,2,fortress,high
+Urasoe,26.250,127.730,Japan,M,2,ruin,high
+Katsuren,26.330,127.880,Japan,M,1,fortress,high
+Naze (Amami),28.380,129.495,Japan,E;N,1,port,high
+Ishigaki,24.340,124.160,Japan,E;N,1,port,high
+Hirara (Miyako),24.805,125.280,Japan,M;E,1,port,high
+Nishinoomote (Tanegashima),30.730,131.000,Japan,E,1,port,high
+Bonotsu,31.260,130.220,Japan,M;E,1,port,low
+Kokura,33.885,130.880,Japan,E;N,2,fortress,high
+Shimonoseki,33.950,130.940,Japan,M;E;N,3,port,high
+Karatsu,33.450,129.970,Japan,E,2,port,high
+Saga,33.260,130.300,Japan,E;N,2,city,high
+Arita,33.200,129.870,Japan,E,1,market,high
+Usa,33.530,131.370,Japan,M,2,religious,high
+Oita (Funai),33.240,131.610,Japan,M;E;N,2,port,high
+Hita,33.320,130.940,Japan,E,1,city,high
+Yatsushiro,32.500,130.600,Japan,E,1,city,high
+Shimabara,32.790,130.370,Japan,E,1,fortress,high
+Hondo (Amakusa),32.460,130.190,Japan,E,1,city,high
+Saitobaru,32.110,131.400,Japan,A;C,1,ruin,low
+Katsumoto (Iki),33.750,129.700,Japan,C;M,1,port,low
+Izuhara (Tsushima),34.200,129.290,Japan,C;M;E;N,2,port,high
+Munakata,33.805,130.540,Japan,A;C,1,religious,high
+Itoshima,33.550,130.200,Japan,C,1,ruin,high
+Kurume,33.320,130.510,Japan,E,1,city,high
+Omuta,33.030,130.450,Japan,N,1,mining,high
+Sasebo,33.170,129.720,Japan,N,1,port,high
+Takamatsu,34.340,134.050,Japan,E;N,2,city,high
+Kotohira,34.190,133.820,Japan,E,1,religious,high
+Matsuyama,33.840,132.765,Japan,E;N,2,city,high
+Kochi,33.560,133.530,Japan,E;N,2,city,high
+Tokushima,34.070,134.555,Japan,E;N,2,city,high
+Uwajima,33.220,132.560,Japan,E,1,city,high
+Niihama (Besshi),33.960,133.280,Japan,E;N,1,mining,high
+Iwami Ginzan,35.110,132.440,Japan,E,2,mining,high
+Hagi,34.410,131.400,Japan,E;N,2,city,high
+Yamaguchi,34.180,131.470,Japan,M;E,3,city,high
+Iwakuni,34.170,132.220,Japan,E,1,fortress,high
+Miyajima,34.300,132.320,Japan,M;E,2,religious,high
+Onomichi,34.410,133.200,Japan,M;E,1,port,high
+Tomonoura,34.385,133.385,Japan,E,1,port,low
+Okayama,34.660,133.935,Japan,E;N,3,city,high
+Kurashiki,34.590,133.770,Japan,E;N,1,market,high
+Tsuyama,35.070,134.000,Japan,E,1,city,high
+Himeji,34.830,134.690,Japan,E;N,3,fortress,high
+Tottori,35.500,134.240,Japan,E;N,2,city,high
+Imbe (Bizen),34.740,134.190,Japan,M;E,1,market,low
+Kobe,34.690,135.195,Japan,M;E;N,3,port,high
+Ikaruga,34.610,135.735,Japan,M,2,religious,high
+Yoshino,34.370,135.860,Japan,M,2,religious,high
+Koyasan,34.213,135.585,Japan,M;E;N,3,religious,high
+Wakayama,34.230,135.170,Japan,E;N,2,city,high
+Kumano Hongu,33.840,135.775,Japan,M;E,2,religious,low
+Tsu,34.720,136.510,Japan,E,1,city,high
+Matsusaka,34.570,136.530,Japan,E,1,city,high
+Iga Ueno,34.770,136.130,Japan,E,1,fortress,high
+Hikone,35.275,136.260,Japan,E,2,fortress,high
+Azuchi,35.140,136.140,Japan,E,2,ruin,high
+Nagahama,35.380,136.270,Japan,E,1,city,high
+Sekigahara,35.365,136.465,Japan,E,2,ruin,high
+Uji,34.885,135.800,Japan,M,2,religious,high
+Sasayama,35.075,135.220,Japan,E,1,fortress,high
+Sakurai (Makimuku),34.515,135.845,Japan,A;C,2,ruin,high
+Shigaraki,34.900,136.080,Japan,M,1,ruin,low
+Furuichi (Habikino),34.555,135.605,Japan,C,2,ruin,high
+Gifu,35.425,136.760,Japan,E,2,fortress,high
+Okazaki,34.955,137.175,Japan,E,1,fortress,high
+Hamamatsu,34.710,137.730,Japan,E;N,2,city,high
+Shizuoka (Sunpu),34.975,138.385,Japan,E;N,3,city,high
+Kofu,35.665,138.570,Japan,E;N,2,city,high
+Matsumoto,36.240,137.970,Japan,E;N,2,fortress,high
+Nagano,36.650,138.190,Japan,M;E;N,2,religious,high
+Ueda,36.400,138.250,Japan,E,1,fortress,high
+Suwa,36.040,138.115,Japan,M,1,religious,high
+Takayama,36.145,137.250,Japan,E;N,1,market,high
+Toyama,36.695,137.215,Japan,E;N,2,city,high
+Fukui,36.065,136.220,Japan,E;N,2,city,high
+Ichijodani,36.005,136.300,Japan,M,2,ruin,low
+Tsuruga,35.645,136.055,Japan,M;E;N,2,port,high
+Obama,35.495,135.745,Japan,M;E,1,port,high
+Eiheiji,36.055,136.355,Japan,M,1,religious,high
+Niigata,37.915,139.040,Japan,E;N,3,port,high
+Aikawa (Sado),38.030,138.240,Japan,E,2,mining,high
+Joetsu (Kasugayama),37.150,138.235,Japan,M;E,2,fortress,high
+Sakata,38.915,139.835,Japan,E;N,2,port,high
+Tsuruoka,38.730,139.825,Japan,E,1,city,high
+Yamagata,38.255,140.340,Japan,E;N,2,city,high
+Yonezawa,37.920,140.115,Japan,E,1,city,high
+Shimoda,34.680,138.945,Japan,N,1,port,high
+Uraga,35.250,139.715,Japan,N,2,port,high
+Yokohama,35.445,139.640,Japan,N,4,port,high
+Mito,36.370,140.470,Japan,E;N,2,city,high
+Kawagoe,35.925,139.485,Japan,E,1,city,high
+Kashima,35.970,140.630,Japan,A;C;M,1,religious,high
+Utsunomiya,36.555,139.885,Japan,E;N,1,city,high
+Ashikaga,36.340,139.450,Japan,M,1,city,high
+Takasaki,36.320,139.000,Japan,N,1,city,high
+Tagajo,38.295,141.005,Japan,M,2,fortress,high
+Matsushima,38.370,141.060,Japan,M;E,1,religious,high
+Akita,39.720,140.100,Japan,M;E;N,2,city,high
+Hirosaki,40.600,140.465,Japan,E;N,2,fortress,high
+Aomori,40.820,140.740,Japan,N,2,port,high
+Sannai-Maruyama,40.810,140.700,Japan,A,2,ruin,high
+Hachinohe,40.510,141.490,Japan,N,1,port,high
+Morioka,39.700,141.150,Japan,E;N,2,city,high
+Isawa (Mizusawa),39.130,141.130,Japan,M,1,fortress,low
+Ishinomaki,38.430,141.300,Japan,E,1,port,high
+Fukushima,37.760,140.470,Japan,E;N,1,city,high
+Aizu-Wakamatsu,37.495,139.930,Japan,M;E;N,2,fortress,high
+Shirakawa,37.125,140.210,Japan,M,1,fortress,high
+Kamaishi,39.275,141.885,Japan,N,1,mining,high
+Kakunodate,39.600,140.560,Japan,E,1,city,high
+Tosaminato,41.030,140.340,Japan,M,2,port,low
+Esashi,41.870,140.130,Japan,E,1,port,high
+Otaru,43.190,141.000,Japan,N,2,port,high
+Asahikawa,43.770,142.365,Japan,N,1,city,high
+Kushiro,42.985,144.380,Japan,N,1,port,high
+Nemuro,43.330,145.580,Japan,E;N,1,port,high
+Abashiri,44.020,144.270,Japan,N,1,port,high
+Muroran,42.315,140.975,Japan,N,1,port,high
+Akkeshi,43.050,144.850,Japan,E,1,port,high
+Tobolsk,58.200,68.250,Russia,E;N,3,capital,high
+Isker (Qashliq),58.150,68.400,Russia,M;E,2,ruin,low
+Tyumen,57.150,65.530,Russia,E;N,2,city,high
+Omsk,54.990,73.370,Russia,E;N,3,city,high
+Tomsk,56.490,84.950,Russia,E;N,3,city,high
+Krasnoyarsk,56.010,92.870,Russia,E;N,3,city,high
+Yeniseysk,58.450,92.170,Russia,E;N,2,city,high
+Irkutsk,52.290,104.280,Russia,E;N,3,city,high
+Kyakhta,50.350,106.450,Russia,E;N,2,market,high
+Chita,52.030,113.500,Russia,E;N,2,city,high
+Nerchinsk,51.980,116.580,Russia,E;N,3,city,high
+Albazin,53.380,124.060,Russia,E,2,fortress,high
+Yakutsk,62.030,129.730,Russia,E;N,3,city,high
+Okhotsk,59.360,143.240,Russia,E;N,3,port,high
+Petropavlovsk-Kamchatsky,53.020,158.650,Russia,E;N,2,port,high
+Anadyr,64.730,177.510,Russia,N,1,port,high
+Magadan,59.570,150.800,Russia,N,2,port,high
+Khabarovsk,48.480,135.080,Russia,N,3,city,high
+Vladivostok,43.120,131.890,Russia,N,3,port,high
+Blagoveshchensk,50.260,127.530,Russia,N,2,city,high
+Novosibirsk,55.030,82.920,Russia,N,3,city,high
+Barnaul,53.350,83.770,Russia,E;N,2,mining,high
+Kuznetsk (Novokuznetsk),53.760,87.140,Russia,E;N,2,city,high
+Mangazeya,66.700,82.270,Russia,E,2,ruin,low
+Beryozovo,63.930,65.050,Russia,E;N,2,city,high
+Surgut,61.250,73.420,Russia,E;N,1,city,high
+Obdorsk (Salekhard),66.530,66.600,Russia,E;N,2,city,high
+Yekaterinburg,56.840,60.610,Russia,E;N,3,city,high
+Chelyabinsk,55.160,61.400,Russia,E;N,2,city,high
+Verkhoturye,58.860,60.810,Russia,E,2,city,high
+Tara,56.900,74.370,Russia,E,1,fortress,high
+Turukhansk,65.800,87.950,Russia,E;N,1,city,high
+Kurgan,55.440,65.340,Russia,E;N,1,city,high
+Troitsk,54.080,61.560,Russia,E,1,market,high
+Pelym,59.600,63.100,Russia,E,1,fortress,low
+Narym,58.900,81.600,Russia,E,1,fortress,low
+Kolyvan (Altai),51.320,82.200,Russia,E,1,mining,low
+Biysk,52.540,85.210,Russia,E;N,1,city,high
+Zmeinogorsk,51.160,82.190,Russia,E,1,mining,high
+Minusinsk,53.710,91.690,Russia,E;N,1,city,high
+Kyzyl,51.720,94.450,Russia,N,1,city,high
+Por-Bazhyn,50.610,97.390,Russia,M,1,ruin,high
+Ulan-Ude (Verkhneudinsk),51.830,107.580,Russia,E;N,2,city,high
+Selenginsk,51.100,106.700,Russia,E,1,fortress,low
+Barguzin,53.600,109.600,Russia,E,1,fortress,low
+Bratsk,56.150,101.630,Russia,E;N,1,city,high
+Kirensk,57.780,108.110,Russia,E,1,city,high
+Olyokminsk,60.370,120.420,Russia,E,1,city,high
+Verkhoyansk,67.550,133.390,Russia,E;N,1,city,high
+Srednekolymsk,67.450,153.700,Russia,E,1,fortress,high
+Zashiversk,67.400,142.600,Russia,E,1,ruin,low
+Ayan,56.450,138.170,Russia,N,1,port,high
+Nikolayevsk-on-Amur,53.140,140.730,Russia,N,1,port,high
+Aleksandrovsk-Sakhalinsky,50.900,142.160,Russia,N,1,port,high
+Korsakov (Otomari),46.630,142.780,Russia,E;N,1,port,high
+Yuzhno-Sakhalinsk (Toyohara),46.960,142.740,Russia,N,1,city,high
+Gizhiga,61.900,160.400,Russia,E,1,fortress,low
+Bolsheretsk,52.700,156.300,Russia,E,1,ruin,low
+Ust-Kut,56.790,105.780,Russia,E,1,city,high
+Ussuriysk,43.800,131.950,Russia,M;N,1,city,high
+Sintashta,52.480,60.180,Russia,A,1,ruin,low
+Pazyryk,50.750,88.070,Russia,A,1,ruin,low
+Arzhan,52.070,93.650,Russia,A,1,ruin,low
+Ivolginsk,51.730,107.300,Russia,C,1,ruin,low
+Kraskino,42.710,130.780,Russia,M,1,ruin,high
+Norilsk,69.350,88.200,Russia,N,1,mining,high
+Achinsk,56.270,90.500,Russia,E;N,1,city,high
+Kansk,56.200,95.710,Russia,E,1,fortress,high

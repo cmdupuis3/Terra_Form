@@ -1,0 +1,1053 @@
+name,lat,lon,country,eras,significance,kind,confidence
+London,51.507,-0.128,United Kingdom,C;M;E;N,5,capital,high
+Edinburgh,55.953,-3.189,United Kingdom,M;E;N,4,capital,high
+Dublin,53.350,-6.260,Ireland,M;E;N,4,capital,high
+Cardiff,51.481,-3.179,United Kingdom,C;M;N,3,capital,high
+Belfast,54.597,-5.930,United Kingdom,E;N,3,port,high
+York,53.959,-1.082,United Kingdom,C;M;E;N,4,city,high
+Winchester,51.063,-1.308,United Kingdom,C;M;E,4,capital,high
+Canterbury,51.280,1.080,United Kingdom,C;M;E;N,4,religious,high
+Oxford,51.752,-1.258,United Kingdom,M;E;N,4,university,high
+Cambridge,52.205,0.119,United Kingdom,M;E;N,4,university,high
+Bristol,51.455,-2.588,United Kingdom,M;E;N,4,port,high
+Norwich,52.628,1.297,United Kingdom,M;E;N,3,city,high
+Lincoln,53.234,-0.538,United Kingdom,C;M;E,3,city,high
+Colchester,51.889,0.904,United Kingdom,A;C;M;E,3,city,high
+St Albans,51.755,-0.336,United Kingdom,C;M;E,3,city,high
+Bath,51.381,-2.359,United Kingdom,C;M;E;N,3,city,high
+Chester,53.191,-2.891,United Kingdom,C;M;E,3,fortress,high
+Exeter,50.722,-3.527,United Kingdom,C;M;E,3,city,high
+Gloucester,51.865,-2.243,United Kingdom,C;M;E,2,city,high
+Worcester,52.192,-2.220,United Kingdom,M;E,2,city,high
+Durham,54.776,-1.575,United Kingdom,M;E;N,3,religious,high
+Newcastle upon Tyne,54.978,-1.618,United Kingdom,C;M;E;N,3,port,high
+Carlisle,54.892,-2.933,United Kingdom,C;M;E,2,fortress,high
+Housesteads (Hadrian's Wall),55.013,-2.331,United Kingdom,C,3,fortress,high
+Vindolanda,54.991,-2.360,United Kingdom,C,2,ruin,high
+Manchester,53.481,-2.243,United Kingdom,E;N,4,city,high
+Liverpool,53.408,-2.992,United Kingdom,E;N,4,port,high
+Birmingham,52.487,-1.890,United Kingdom,E;N,4,city,high
+Leeds,53.800,-1.549,United Kingdom,E;N,3,city,high
+Sheffield,53.381,-1.470,United Kingdom,E;N,3,city,high
+Glasgow,55.864,-4.252,United Kingdom,M;E;N,4,port,high
+Aberdeen,57.150,-2.094,United Kingdom,M;E;N,3,port,high
+Stirling,56.117,-3.937,United Kingdom,M;E,3,fortress,high
+Perth,56.396,-3.437,United Kingdom,M;E,2,city,high
+Scone,56.421,-3.401,United Kingdom,M,2,religious,high
+Dunfermline,56.072,-3.452,United Kingdom,M,2,religious,high
+St Andrews,56.340,-2.796,United Kingdom,M;E,3,university,high
+Iona,56.335,-6.418,United Kingdom,M,3,religious,high
+Dunadd,56.088,-5.481,United Kingdom,M,2,fortress,high
+Skara Brae,59.049,-3.343,United Kingdom,A,2,ruin,high
+Kirkwall,58.981,-2.960,United Kingdom,M;E,2,port,high
+Jarlshof,59.869,-1.291,United Kingdom,A;M,1,ruin,high
+Inverness,57.478,-4.224,United Kingdom,M;E;N,2,city,high
+Lindisfarne,55.669,-1.802,United Kingdom,M,3,religious,high
+Bamburgh,55.609,-1.710,United Kingdom,M,2,fortress,high
+Jarrow,54.980,-1.472,United Kingdom,M,2,religious,high
+Whitby,54.486,-0.613,United Kingdom,M;E,2,religious,high
+Tintagel,50.667,-4.757,United Kingdom,M,2,fortress,high
+Glastonbury,51.146,-2.714,United Kingdom,M,2,religious,high
+Salisbury,51.070,-1.794,United Kingdom,M;E,3,religious,high
+Stonehenge,51.179,-1.826,United Kingdom,A,4,religious,high
+Avebury,51.428,-1.854,United Kingdom,A,2,religious,high
+Old Sarum,51.093,-1.805,United Kingdom,A;C;M,2,fortress,high
+Maiden Castle,50.695,-2.470,United Kingdom,A;C,2,fortress,high
+Dorchester,50.715,-2.437,United Kingdom,C;M,1,city,high
+Silchester,51.359,-1.079,United Kingdom,C,2,ruin,high
+Wroxeter,52.674,-2.648,United Kingdom,C,2,ruin,high
+Caerleon,51.610,-2.955,United Kingdom,C,2,fortress,high
+Caernarfon,53.139,-4.277,United Kingdom,C;M,2,fortress,high
+Conwy,53.280,-3.830,United Kingdom,M,2,fortress,high
+St Davids,51.882,-5.269,United Kingdom,M,2,religious,high
+Aberffraw,53.189,-4.460,United Kingdom,M,1,capital,high
+Shrewsbury,52.708,-2.754,United Kingdom,M;E,2,city,high
+Ludlow,52.368,-2.718,United Kingdom,M;E,2,fortress,high
+Hereford,52.056,-2.716,United Kingdom,M;E,2,religious,high
+Coventry,52.408,-1.510,United Kingdom,M;E;N,3,city,high
+Nottingham,52.954,-1.158,United Kingdom,M;E;N,3,city,high
+Leicester,52.636,-1.133,United Kingdom,C;M;E;N,2,city,high
+Tamworth,52.634,-1.695,United Kingdom,M,2,capital,high
+Repton,52.840,-1.551,United Kingdom,M,1,religious,high
+Stamford,52.651,-0.480,United Kingdom,M,2,market,high
+Boston,52.979,-0.026,United Kingdom,M;E,2,port,high
+King's Lynn,52.752,0.396,United Kingdom,M;E,3,port,high
+Bury St Edmunds,52.246,0.712,United Kingdom,M;E,2,religious,high
+Ely,52.399,0.262,United Kingdom,M;E,2,religious,high
+Sutton Hoo,52.089,1.338,United Kingdom,M,2,ruin,high
+Ipswich,52.059,1.156,United Kingdom,M;E;N,2,port,high
+Dover,51.129,1.311,United Kingdom,C;M;E;N,3,port,high
+Hastings,50.856,0.573,United Kingdom,M,2,port,high
+Southampton,50.904,-1.404,United Kingdom,M;E;N,3,port,high
+Portsmouth,50.799,-1.091,United Kingdom,E;N,3,port,high
+Plymouth,50.376,-4.143,United Kingdom,E;N,3,port,high
+Windsor,51.484,-0.604,United Kingdom,M;E;N,2,fortress,high
+Rochester,51.389,0.505,United Kingdom,C;M,2,fortress,high
+Reading,51.456,-0.973,United Kingdom,M;E;N,1,religious,high
+Lewes,50.874,0.011,United Kingdom,M,1,fortress,high
+Fountains Abbey,54.110,-1.583,United Kingdom,M,2,religious,high
+Rievaulx,54.257,-1.117,United Kingdom,M,1,religious,high
+Lancaster,54.047,-2.801,United Kingdom,M;E,1,fortress,high
+Hull,53.745,-0.336,United Kingdom,M;E;N,3,port,high
+Beverley,53.842,-0.427,United Kingdom,M,1,religious,high
+Berwick-upon-Tweed,55.771,-2.007,United Kingdom,M;E,2,fortress,high
+Dundee,56.462,-2.971,United Kingdom,M;E;N,2,port,high
+Linlithgow,55.978,-3.600,United Kingdom,M;E,1,fortress,high
+Roxburgh,55.584,-2.467,United Kingdom,M,1,fortress,high
+Melrose,55.599,-2.728,United Kingdom,M,1,religious,high
+Elgin,57.649,-3.319,United Kingdom,M,1,religious,high
+Lerwick,60.155,-1.145,United Kingdom,E;N,1,port,high
+Peel,54.224,-4.692,Isle of Man,M,2,fortress,high
+Tynwald Hill (St John's),54.204,-4.636,Isle of Man,M;E;N,1,religious,high
+Tara,53.579,-6.612,Ireland,A;M,3,religious,high
+Newgrange,53.695,-6.475,Ireland,A,3,religious,high
+Clonmacnoise,53.326,-7.986,Ireland,M,3,religious,high
+Armagh,54.350,-6.653,United Kingdom,M;E,3,religious,high
+Cashel,52.516,-7.890,Ireland,M,2,religious,high
+Glendalough,53.010,-6.328,Ireland,M,2,religious,high
+Kells,53.727,-6.878,Ireland,M,1,religious,high
+Kildare,53.158,-6.910,Ireland,M,1,religious,high
+Skellig Michael,51.771,-10.540,Ireland,M,2,religious,high
+Cork,51.898,-8.473,Ireland,M;E;N,3,port,high
+Waterford,52.259,-7.110,Ireland,M;E;N,3,port,high
+Limerick,52.664,-8.623,Ireland,M;E;N,3,city,high
+Galway,53.272,-9.049,Ireland,M;E;N,3,port,high
+Kilkenny,52.654,-7.252,Ireland,M;E,2,city,high
+Wexford,52.336,-6.463,Ireland,M;E,2,port,high
+Derry,54.997,-7.309,United Kingdom,M;E;N,2,fortress,high
+Drogheda,53.718,-6.348,Ireland,M;E,2,port,high
+Trim,53.555,-6.790,Ireland,M,1,fortress,high
+Dún Aonghasa,53.126,-9.767,Ireland,A;M,1,fortress,high
+Navan Fort,54.348,-6.697,United Kingdom,A,1,religious,high
+Paris,48.857,2.352,France,C;M;E;N,5,capital,high
+Lyon,45.764,4.836,France,C;M;E;N,4,city,high
+Marseille,43.296,5.370,France,A;C;M;E;N,4,port,high
+Bordeaux,44.838,-0.579,France,C;M;E;N,4,port,high
+Toulouse,43.604,1.444,France,C;M;E;N,4,city,high
+Reims,49.258,4.032,France,C;M;E;N,4,religious,high
+Orléans,47.902,1.909,France,C;M;E,3,city,high
+Tours,47.394,0.685,France,C;M;E,3,religious,high
+Rouen,49.443,1.099,France,C;M;E;N,4,city,high
+Lille,50.629,3.057,France,M;E;N,3,city,high
+Strasbourg,48.573,7.752,France,C;M;E;N,4,city,high
+Nantes,47.218,-1.554,France,C;M;E;N,3,port,high
+Rennes,48.117,-1.678,France,C;M;E,3,capital,high
+Dijon,47.322,5.041,France,M;E,3,capital,high
+Besançon,47.238,6.024,France,C;M;E,2,city,high
+Grenoble,45.188,5.724,France,C;M;E;N,2,city,high
+Avignon,43.949,4.806,France,C;M;E,4,religious,high
+Arles,43.677,4.628,France,C;M,3,city,high
+Nîmes,43.837,4.360,France,C;M,3,city,high
+Orange,44.138,4.808,France,C,2,city,high
+Vaison-la-Romaine,44.240,5.075,France,C,1,ruin,high
+Glanum,43.774,4.832,France,C,1,ruin,high
+Pont du Gard,43.947,4.535,France,C,2,ruin,high
+Aix-en-Provence,43.529,5.447,France,C;M;E,3,city,high
+Narbonne,43.184,3.004,France,C;M,3,city,high
+Carcassonne,43.213,2.351,France,C;M,3,fortress,high
+Montpellier,43.611,3.877,France,M;E;N,3,university,high
+Béziers,43.344,3.216,France,C;M,2,city,high
+Albi,43.929,2.148,France,M,2,religious,high
+Cahors,44.449,1.436,France,C;M,1,city,high
+Périgueux,45.184,0.722,France,C;M,1,city,high
+Lascaux,45.049,1.176,France,A,2,ruin,high
+Poitiers,46.580,0.340,France,C;M;E,3,city,high
+Limoges,45.834,1.262,France,C;M;E,2,city,high
+Clermont-Ferrand,45.777,3.087,France,A;C;M;E;N,3,city,high
+Gergovia,45.714,3.124,France,C,2,ruin,high
+Le Puy-en-Velay,45.044,3.885,France,M,2,religious,high
+Vienne,45.525,4.875,France,C;M,2,city,high
+Bibracte,46.927,4.036,France,A;C,2,ruin,high
+Autun,46.951,4.299,France,C;M,2,city,high
+Alesia,47.537,4.500,France,C,2,ruin,high
+Cluny,46.434,4.659,France,M,3,religious,high
+Vézelay,47.466,3.748,France,M,2,religious,high
+Cîteaux,47.128,5.093,France,M,2,religious,high
+Auxerre,47.798,3.567,France,M,1,religious,high
+Sens,48.197,3.283,France,C;M,2,religious,high
+Troyes,48.297,4.074,France,M;E,3,market,high
+Provins,48.559,3.299,France,M,2,market,high
+Chartres,48.447,1.489,France,M,3,religious,high
+Saint-Denis,48.936,2.359,France,M;E,3,religious,high
+Versailles,48.805,2.120,France,E;N,4,capital,high
+Fontainebleau,48.402,2.700,France,M;E,2,fortress,high
+Compiègne,49.418,2.826,France,M;E;N,1,city,high
+Soissons,49.382,3.323,France,C;M,2,capital,high
+Laon,49.564,3.620,France,M,2,capital,high
+Amiens,49.894,2.296,France,C;M;E;N,3,religious,high
+Beauvais,49.430,2.080,France,M,1,religious,high
+Noyon,49.582,2.999,France,M,1,religious,high
+Saint-Quentin,49.847,3.287,France,M;E,1,city,high
+Arras,50.291,2.778,France,M;E,2,market,high
+Calais,50.952,1.857,France,M;E;N,2,port,high
+Boulogne-sur-Mer,50.726,1.614,France,C;M;E,2,port,high
+Saint-Omer,50.750,2.252,France,M,1,religious,high
+Dunkirk,51.034,2.377,France,E;N,2,port,high
+Caen,49.182,-0.371,France,M;E;N,3,city,high
+Bayeux,49.277,-0.703,France,M,2,religious,high
+Mont-Saint-Michel,48.636,-1.511,France,M,3,religious,high
+Le Mans,48.006,0.199,France,C;M,2,city,high
+Angers,47.471,-0.552,France,M;E,3,capital,high
+Saumur,47.260,-0.077,France,M;E,1,fortress,high
+Fontevraud,47.181,0.052,France,M,1,religious,high
+Blois,47.586,1.335,France,M;E,2,capital,high
+Chinon,47.167,0.240,France,M,1,fortress,high
+Bourges,47.081,2.399,France,C;M;E,3,city,high
+Nevers,46.990,3.159,France,M;E,1,city,high
+Moulins,46.566,3.333,France,M;E,1,capital,high
+La Rochelle,46.160,-1.152,France,M;E;N,3,port,high
+Saintes,45.746,-0.633,France,C;M,2,city,high
+Rochefort,45.942,-0.959,France,E;N,1,port,high
+Brest,48.390,-4.486,France,E;N,2,port,high
+Saint-Malo,48.650,-2.026,France,M;E;N,2,port,high
+Vannes,47.658,-2.760,France,C;M,2,city,high
+Carnac,47.584,-3.079,France,A,2,religious,high
+Quimper,48.000,-4.097,France,M,1,city,high
+Nancy,48.692,6.184,France,M;E;N,3,capital,high
+Metz,49.120,6.177,France,C;M;E;N,3,city,high
+Verdun,49.160,5.384,France,M;E;N,2,fortress,high
+Toul,48.675,5.892,France,M,1,religious,high
+Colmar,48.079,7.358,France,M;E,2,city,high
+Mulhouse,47.750,7.336,France,E;N,2,city,high
+Belfort,47.638,6.864,France,E;N,1,fortress,high
+Chambéry,45.564,5.918,France,M;E,2,capital,high
+Annecy,45.899,6.129,France,M;E,1,city,high
+Lourdes,43.095,-0.047,France,N,2,religious,high
+Pau,43.296,-0.370,France,M;E,2,capital,high
+Bayonne,43.493,-1.475,France,M;E,2,port,high
+Perpignan,42.699,2.895,France,M;E,2,capital,high
+Foix,42.965,1.606,France,M,1,fortress,high
+Montségur,42.876,1.833,France,M,1,fortress,high
+Rocamadour,44.799,1.618,France,M,1,religious,high
+Conques,44.600,2.397,France,M,1,religious,high
+Moissac,44.105,1.085,France,M,1,religious,high
+Saint-Étienne,45.440,4.387,France,N,2,mining,high
+Le Creusot,46.805,4.432,France,N,1,mining,high
+Lens,50.432,2.833,France,N,1,mining,high
+Le Havre,49.494,0.108,France,E;N,2,port,high
+Cherbourg,49.639,-1.616,France,E;N,1,port,high
+Toulon,43.125,5.930,France,E;N,2,port,high
+Nice,43.710,7.262,France,A;C;M;E;N,3,port,high
+Monaco,43.738,7.425,Monaco,A;M;E;N,2,capital,high
+Ensérune,43.312,3.047,France,A;C,1,ruin,high
+Fréjus,43.433,6.737,France,C,1,port,high
+Aigues-Mortes,43.567,4.192,France,M,2,port,high
+Ajaccio,41.927,8.737,France,E;N,2,port,high
+Corte,42.306,9.150,France,E,1,capital,high
+Bonifacio,41.387,9.159,France,M,1,fortress,high
+Aléria,42.104,9.512,France,A;C,1,ruin,high
+Andorra la Vella,42.507,1.522,Andorra,M;E;N,1,capital,high
+Madrid,40.417,-3.704,Spain,E;N,5,capital,high
+Lisbon,38.722,-9.139,Portugal,C;M;E;N,5,capital,high
+Toledo,39.863,-4.028,Spain,C;M;E,4,capital,high
+Seville,37.389,-5.984,Spain,C;M;E;N,4,port,high
+Córdoba,37.888,-4.779,Spain,C;M;E,5,capital,high
+Granada,37.177,-3.599,Spain,M;E;N,4,capital,high
+Barcelona,41.387,2.170,Spain,C;M;E;N,4,port,high
+Valencia,39.470,-0.377,Spain,C;M;E;N,4,port,high
+Zaragoza,41.649,-0.888,Spain,C;M;E;N,4,city,high
+Burgos,42.341,-3.700,Spain,M;E,3,capital,high
+León,42.599,-5.567,Spain,C;M;E,3,capital,high
+Oviedo,43.362,-5.849,Spain,M;E;N,3,capital,high
+Santiago de Compostela,42.881,-8.545,Spain,M;E;N,4,religious,high
+Salamanca,40.965,-5.664,Spain,C;M;E,3,university,high
+Valladolid,41.652,-4.724,Spain,M;E,3,capital,high
+Segovia,40.948,-4.118,Spain,C;M;E,3,city,high
+Ávila,40.656,-4.700,Spain,M;E,2,fortress,high
+Cuenca,40.071,-2.137,Spain,M;E,2,city,high
+Pamplona,42.813,-1.644,Spain,C;M;E,3,capital,high
+Logroño,42.465,-2.445,Spain,M;E,1,city,high
+Nájera,42.416,-2.733,Spain,M,1,capital,high
+San Millán de la Cogolla,42.326,-2.865,Spain,M,1,religious,high
+Bilbao,43.263,-2.935,Spain,M;E;N,3,port,high
+San Sebastián,43.318,-1.981,Spain,M;E;N,2,port,high
+Santander,43.462,-3.810,Spain,M;E;N,2,port,high
+Gijón,43.545,-5.662,Spain,C;M;N,1,port,high
+A Coruña,43.371,-8.396,Spain,C;M;E;N,2,port,high
+Lugo,43.012,-7.556,Spain,C;M,2,city,high
+Astorga,42.458,-6.056,Spain,C;M,1,city,high
+Las Médulas,42.461,-6.769,Spain,C,2,mining,high
+Numantia,41.808,-2.445,Spain,A;C,2,ruin,high
+Soria,41.764,-2.465,Spain,M,1,city,high
+Clunia,41.780,-3.370,Spain,C,1,ruin,high
+Tarragona,41.119,1.245,Spain,A;C;M,3,city,high
+Empúries,42.134,3.121,Spain,A;C,2,ruin,high
+Girona,41.979,2.821,Spain,C;M;E,2,city,high
+Lleida,41.617,0.622,Spain,C;M,2,city,high
+Tortosa,40.812,0.521,Spain,C;M,1,city,high
+Ripoll,42.201,2.191,Spain,M,1,religious,high
+Montserrat,41.593,1.837,Spain,M;E,2,religious,high
+Poblet,41.380,1.082,Spain,M,1,religious,high
+Huesca,42.136,-0.409,Spain,C;M,1,city,high
+Jaca,42.570,-0.550,Spain,M,1,capital,high
+Teruel,40.344,-1.107,Spain,M,1,city,high
+Sagunto,39.680,-0.278,Spain,A;C;M,2,fortress,high
+Alicante,38.345,-0.481,Spain,C;M;E;N,2,port,high
+Cartagena,37.606,-0.987,Spain,A;C;M;E;N,3,port,high
+Murcia,37.984,-1.129,Spain,M;E;N,3,city,high
+Almería,36.834,-2.464,Spain,M;E,2,port,high
+Málaga,36.721,-4.421,Spain,A;C;M;E;N,3,port,high
+Cádiz,36.527,-6.288,Spain,A;C;M;E;N,3,port,high
+Jerez de la Frontera,36.687,-6.137,Spain,M;E,1,city,high
+Huelva,37.261,-6.945,Spain,A;C;E;N,2,port,high
+Río Tinto,37.692,-6.591,Spain,A;C;N,2,mining,high
+Itálica,37.444,-6.047,Spain,C,2,ruin,high
+Carmona,37.471,-5.646,Spain,A;C;M,1,city,high
+Écija,37.542,-5.083,Spain,C;M,1,city,high
+Jaén,37.780,-3.790,Spain,M;E,1,city,high
+Úbeda,38.013,-3.370,Spain,M;E,1,city,high
+Medina Azahara,37.886,-4.868,Spain,M,3,ruin,high
+Almadén,38.776,-4.835,Spain,E;N,2,mining,high
+Mérida,38.916,-6.344,Spain,C;M,3,city,high
+Cáceres,39.476,-6.372,Spain,C;M;E,1,city,high
+Badajoz,38.879,-6.970,Spain,M;E,2,fortress,high
+Guadalupe,39.453,-5.327,Spain,M;E,1,religious,high
+Trujillo,39.459,-5.882,Spain,M;E,1,city,high
+Ciudad Real,38.986,-3.927,Spain,M;E,1,city,high
+Calatrava la Nueva,38.655,-3.907,Spain,M,1,fortress,high
+Alcalá de Henares,40.482,-3.364,Spain,C;M;E,2,university,high
+Guadalajara,40.633,-3.167,Spain,M;E,1,city,high
+Sigüenza,41.069,-2.640,Spain,M,1,religious,high
+El Escorial,40.589,-4.148,Spain,E,2,religious,high
+Aranjuez,40.031,-3.603,Spain,E,1,fortress,high
+Palma,39.570,2.650,Spain,C;M;E;N,3,port,high
+Ibiza,38.909,1.433,Spain,A;C;M;E;N,2,port,high
+Mahón,39.888,4.266,Spain,E;N,1,port,high
+Gibraltar,36.141,-5.353,Gibraltar,M;E;N,2,fortress,high
+Covadonga,43.309,-5.055,Spain,M,2,religious,high
+Santillana del Mar,43.389,-4.110,Spain,M,1,city,high
+Altamira,43.378,-4.122,Spain,A,2,ruin,high
+Atapuerca,42.351,-3.512,Spain,A,1,ruin,high
+Los Millares,36.965,-2.519,Spain,A,1,ruin,high
+Porto,41.150,-8.610,Portugal,C;M;E;N,4,port,high
+Coimbra,40.207,-8.429,Portugal,C;M;E;N,3,university,high
+Braga,41.551,-8.428,Portugal,C;M;E,3,religious,high
+Guimarães,41.444,-8.296,Portugal,M,3,capital,high
+Évora,38.571,-7.909,Portugal,C;M;E,3,city,high
+Santarém,39.236,-8.686,Portugal,M;E,1,city,high
+Tomar,39.603,-8.414,Portugal,M,2,religious,high
+Alcobaça,39.548,-8.979,Portugal,M,2,religious,high
+Batalha,39.659,-8.825,Portugal,M,1,religious,high
+Sintra,38.797,-9.390,Portugal,M;E;N,2,fortress,high
+Lagos,37.102,-8.674,Portugal,M;E,2,port,high
+Sagres,37.008,-8.945,Portugal,M;E,1,port,high
+Faro,37.019,-7.930,Portugal,C;M;E,1,port,high
+Silves,37.189,-8.439,Portugal,M,2,capital,high
+Conímbriga,40.099,-8.491,Portugal,C,2,ruin,high
+Elvas,38.881,-7.163,Portugal,E,1,fortress,high
+Bragança,41.806,-6.757,Portugal,M;E,1,city,high
+Setúbal,38.525,-8.892,Portugal,M;E,1,port,high
+Viseu,40.657,-7.914,Portugal,M,1,city,high
+Lamego,41.097,-7.809,Portugal,M,1,city,high
+Rome,41.902,12.496,Italy,A;C;M;E;N,5,capital,high
+Venice,45.438,12.327,Italy,M;E;N,5,port,high
+Florence,43.771,11.254,Italy,C;M;E;N,5,city,high
+Milan,45.464,9.190,Italy,C;M;E;N,4,city,high
+Naples,40.852,14.268,Italy,A;C;M;E;N,4,capital,high
+Genoa,44.406,8.946,Italy,C;M;E;N,4,port,high
+Turin,45.070,7.686,Italy,C;M;E;N,4,capital,high
+Bologna,44.494,11.343,Italy,A;C;M;E;N,4,university,high
+Pisa,43.716,10.397,Italy,C;M;E,4,port,high
+Siena,43.319,11.331,Italy,M;E,3,city,high
+Ravenna,44.418,12.203,Italy,C;M,3,capital,high
+Pavia,45.185,9.158,Italy,C;M,3,capital,high
+Verona,45.439,10.994,Italy,C;M;E,3,city,high
+Padua,45.407,11.876,Italy,C;M;E,3,university,high
+Vicenza,45.546,11.548,Italy,C;M;E,2,city,high
+Mantua,45.157,10.792,Italy,M;E,3,capital,high
+Ferrara,44.838,11.620,Italy,M;E,3,capital,high
+Modena,44.647,10.925,Italy,C;M;E,2,capital,high
+Parma,44.801,10.328,Italy,C;M;E,2,capital,high
+Piacenza,45.052,9.693,Italy,C;M,2,city,high
+Cremona,45.133,10.023,Italy,C;M;E,2,city,high
+Brescia,45.540,10.219,Italy,C;M,2,city,high
+Bergamo,45.698,9.670,Italy,C;M,2,city,high
+Como,45.808,9.085,Italy,C;M,1,city,high
+Monza,45.584,9.274,Italy,M,1,religious,high
+Aquileia,45.769,13.371,Italy,C;M,3,ruin,high
+Trieste,45.650,13.776,Italy,C;E;N,3,port,high
+Cividale del Friuli,46.094,13.431,Italy,M,2,capital,high
+Udine,46.063,13.235,Italy,M;E,1,city,high
+Treviso,45.667,12.243,Italy,M,1,city,high
+Trento,46.070,11.121,Italy,M;E,2,religious,high
+Bolzano,46.498,11.355,Italy,M;E,1,market,high
+Aosta,45.737,7.320,Italy,C;M,1,city,high
+Ivrea,45.467,7.876,Italy,M,1,city,high
+Asti,44.900,8.207,Italy,M,1,city,high
+Alessandria,44.913,8.615,Italy,M;E,1,fortress,high
+Lucca,43.843,10.503,Italy,C;M;E,3,city,high
+Pistoia,43.933,10.918,Italy,M,1,city,high
+Arezzo,43.463,11.880,Italy,A;C;M,2,city,high
+Volterra,43.401,10.861,Italy,A;C;M,2,city,high
+Fiesole,43.806,11.293,Italy,A;C,1,ruin,high
+Cortona,43.275,11.985,Italy,A;C;M,1,city,high
+Chiusi,43.016,11.949,Italy,A;C,2,ruin,high
+Populonia,42.988,10.495,Italy,A,1,ruin,high
+Vetulonia,42.861,10.973,Italy,A,1,ruin,high
+Tarquinia,42.254,11.756,Italy,A;C,3,ruin,high
+Cerveteri,42.000,12.100,Italy,A;C,2,ruin,high
+Veii,42.028,12.397,Italy,A;C,2,ruin,high
+Orvieto,42.718,12.111,Italy,A;C;M,2,city,high
+Perugia,43.111,12.390,Italy,A;C;M;E,3,city,high
+Assisi,43.071,12.617,Italy,M,3,religious,high
+Spoleto,42.734,12.737,Italy,C;M,2,capital,high
+Urbino,43.725,12.637,Italy,M;E,2,capital,high
+Ancona,43.616,13.519,Italy,C;M;E,2,port,high
+Loreto,43.440,13.608,Italy,M;E,1,religious,high
+Rimini,44.060,12.566,Italy,C;M;E,2,city,high
+San Marino,43.936,12.447,San Marino,M;E;N,2,capital,high
+Ostia,41.756,12.291,Italy,C,3,ruin,high
+Tivoli,41.963,12.798,Italy,C;E,2,city,high
+Palestrina,41.839,12.890,Italy,A;C,1,ruin,high
+Viterbo,42.419,12.105,Italy,M,2,religious,high
+Civitavecchia,42.093,11.796,Italy,C;E;N,1,port,high
+Montecassino,41.490,13.814,Italy,M,3,religious,high
+Gaeta,41.213,13.572,Italy,C;M,1,port,high
+Capua,41.083,14.250,Italy,A;C;M,3,city,high
+Benevento,41.130,14.782,Italy,A;C;M,3,capital,high
+Pompeii,40.749,14.485,Italy,A;C,4,ruin,high
+Herculaneum,40.806,14.348,Italy,C,2,ruin,high
+Cumae,40.848,14.054,Italy,A;C,2,ruin,high
+Pozzuoli,40.823,14.122,Italy,A;C,2,port,high
+Paestum,40.420,15.005,Italy,A;C,3,ruin,high
+Salerno,40.682,14.768,Italy,C;M;E,3,capital,high
+Amalfi,40.634,14.603,Italy,M,3,port,high
+Velia,40.159,15.155,Italy,A;C,1,ruin,high
+Bari,41.125,16.862,Italy,C;M;E;N,3,port,high
+Brindisi,40.632,17.936,Italy,A;C;M,2,port,high
+Taranto,40.464,17.247,Italy,A;C;M;E;N,3,port,high
+Lecce,40.352,18.169,Italy,C;M;E,2,city,high
+Otranto,40.145,18.491,Italy,M,1,port,high
+Metapontum,40.391,16.818,Italy,A;C,2,ruin,high
+Sybaris,39.716,16.465,Italy,A,2,ruin,high
+Croton,39.081,17.127,Italy,A;C,2,ruin,high
+Locri,38.207,16.254,Italy,A;C,1,ruin,high
+Reggio Calabria,38.111,15.647,Italy,A;C;M;E;N,2,port,high
+Matera,40.666,16.604,Italy,M;N,1,city,high
+Melfi,40.996,15.653,Italy,M,1,fortress,high
+Canosa di Puglia,41.222,16.067,Italy,A;C,1,city,high
+Cannae,41.306,16.133,Italy,C,1,ruin,high
+Castel del Monte,41.085,16.271,Italy,M,1,fortress,high
+Lucera,41.508,15.335,Italy,C;M,1,fortress,high
+L'Aquila,42.351,13.399,Italy,M;E,1,city,high
+Sulmona,42.048,13.927,Italy,C;M,1,city,high
+Palermo,38.116,13.361,Italy,A;C;M;E;N,4,capital,high
+Syracuse,37.075,15.287,Italy,A;C;M;E;N,4,port,high
+Agrigento,37.311,13.577,Italy,A;C;M,3,ruin,high
+Selinunte,37.584,12.825,Italy,A;C,2,ruin,high
+Segesta,37.941,12.835,Italy,A;C,2,ruin,high
+Messina,38.194,15.554,Italy,A;C;M;E;N,3,port,high
+Catania,37.502,15.087,Italy,A;C;M;E;N,3,city,high
+Taormina,37.853,15.288,Italy,A;C,1,city,high
+Gela,37.067,14.250,Italy,A;C,1,ruin,high
+Himera,37.972,13.823,Italy,A,1,ruin,high
+Motya,37.868,12.469,Italy,A;C,2,ruin,high
+Marsala,37.798,12.435,Italy,A;C;M,1,port,high
+Trapani,38.018,12.514,Italy,C;M;E,1,port,high
+Enna,37.567,14.280,Italy,A;C;M,1,fortress,high
+Piazza Armerina,37.384,14.370,Italy,C,1,ruin,high
+Cefalù,38.040,14.023,Italy,M,1,religious,high
+Monreale,38.082,13.290,Italy,M,2,religious,high
+Noto,36.891,15.069,Italy,E,1,city,high
+Cagliari,39.223,9.122,Italy,A;C;M;E;N,3,port,high
+Nora,38.985,9.017,Italy,A;C,1,ruin,high
+Tharros,39.874,8.441,Italy,A;C,1,ruin,high
+Su Nuraxi (Barumini),39.706,8.991,Italy,A,2,ruin,high
+Sassari,40.727,8.560,Italy,M;E,1,city,high
+Alghero,40.558,8.320,Italy,M;E,1,port,high
+Valletta,35.899,14.514,Malta,E;N,3,capital,high
+Mdina,35.886,14.403,Malta,A;C;M;E,2,fortress,high
+Birgu,35.888,14.522,Malta,M;E,1,fortress,high
+Ħaġar Qim,35.828,14.442,Malta,A,2,religious,high
+Ġgantija,36.047,14.269,Malta,A,2,religious,high
+Berlin,52.520,13.405,Germany,M;E;N,5,capital,high
+Vienna,48.208,16.373,Austria,C;M;E;N,5,capital,high
+Munich,48.137,11.576,Germany,M;E;N,4,capital,high
+Hamburg,53.551,9.994,Germany,M;E;N,4,port,high
+Cologne,50.938,6.960,Germany,C;M;E;N,4,city,high
+Frankfurt am Main,50.111,8.682,Germany,M;E;N,4,city,high
+Aachen,50.776,6.084,Germany,C;M;E,4,capital,high
+Trier,49.750,6.637,Germany,C;M;E,3,city,high
+Mainz,49.999,8.273,Germany,C;M;E;N,4,religious,high
+Worms,49.632,8.359,Germany,C;M;E,3,city,high
+Speyer,49.317,8.441,Germany,C;M;E,3,religious,high
+Heidelberg,49.399,8.672,Germany,M;E;N,3,university,high
+Nuremberg,49.454,11.077,Germany,M;E;N,4,city,high
+Augsburg,48.371,10.898,Germany,C;M;E;N,4,city,high
+Regensburg,49.013,12.102,Germany,C;M;E,4,capital,high
+Lübeck,53.866,10.687,Germany,M;E;N,4,port,high
+Bremen,53.079,8.802,Germany,M;E;N,3,port,high
+Magdeburg,52.131,11.640,Germany,M;E;N,3,city,high
+Leipzig,51.340,12.375,Germany,M;E;N,4,market,high
+Dresden,51.051,13.738,Germany,M;E;N,4,capital,high
+Hanover,52.375,9.732,Germany,M;E;N,3,capital,high
+Brunswick,52.269,10.521,Germany,M;E;N,3,capital,high
+Goslar,51.907,10.429,Germany,M;E,3,mining,high
+Hildesheim,52.151,9.951,Germany,M;E,2,religious,high
+Quedlinburg,51.790,11.147,Germany,M,2,religious,high
+Fulda,50.555,9.681,Germany,M,2,religious,high
+Würzburg,49.794,9.929,Germany,M;E;N,3,religious,high
+Bamberg,49.892,10.892,Germany,M;E,3,religious,high
+Erfurt,50.979,11.032,Germany,M;E;N,3,city,high
+Weimar,50.979,11.329,Germany,E;N,3,capital,high
+Eisenach (Wartburg),50.975,10.320,Germany,M;E,2,fortress,high
+Wittenberg,51.866,12.647,Germany,E,3,university,high
+Halle,51.483,11.970,Germany,M;E;N,2,city,high
+Naumburg,51.152,11.810,Germany,M,1,religious,high
+Meissen,51.163,13.473,Germany,M;E,2,capital,high
+Freiberg,50.917,13.343,Germany,M;E;N,2,mining,high
+Chemnitz,50.833,12.924,Germany,N,2,city,high
+Zwickau,50.718,12.496,Germany,M;E;N,1,city,high
+Görlitz,51.153,14.988,Germany,M;E,1,city,high
+Bautzen,51.181,14.424,Germany,M;E,1,city,high
+Potsdam,52.391,13.064,Germany,E;N,3,capital,high
+Brandenburg an der Havel,52.412,12.555,Germany,M,2,capital,high
+Stendal,52.606,11.859,Germany,M,1,market,high
+Tangermünde,52.547,11.970,Germany,M,1,fortress,high
+Stralsund,54.309,13.082,Germany,M;E,2,port,high
+Greifswald,54.096,13.382,Germany,M;E,1,university,high
+Rostock,54.092,12.099,Germany,M;E;N,2,port,high
+Wismar,53.891,11.465,Germany,M;E,2,port,high
+Schwerin,53.629,11.413,Germany,M;E;N,2,capital,high
+Kiel,54.323,10.123,Germany,M;E;N,2,port,high
+Hedeby,54.491,9.566,Germany,M,2,ruin,high
+Schleswig,54.516,9.569,Germany,M;E,1,capital,high
+Lüneburg,53.248,10.408,Germany,M;E,2,mining,high
+Celle,52.624,10.081,Germany,M;E,1,capital,high
+Paderborn,51.719,8.754,Germany,M,2,religious,high
+Corvey,51.778,9.410,Germany,M,1,religious,high
+Münster,51.961,7.628,Germany,M;E;N,3,religious,high
+Osnabrück,52.280,8.047,Germany,M;E,2,city,high
+Soest,51.571,8.106,Germany,M,1,market,high
+Dortmund,51.514,7.466,Germany,M;E;N,3,city,high
+Essen,51.456,7.012,Germany,M;N,3,mining,high
+Duisburg,51.435,6.762,Germany,M;N,2,port,high
+Düsseldorf,51.228,6.773,Germany,M;E;N,3,capital,high
+Xanten,51.662,6.453,Germany,C;M,2,ruin,high
+Cleves,51.786,6.139,Germany,M;E,1,capital,high
+Bonn,50.734,7.100,Germany,C;M;E;N,2,capital,high
+Koblenz,50.359,7.588,Germany,C;M;E,2,city,high
+Marburg,50.810,8.771,Germany,M;E,2,university,high
+Kassel,51.316,9.491,Germany,M;E;N,2,capital,high
+Wetzlar,50.556,8.502,Germany,M;E,1,city,high
+Darmstadt,49.872,8.651,Germany,E;N,1,capital,high
+Wiesbaden,50.082,8.240,Germany,C;E;N,1,capital,high
+Kaiserslautern,49.444,7.769,Germany,M,1,city,high
+Saarbrücken,49.240,6.997,Germany,E;N,2,mining,high
+Karlsruhe,49.009,8.404,Germany,E;N,2,capital,high
+Mannheim,49.489,8.467,Germany,E;N,2,capital,high
+Stuttgart,48.776,9.183,Germany,M;E;N,4,capital,high
+Tübingen,48.520,9.056,Germany,M;E,2,university,high
+Ulm,48.401,9.988,Germany,M;E;N,3,city,high
+Konstanz,47.661,9.176,Germany,C;M;E,2,religious,high
+Reichenau,47.698,9.062,Germany,M,2,religious,high
+Freiburg im Breisgau,47.999,7.842,Germany,M;E;N,2,university,high
+Rottweil,48.168,8.627,Germany,C;M,1,city,high
+Heuneburg,48.095,9.413,Germany,A,2,ruin,high
+Passau,48.574,13.464,Germany,C;M;E,2,religious,high
+Landshut,48.537,12.152,Germany,M;E,1,capital,high
+Ingolstadt,48.765,11.425,Germany,M;E,1,fortress,high
+Eichstätt,48.891,11.184,Germany,M,1,religious,high
+Rothenburg ob der Tauber,49.378,10.179,Germany,M,2,city,high
+Ansbach,49.301,10.572,Germany,M;E,1,capital,high
+Bayreuth,49.948,11.578,Germany,E;N,1,capital,high
+Manching,48.715,11.510,Germany,A;C,2,ruin,high
+Kempten,47.726,10.314,Germany,C;M,1,city,high
+Lindau,47.546,9.684,Germany,M;E,1,city,high
+Salzburg,47.800,13.044,Austria,C;M;E;N,3,religious,high
+Hallstatt,47.562,13.649,Austria,A;C,3,mining,high
+Hallein (Dürrnberg),47.683,13.094,Austria,A;C;M,1,mining,high
+Innsbruck,47.269,11.404,Austria,M;E;N,3,capital,high
+Graz,47.071,15.439,Austria,M;E;N,3,capital,high
+Linz,48.306,14.286,Austria,C;M;E;N,2,city,high
+Carnuntum,48.115,16.864,Austria,C,2,ruin,high
+Melk,48.228,15.332,Austria,M;E,2,religious,high
+Klosterneuburg,48.305,16.325,Austria,M,1,religious,high
+Krems,48.410,15.614,Austria,M,1,market,high
+Wiener Neustadt,47.813,16.243,Austria,M;E,1,city,high
+Klagenfurt,46.624,14.308,Austria,M;E;N,1,capital,high
+Villach,46.611,13.856,Austria,C;M,1,market,high
+Magdalensberg,46.721,14.429,Austria,C,1,ruin,high
+Bregenz,47.503,9.747,Austria,C;M,1,city,high
+Eisenerz,47.540,14.887,Austria,M;E;N,1,mining,high
+Zürich,47.377,8.541,Switzerland,C;M;E;N,4,city,high
+Geneva,46.202,6.143,Switzerland,C;M;E;N,4,city,high
+Basel,47.559,7.588,Switzerland,C;M;E;N,3,university,high
+Bern,46.948,7.447,Switzerland,M;E;N,3,capital,high
+Lausanne,46.520,6.633,Switzerland,C;M;E;N,2,city,high
+Lucerne,47.050,8.306,Switzerland,M;E;N,2,city,high
+St. Gallen,47.424,9.376,Switzerland,M;E;N,3,religious,high
+Chur,46.850,9.532,Switzerland,C;M,1,religious,high
+Sion,46.233,7.360,Switzerland,M,1,religious,high
+Avenches (Aventicum),46.880,7.040,Switzerland,C,1,ruin,high
+Augst (Augusta Raurica),47.534,7.721,Switzerland,C,2,ruin,high
+Schaffhausen,47.697,8.634,Switzerland,M;E,1,city,high
+Fribourg,46.806,7.161,Switzerland,M;E,1,city,high
+Einsiedeln,47.127,8.752,Switzerland,M;E,1,religious,high
+Bellinzona,46.195,9.024,Switzerland,M,1,fortress,high
+La Tène,47.010,7.027,Switzerland,A,2,ruin,high
+Vaduz,47.141,9.521,Liechtenstein,E;N,1,capital,high
+Amsterdam,52.374,4.890,Netherlands,M;E;N,5,port,high
+Brussels,50.847,4.352,Belgium,M;E;N,4,capital,high
+Antwerp,51.220,4.402,Belgium,M;E;N,4,port,high
+Bruges,51.209,3.225,Belgium,M;E,3,port,high
+Ghent,51.054,3.725,Belgium,M;E;N,4,city,high
+Ypres,50.851,2.886,Belgium,M;N,2,city,high
+Leuven,50.879,4.701,Belgium,M;E;N,3,university,high
+Mechelen,51.028,4.480,Belgium,M;E,2,capital,high
+Liège,50.633,5.567,Belgium,M;E;N,3,religious,high
+Tournai,50.606,3.389,Belgium,C;M;E,3,capital,high
+Namur,50.465,4.867,Belgium,M;E;N,2,fortress,high
+Mons,50.454,3.952,Belgium,M;E;N,1,city,high
+Charleroi,50.411,4.444,Belgium,E;N,2,mining,high
+Tongeren,50.780,5.464,Belgium,C;M,2,city,high
+Kortrijk,50.828,3.265,Belgium,M,1,market,high
+Oudenaarde,50.845,3.600,Belgium,M;E,1,market,high
+Dinant,50.261,4.912,Belgium,M,1,market,high
+Stavelot,50.395,5.930,Belgium,M,1,religious,high
+Nivelles,50.598,4.325,Belgium,M,1,religious,high
+Ostend,51.229,2.919,Belgium,E;N,1,port,high
+Spa,50.492,5.864,Belgium,E;N,1,city,high
+Utrecht,52.091,5.122,Netherlands,C;M;E;N,4,religious,high
+Rotterdam,51.924,4.478,Netherlands,M;E;N,3,port,high
+The Hague,52.080,4.311,Netherlands,M;E;N,3,capital,high
+Leiden,52.160,4.497,Netherlands,M;E;N,3,university,high
+Haarlem,52.381,4.637,Netherlands,M;E;N,2,city,high
+Delft,52.012,4.357,Netherlands,M;E,2,city,high
+Dordrecht,51.813,4.690,Netherlands,M;E,3,port,high
+Middelburg,51.499,3.610,Netherlands,M;E,2,port,high
+Nijmegen,51.843,5.852,Netherlands,C;M;E,3,city,high
+Maastricht,50.851,5.691,Netherlands,C;M;E;N,2,city,high
+Groningen,53.219,6.568,Netherlands,M;E;N,2,university,high
+Deventer,52.255,6.164,Netherlands,M;E,2,market,high
+Kampen,52.555,5.911,Netherlands,M,2,port,high
+Zwolle,52.513,6.093,Netherlands,M;E,1,market,high
+Zutphen,52.139,6.201,Netherlands,M,1,market,high
+Dorestad,51.975,5.342,Netherlands,M,2,ruin,high
+Enkhuizen,52.703,5.293,Netherlands,E,1,port,high
+Hoorn,52.642,5.060,Netherlands,E,1,port,high
+'s-Hertogenbosch,51.690,5.302,Netherlands,M;E,2,city,high
+Breda,51.589,4.776,Netherlands,M;E,1,fortress,high
+Alkmaar,52.632,4.749,Netherlands,M;E,1,market,high
+Arnhem,51.985,5.899,Netherlands,M;E;N,1,city,high
+Leeuwarden,53.201,5.799,Netherlands,M;E,1,capital,high
+Egmond,52.620,4.657,Netherlands,M,1,religious,high
+Vlissingen,51.443,3.571,Netherlands,E,1,port,high
+Luxembourg,49.612,6.130,Luxembourg,M;E;N,3,capital,high
+Echternach,49.812,6.422,Luxembourg,M,1,religious,high
+Stockholm,59.329,18.069,Sweden,M;E;N,4,capital,high
+Copenhagen,55.676,12.568,Denmark,M;E;N,4,capital,high
+Oslo,59.913,10.752,Norway,M;E;N,4,capital,high
+Helsinki,60.170,24.938,Finland,E;N,3,capital,high
+Reykjavík,64.147,-21.942,Iceland,M;E;N,3,capital,high
+Riga,56.949,24.105,Latvia,M;E;N,4,port,high
+Tallinn,59.437,24.754,Estonia,M;E;N,3,port,high
+Vilnius,54.687,25.280,Lithuania,M;E;N,4,capital,high
+Uppsala,59.859,17.639,Sweden,M;E;N,3,religious,high
+Gamla Uppsala,59.898,17.631,Sweden,A;M,2,religious,high
+Sigtuna,59.617,17.724,Sweden,M,2,capital,high
+Birka,59.336,17.542,Sweden,M,2,ruin,high
+Visby,57.641,18.296,Sweden,M;E,3,port,high
+Lund,55.705,13.191,Sweden,M;E;N,3,religious,high
+Kalmar,56.664,16.357,Sweden,M;E,2,fortress,high
+Gothenburg,57.709,11.975,Sweden,E;N,3,port,high
+Falun,60.606,15.636,Sweden,M;E;N,3,mining,high
+Sala,59.923,16.606,Sweden,E,1,mining,high
+Västerås,59.611,16.546,Sweden,M;E,1,city,high
+Örebro,59.274,15.207,Sweden,M;E,1,city,high
+Linköping,58.411,15.621,Sweden,M;E,1,religious,high
+Skara,58.386,13.439,Sweden,M,2,religious,high
+Vadstena,58.449,14.890,Sweden,M,1,religious,high
+Nyköping,58.753,17.008,Sweden,M,1,fortress,high
+Norrköping,58.588,16.192,Sweden,E;N,1,city,high
+Karlskrona,56.161,15.587,Sweden,E;N,2,port,high
+Helsingborg,56.046,12.694,Sweden,M;E,1,fortress,high
+Malmö,55.605,13.003,Sweden,M;E;N,2,port,high
+Kiruna,67.856,20.225,Sweden,N,1,mining,high
+Luleå,65.584,22.157,Sweden,E;N,1,port,high
+Söderköping,58.481,16.321,Sweden,M,1,market,high
+Lödöse,58.033,12.153,Sweden,M,1,port,high
+Roskilde,55.642,12.081,Denmark,M;E,3,capital,high
+Jelling,55.756,9.420,Denmark,M,3,religious,high
+Ribe,55.329,8.766,Denmark,M,2,port,high
+Aarhus,56.157,10.211,Denmark,M;E;N,3,port,high
+Odense,55.396,10.389,Denmark,M;E;N,2,city,high
+Aalborg,57.048,9.919,Denmark,M;E;N,1,port,high
+Viborg,56.453,9.402,Denmark,M,2,religious,high
+Helsingør,56.036,12.613,Denmark,M;E,2,fortress,high
+Trelleborg (Slagelse),55.395,11.265,Denmark,M,1,fortress,high
+Lejre,55.605,11.973,Denmark,A;M,1,ruin,high
+Nyborg,55.312,10.790,Denmark,M,1,fortress,high
+Hammershus,55.272,14.760,Denmark,M,1,fortress,high
+Tórshavn,62.010,-6.772,Faroe Islands,M;E;N,1,capital,high
+Bergen,60.393,5.324,Norway,M;E;N,4,port,high
+Trondheim,63.430,10.395,Norway,M;E;N,3,religious,high
+Tønsberg,59.268,10.407,Norway,M,2,port,high
+Kaupang,59.106,10.049,Norway,M,1,ruin,high
+Borre,59.380,10.465,Norway,M,1,ruin,high
+Stavanger,58.970,5.733,Norway,M;E;N,2,port,high
+Hamar,60.794,11.068,Norway,M,1,religious,high
+Avaldsnes,59.355,5.272,Norway,M,1,capital,high
+Tromsø,69.649,18.956,Norway,N,1,port,high
+Røros,62.575,11.384,Norway,E;N,1,mining,high
+Kongsberg,59.669,9.650,Norway,E;N,1,mining,high
+Vardø,70.371,31.108,Norway,E;N,1,fortress,high
+Stiklestad,63.800,11.567,Norway,M,1,religious,high
+Þingvellir,64.256,-21.130,Iceland,M,3,religious,high
+Skálholt,64.126,-20.527,Iceland,M;E,2,religious,high
+Hólar,65.733,-19.112,Iceland,M;E,1,religious,high
+Turku,60.452,22.267,Finland,M;E;N,3,capital,high
+Tampere,61.498,23.761,Finland,N,2,city,high
+Hämeenlinna,60.995,24.464,Finland,M;E,1,fortress,high
+Porvoo,60.395,25.665,Finland,M;E,1,city,high
+Savonlinna (Olavinlinna),61.869,28.880,Finland,M;E,1,fortress,high
+Rauma,61.129,21.511,Finland,M;E,1,port,high
+Oulu,65.012,25.471,Finland,E;N,1,port,high
+Tartu,58.378,26.729,Estonia,M;E;N,3,university,high
+Narva,59.377,28.191,Estonia,M;E,2,fortress,high
+Pärnu,58.386,24.497,Estonia,M;E,1,port,high
+Haapsalu,58.943,23.541,Estonia,M,1,religious,high
+Kuressaare,58.253,22.489,Estonia,M,1,fortress,high
+Cēsis,57.313,25.274,Latvia,M,1,fortress,high
+Jelgava,56.653,23.721,Latvia,M;E,2,capital,high
+Ventspils,57.394,21.564,Latvia,M;E,1,port,high
+Daugavpils,55.874,26.536,Latvia,E;N,1,fortress,high
+Kaunas,54.898,23.904,Lithuania,M;E;N,3,city,high
+Trakai,54.638,24.934,Lithuania,M,2,capital,high
+Kernavė,54.886,24.853,Lithuania,A;M,2,ruin,high
+Klaipėda,55.703,21.144,Lithuania,M;E;N,2,port,high
+Kaliningrad (Königsberg),54.710,20.452,Russia,M;E;N,4,capital,high
+Warsaw,52.230,21.012,Poland,M;E;N,4,capital,high
+Kraków,50.064,19.945,Poland,M;E;N,4,capital,high
+Gniezno,52.535,17.583,Poland,M,3,capital,high
+Poznań,52.409,16.932,Poland,M;E;N,3,capital,high
+Wrocław,51.108,17.038,Poland,M;E;N,4,city,high
+Gdańsk,54.352,18.647,Poland,M;E;N,4,port,high
+Toruń,53.014,18.598,Poland,M;E;N,3,city,high
+Płock,52.547,19.707,Poland,M,2,capital,high
+Łódź,51.760,19.457,Poland,N,3,city,high
+Lublin,51.246,22.568,Poland,M;E;N,3,city,high
+Sandomierz,50.682,21.749,Poland,M,2,city,high
+Wieliczka,49.987,20.065,Poland,M;E;N,2,mining,high
+Częstochowa,50.812,19.120,Poland,E;N,2,religious,high
+Malbork,54.040,19.028,Poland,M,3,fortress,high
+Elbląg,54.156,19.404,Poland,M;E,2,port,high
+Szczecin,53.429,14.553,Poland,M;E;N,3,port,high
+Kołobrzeg,54.176,15.583,Poland,M,1,port,high
+Wolin,53.847,14.615,Poland,M,2,ruin,high
+Biskupin,52.788,17.743,Poland,A,2,ruin,high
+Kalisz,51.762,18.091,Poland,C;M,2,city,high
+Legnica,51.210,16.162,Poland,M;E,1,city,high
+Opole,50.671,17.926,Poland,M;E,1,capital,high
+Kruszwica,52.676,18.333,Poland,M,1,ruin,high
+Ostrów Lednicki,52.527,17.383,Poland,M,1,ruin,high
+Frombork,54.358,19.680,Poland,M;E,1,religious,high
+Zamość,50.717,23.252,Poland,E,2,fortress,high
+Przemyśl,49.783,22.767,Poland,M;E;N,1,fortress,high
+Katowice,50.264,19.024,Poland,N,2,mining,high
+Olsztyn,53.778,20.480,Poland,M;E,1,city,high
+Grunwald,53.487,20.093,Poland,M,1,ruin,high
+Białystok,53.133,23.169,Poland,E;N,1,city,high
+Oświęcim,50.034,19.210,Poland,N,2,city,high
+Prague,50.075,14.438,Czechia,M;E;N,5,capital,high
+Brno,49.195,16.608,Czechia,M;E;N,3,city,high
+Olomouc,49.594,17.251,Czechia,M;E,3,religious,high
+Kutná Hora,49.948,15.268,Czechia,M;E,3,mining,high
+Plzeň,49.748,13.378,Czechia,M;E;N,2,city,high
+Český Krumlov,48.811,14.315,Czechia,M;E,1,city,high
+Jáchymov,50.373,12.912,Czechia,E,2,mining,high
+Mikulčice,48.806,17.088,Czechia,M,2,ruin,high
+Velehrad (Staré Město),49.075,17.433,Czechia,M,1,ruin,high
+Litoměřice,50.534,14.132,Czechia,M,1,city,high
+Cheb,50.080,12.374,Czechia,M;E,1,city,high
+Hradec Králové,50.209,15.832,Czechia,M;E,1,city,high
+Ostrava,49.835,18.293,Czechia,N,2,mining,high
+Karlštejn,49.939,14.188,Czechia,M,1,fortress,high
+Tábor,49.414,14.658,Czechia,M,2,fortress,high
+Bratislava,48.149,17.107,Slovakia,C;M;E;N,3,capital,high
+Nitra,48.308,18.087,Slovakia,M,2,religious,high
+Banská Štiavnica,48.458,18.896,Slovakia,M;E,3,mining,high
+Kremnica,48.705,18.918,Slovakia,M;E,2,mining,high
+Košice,48.716,21.258,Slovakia,M;E;N,3,city,high
+Levoča,49.026,20.590,Slovakia,M;E,1,city,high
+Spiš Castle,49.000,20.768,Slovakia,M,1,fortress,high
+Trenčín,48.894,18.044,Slovakia,C;M,1,fortress,high
+Bardejov,49.293,21.276,Slovakia,M,1,city,high
+Devín,48.174,16.978,Slovakia,M,1,fortress,high
+Budapest,47.498,19.040,Hungary,C;M;E;N,5,capital,high
+Esztergom,47.785,18.740,Hungary,M,3,capital,high
+Székesfehérvár,47.186,18.422,Hungary,M,3,capital,high
+Visegrád,47.785,18.971,Hungary,M,2,fortress,high
+Pécs,46.071,18.233,Hungary,C;M;E,3,city,high
+Sopron,47.685,16.590,Hungary,C;M;E,2,city,high
+Győr,47.687,17.635,Hungary,C;M;E,2,city,high
+Eger,47.902,20.377,Hungary,M;E,2,fortress,high
+Debrecen,47.532,21.627,Hungary,M;E;N,2,city,high
+Szeged,46.253,20.148,Hungary,M;E;N,2,city,high
+Pannonhalma,47.552,17.755,Hungary,M,2,religious,high
+Veszprém,47.093,17.911,Hungary,M,1,religious,high
+Vác,47.776,19.136,Hungary,M,1,religious,high
+Kalocsa,46.528,18.985,Hungary,M,1,religious,high
+Mohács,45.993,18.683,Hungary,E,1,ruin,high
+Szigetvár,46.048,17.805,Hungary,E,1,fortress,high
+Sárospatak,48.320,21.566,Hungary,M;E,1,fortress,high
+Gorsium (Tác),47.110,18.360,Hungary,C,1,ruin,high
+Athens,37.984,23.728,Greece,A;C;M;E;N,5,capital,high
+Thessaloniki,40.640,22.944,Greece,C;M;E;N,4,port,high
+Sparta,37.075,22.430,Greece,A;C;M,3,ruin,high
+Corinth,37.906,22.879,Greece,A;C;M,3,ruin,high
+Mycenae,37.731,22.756,Greece,A,3,ruin,high
+Tiryns,37.600,22.800,Greece,A,2,ruin,high
+Argos,37.633,22.733,Greece,A;C,2,city,high
+Epidaurus,37.596,23.079,Greece,C,2,religious,high
+Olympia,37.638,21.630,Greece,A;C,4,religious,high
+Delphi,38.482,22.501,Greece,A;C,4,religious,high
+Thebes,38.325,23.318,Greece,A;C,3,city,high
+Eleusis,38.041,23.538,Greece,A;C,2,religious,high
+Marathon,38.153,23.963,Greece,C,1,ruin,high
+Chalcis,38.464,23.600,Greece,A;C;M,2,port,high
+Pella,40.760,22.523,Greece,C,3,ruin,high
+Vergina (Aigai),40.481,22.317,Greece,A;C,3,ruin,high
+Dion,40.172,22.491,Greece,C,1,ruin,high
+Amphipolis,40.822,23.846,Greece,C,2,ruin,high
+Philippi,41.013,24.286,Greece,C;M,2,ruin,high
+Kavala,40.937,24.412,Greece,C;M;E;N,1,port,high
+Mount Athos (Karyes),40.257,24.226,Greece,M;E;N,3,religious,high
+Dodona,39.546,20.788,Greece,A;C,2,religious,high
+Ioannina,39.665,20.852,Greece,M;E;N,2,city,high
+Nicopolis,39.023,20.733,Greece,C;M,1,ruin,high
+Arta,39.160,20.985,Greece,M,1,capital,high
+Corfu,39.624,19.922,Greece,A;C;M;E;N,3,port,high
+Mystras,37.076,22.367,Greece,M,3,ruin,high
+Monemvasia,36.688,23.054,Greece,M;E,2,fortress,high
+Nafplio,37.568,22.808,Greece,M;E;N,2,port,high
+Patras,38.246,21.735,Greece,C;M;E;N,2,port,high
+Messene,37.176,21.920,Greece,C,2,ruin,high
+Pylos (Palace of Nestor),37.028,21.695,Greece,A,2,ruin,high
+Meteora,39.721,21.631,Greece,M,2,religious,high
+Larissa,39.639,22.420,Greece,A;C;M;E;N,2,city,high
+Volos (Iolcos),39.362,22.942,Greece,A;N,1,port,high
+Thermopylae,38.797,22.537,Greece,C,1,ruin,high
+Kastoria,40.517,21.268,Greece,M;E,1,city,high
+Rhodes,36.445,28.222,Greece,A;C;M;E;N,3,port,high
+Kos,36.893,27.288,Greece,C;M,1,port,high
+Heraklion,35.339,25.134,Greece,M;E;N,2,port,high
+Knossos,35.298,25.163,Greece,A,4,ruin,high
+Phaistos,35.051,24.814,Greece,A,2,ruin,high
+Gortyn,35.063,24.947,Greece,C,2,ruin,high
+Chania,35.514,24.018,Greece,A;M;E;N,1,port,high
+Mytilene,39.108,26.555,Greece,A;C;M;E,2,port,high
+Chios,38.368,26.136,Greece,A;C;M;E,2,port,high
+Samos (Pythagoreion),37.692,26.943,Greece,A;C,2,ruin,high
+Delos,37.393,25.271,Greece,A;C,3,religious,high
+Naxos,37.106,25.376,Greece,A;C;M,1,port,high
+Akrotiri (Santorini),36.351,25.404,Greece,A,2,ruin,high
+Aegina,37.747,23.429,Greece,A;C;N,1,port,high
+Thasos,40.779,24.713,Greece,A;C,1,port,high
+Samothrace,40.500,25.530,Greece,A;C,1,religious,high
+Sofia,42.698,23.322,Bulgaria,C;M;E;N,4,capital,high
+Plovdiv,42.144,24.750,Bulgaria,A;C;M;E;N,4,city,high
+Veliko Tarnovo,43.081,25.629,Bulgaria,M,3,capital,high
+Pliska,43.387,27.129,Bulgaria,M,3,ruin,high
+Preslav,43.157,26.822,Bulgaria,M,2,ruin,high
+Varna,43.214,27.915,Bulgaria,A;C;M;E;N,3,port,high
+Nesebar,42.659,27.734,Bulgaria,A;C;M,2,port,high
+Sozopol,42.418,27.696,Bulgaria,A;C,1,port,high
+Rila Monastery,42.133,23.340,Bulgaria,M;E,2,religious,high
+Shumen,43.271,26.923,Bulgaria,M;E,1,fortress,high
+Vidin,43.990,22.873,Bulgaria,C;M;E,1,fortress,high
+Silistra,44.117,27.260,Bulgaria,C;M,1,fortress,high
+Ruse,43.856,25.971,Bulgaria,C;E;N,1,port,high
+Stara Zagora,42.426,25.634,Bulgaria,A;C;M,1,city,high
+Kazanlak (Seuthopolis),42.620,25.390,Bulgaria,A,1,ruin,high
+Madara,43.278,27.117,Bulgaria,M,1,religious,high
+Belgrade,44.787,20.457,Serbia,C;M;E;N,4,capital,high
+Niš,43.321,21.896,Serbia,C;M;E;N,2,city,high
+Novi Sad,45.255,19.845,Serbia,E;N,2,city,high
+Sirmium (Sremska Mitrovica),44.976,19.612,Serbia,C,3,ruin,high
+Viminacium,44.737,21.223,Serbia,C,1,ruin,high
+Gamzigrad (Felix Romuliana),43.899,22.185,Serbia,C,1,ruin,high
+Kruševac,43.580,21.334,Serbia,M,1,capital,high
+Smederevo,44.663,20.930,Serbia,M,2,capital,high
+Ras (Novi Pazar),43.137,20.512,Serbia,M,2,capital,high
+Studenica,43.486,20.532,Serbia,M,2,religious,high
+Prizren,42.213,20.740,Kosovo,M;E,2,capital,high
+Pristina,42.663,21.166,Kosovo,M;E;N,2,capital,high
+Peć,42.660,20.288,Kosovo,M,2,religious,high
+Vinča,44.760,20.620,Serbia,A,2,ruin,high
+Lepenski Vir,44.556,22.026,Serbia,A,1,ruin,high
+Cetinje,42.391,18.914,Montenegro,E;N,2,capital,high
+Kotor,42.425,18.771,Montenegro,M;E,2,port,high
+Stari Bar,42.095,19.137,Montenegro,M,1,fortress,high
+Podgorica (Doclea),42.441,19.263,Montenegro,C;N,1,capital,high
+Sarajevo,43.856,18.413,Bosnia and Herzegovina,E;N,3,capital,high
+Mostar,43.343,17.808,Bosnia and Herzegovina,E;N,2,city,high
+Jajce,44.342,17.270,Bosnia and Herzegovina,M,2,capital,high
+Travnik,44.227,17.666,Bosnia and Herzegovina,E,1,capital,high
+Banja Luka,44.772,17.191,Bosnia and Herzegovina,E;N,1,city,high
+Bobovac,44.138,18.332,Bosnia and Herzegovina,M,1,capital,high
+Zagreb,45.815,15.982,Croatia,M;E;N,3,capital,high
+Split (Salona),43.509,16.440,Croatia,C;M;E;N,3,port,high
+Dubrovnik,42.650,18.094,Croatia,M;E,3,port,high
+Zadar,44.119,15.232,Croatia,C;M;E,2,port,high
+Pula,44.867,13.850,Croatia,C;M,2,port,high
+Poreč,45.228,13.595,Croatia,C;M,1,port,high
+Šibenik,43.735,15.890,Croatia,M;E,1,port,high
+Trogir,43.517,16.252,Croatia,A;C;M,1,port,high
+Nin,44.242,15.180,Croatia,C;M,1,capital,high
+Knin,44.038,16.198,Croatia,M,1,capital,high
+Osijek (Mursa),45.555,18.695,Croatia,C;E;N,1,fortress,high
+Varaždin,46.306,16.338,Croatia,M;E,1,capital,high
+Vukovar (Vučedol),45.345,18.998,Croatia,A;N,1,ruin,high
+Hvar,43.172,16.443,Croatia,M;E,1,port,high
+Ljubljana,46.051,14.506,Slovenia,C;M;E;N,3,capital,high
+Ptuj (Poetovio),46.420,15.870,Slovenia,C;M,1,city,high
+Celje,46.236,15.268,Slovenia,C;M,1,city,high
+Idrija,46.002,14.028,Slovenia,E;N,1,mining,high
+Piran,45.528,13.568,Slovenia,M;E,1,port,high
+Maribor,46.554,15.646,Slovenia,M;E;N,1,city,high
+Skopje,41.997,21.428,North Macedonia,C;M;E;N,3,capital,high
+Ohrid,41.117,20.802,North Macedonia,C;M,3,religious,high
+Stobi,41.552,21.974,North Macedonia,C,1,ruin,high
+Bitola (Heraclea Lyncestis),41.011,21.343,North Macedonia,C;E;N,1,city,high
+Tirana,41.328,19.819,Albania,E;N,2,capital,high
+Durrës,41.323,19.456,Albania,A;C;M;E;N,3,port,high
+Butrint,39.746,20.021,Albania,A;C;M,2,ruin,high
+Apollonia,40.722,19.472,Albania,A;C,2,ruin,high
+Krujë,41.509,19.793,Albania,M,2,fortress,high
+Shkodër,42.068,19.513,Albania,A;C;M;E;N,2,city,high
+Berat,40.706,19.952,Albania,A;M;E,2,city,high
+Gjirokastër,40.076,20.139,Albania,M;E,1,city,high
+Vlorë,40.466,19.490,Albania,A;M;N,1,port,high
+Bucharest,44.427,26.103,Romania,E;N,4,capital,high
+Iași,47.158,27.601,Romania,M;E;N,3,capital,high
+Suceava,47.651,26.255,Romania,M;E,3,capital,high
+Târgoviște,44.925,25.457,Romania,M;E,2,capital,high
+Curtea de Argeș,45.139,24.679,Romania,M,2,capital,high
+Cluj-Napoca,46.771,23.624,Romania,C;M;E;N,3,city,high
+Alba Iulia,46.067,23.570,Romania,C;M;E;N,3,capital,high
+Sibiu,45.798,24.152,Romania,M;E;N,3,city,high
+Brașov,45.657,25.601,Romania,M;E;N,3,city,high
+Sighișoara,46.219,24.792,Romania,M;E,2,city,high
+Timișoara,45.749,21.227,Romania,M;E;N,3,city,high
+Oradea,47.072,21.921,Romania,M;E;N,2,city,high
+Sarmizegetusa Regia,45.623,23.312,Romania,A;C,3,ruin,high
+Ulpia Traiana Sarmizegetusa,45.513,22.785,Romania,C,2,ruin,high
+Constanța (Tomis),44.173,28.638,Romania,A;C;M;E;N,3,port,high
+Histria,44.546,28.775,Romania,A;C,2,ruin,high
+Adamclisi (Tropaeum Traiani),44.088,27.959,Romania,C,1,ruin,high
+Putna,47.871,25.603,Romania,M,1,religious,high
+Roșia Montană,46.308,23.130,Romania,C;M;E;N,2,mining,high
+Hunedoara,45.750,22.900,Romania,M,1,fortress,high
+Galați,45.435,28.008,Romania,E;N,1,port,high
+Cucuteni,47.286,26.915,Romania,A,1,ruin,high
+Istanbul,41.009,28.978,Turkey,A;C;M;E;N,5,capital,high
+Edirne,41.677,26.556,Turkey,C;M;E,3,capital,high
+Moscow,55.756,37.617,Russia,M;E;N,5,capital,high
+Saint Petersburg,59.934,30.335,Russia,E;N,5,capital,high
+Kyiv,50.450,30.523,Ukraine,M;E;N,5,capital,high
+Novgorod,58.521,31.276,Russia,M;E,4,city,high
+Vladimir,56.129,40.407,Russia,M,3,capital,high
+Suzdal,56.418,40.449,Russia,M,2,religious,high
+Rostov Veliky,57.185,39.415,Russia,M,2,religious,high
+Yaroslavl,57.626,39.894,Russia,M;E;N,3,city,high
+Tver,56.859,35.912,Russia,M;E,2,capital,high
+Pskov,57.817,28.332,Russia,M;E,3,city,high
+Smolensk,54.783,32.045,Russia,M;E;N,3,fortress,high
+Gnezdovo,54.783,31.880,Russia,M,1,ruin,high
+Staraya Ladoga,59.997,32.295,Russia,M,2,ruin,high
+Staraya Ryazan,54.400,40.433,Russia,M,2,ruin,high
+Murom,55.579,42.052,Russia,M,1,city,high
+Nizhny Novgorod,56.326,44.006,Russia,M;E;N,3,market,high
+Kazan,55.796,49.106,Russia,M;E;N,4,capital,high
+Bolghar,54.977,49.045,Russia,M,3,ruin,high
+Sarai (Selitrennoye),47.177,47.447,Russia,M,3,ruin,high
+Sarai Berke (Tsarev),48.683,45.367,Russia,M,2,ruin,low
+Astrakhan,46.349,48.040,Russia,M;E;N,3,port,high
+Volgograd (Tsaritsyn),48.708,44.514,Russia,E;N,3,city,high
+Saratov,51.533,46.034,Russia,E;N,2,city,high
+Samara,53.195,50.100,Russia,E;N,2,city,high
+Ufa,54.735,55.958,Russia,E;N,2,city,high
+Perm,58.010,56.229,Russia,E;N,2,city,high
+Orenburg,51.768,55.097,Russia,E;N,1,fortress,high
+Magnitogorsk,53.407,58.980,Russia,N,1,mining,high
+Arkaim,52.650,59.572,Russia,A,1,ruin,high
+Kirov (Vyatka),58.603,49.668,Russia,M;E;N,1,city,high
+Veliky Ustyug,60.760,46.305,Russia,M;E,1,market,high
+Vologda,59.220,39.891,Russia,M;E,2,city,high
+Arkhangelsk,64.540,40.515,Russia,E;N,3,port,high
+Solovetsky Monastery,65.025,35.710,Russia,E,2,religious,high
+Kirillo-Belozersky Monastery,59.859,38.372,Russia,M;E,1,religious,high
+Murmansk,68.970,33.075,Russia,N,2,port,high
+Petrozavodsk,61.785,34.347,Russia,E;N,1,city,high
+Vyborg,60.711,28.754,Russia,M;E;N,2,fortress,high
+Oreshek (Shlisselburg),59.954,31.038,Russia,M;E,1,fortress,high
+Izborsk,57.709,27.860,Russia,M,1,fortress,high
+Sergiyev Posad,56.310,38.136,Russia,M;E;N,2,religious,high
+Kolomna,55.095,38.766,Russia,M;E,1,fortress,high
+Tula,54.193,37.618,Russia,E;N,2,city,high
+Kulikovo Field,53.636,38.651,Russia,M,1,ruin,high
+Kursk,51.730,36.193,Russia,M;E;N,2,city,high
+Voronezh,51.661,39.200,Russia,E;N,2,city,high
+Ivanovo,57.000,40.974,Russia,N,1,city,high
+Rostov-on-Don,47.222,39.720,Russia,E;N,3,port,high
+Tanais,47.270,39.333,Russia,C,2,ruin,high
+Azov (Tana),47.112,39.424,Russia,M;E,2,port,high
+Phanagoria,45.277,36.967,Russia,A;C,2,ruin,high
+Anapa (Gorgippia),44.895,37.316,Russia,A;C,1,ruin,high
+Tmutarakan (Taman),45.213,36.716,Russia,M,1,ruin,high
+Derbent,42.058,48.290,Russia,C;M;E,3,fortress,high
+Maykop,44.609,40.100,Russia,A;N,1,ruin,high
+Grozny,43.318,45.698,Russia,N,1,city,high
+Vladikavkaz,43.024,44.682,Russia,N,1,fortress,high
+Maghas (Alania),43.260,44.830,Russia,M,1,ruin,low
+Chernihiv,51.494,31.295,Ukraine,M;E,3,capital,high
+Pereiaslav,50.067,31.447,Ukraine,M,2,capital,high
+Halych,49.123,24.728,Ukraine,M,2,capital,high
+Lviv,49.842,24.032,Ukraine,M;E;N,4,city,high
+Volodymyr,50.848,24.323,Ukraine,M,2,capital,high
+Lutsk,50.747,25.325,Ukraine,M;E,2,fortress,high
+Kamianets-Podilskyi,48.673,26.569,Ukraine,M;E,2,fortress,high
+Khotyn,48.507,26.498,Ukraine,M;E,1,fortress,high
+Chernivtsi,48.292,25.935,Ukraine,E;N,2,city,high
+Ostroh,50.329,26.517,Ukraine,M;E,1,city,high
+Kharkiv,49.994,36.231,Ukraine,E;N,3,city,high
+Poltava,49.589,34.551,Ukraine,E;N,2,city,high
+Donetsk,48.016,37.803,Ukraine,N,3,mining,high
+Kryvyi Rih,47.910,33.391,Ukraine,N,1,mining,high
+Dnipro,48.465,35.046,Ukraine,E;N,2,city,high
+Zaporizhzhia (Khortytsia),47.839,35.139,Ukraine,E;N,2,fortress,high
+Odesa,46.483,30.726,Ukraine,E;N,4,port,high
+Olbia,46.693,31.904,Ukraine,A;C,3,ruin,high
+Bilhorod-Dnistrovskyi (Tyras),46.195,30.353,Ukraine,A;C;M,2,fortress,high
+Kherson,46.635,32.617,Ukraine,E;N,2,port,high
+Chersonesus,44.611,33.493,Ukraine,A;C;M,3,ruin,high
+Sevastopol,44.617,33.525,Ukraine,E;N,3,port,high
+Panticapaeum (Kerch),45.351,36.470,Ukraine,A;C;M,3,ruin,high
+Feodosia (Kaffa),45.032,35.382,Ukraine,A;C;M;E,3,port,high
+Sudak (Soldaia),44.852,34.975,Ukraine,M,2,fortress,high
+Bakhchysarai,44.755,33.857,Ukraine,E,3,capital,high
+Mangup,44.592,33.807,Ukraine,M,1,fortress,high
+Simferopol (Neapolis Scythica),44.952,34.102,Ukraine,A;C;N,2,city,high
+Yevpatoria (Kerkinitis),45.190,33.367,Ukraine,A;C;E,1,port,high
+Trypillia,50.120,30.785,Ukraine,A,1,ruin,high
+Bilsk (Gelonus),50.090,34.633,Ukraine,A,1,ruin,high
+Baturyn,51.345,32.878,Ukraine,E,1,capital,high
+Hlukhiv,51.678,33.916,Ukraine,E,1,capital,high
+Chyhyryn,49.080,32.660,Ukraine,E,1,capital,high
+Uzhhorod,48.621,22.288,Ukraine,M;E;N,1,city,high
+Minsk,53.904,27.561,Belarus,M;E;N,3,capital,high
+Polotsk,55.485,28.786,Belarus,M,3,capital,high
+Turov,52.070,27.735,Belarus,M,1,capital,high
+Vitebsk,55.190,30.206,Belarus,M;E;N,2,city,high
+Hrodna,53.669,23.813,Belarus,M;E;N,2,city,high
+Navahrudak,53.600,25.828,Belarus,M,2,capital,high
+Brest (Belarus),52.097,23.734,Belarus,M;E;N,2,fortress,high
+Mir,53.451,26.473,Belarus,E,1,fortress,high
+Nesvizh,53.223,26.675,Belarus,E,1,fortress,high
+Mogilev,53.894,30.331,Belarus,E;N,1,city,high
+Pinsk,52.115,26.103,Belarus,M;E,1,city,high
+Chișinău,47.011,28.864,Moldova,E;N,2,capital,high
+Orheiul Vechi,47.306,28.970,Moldova,M,1,ruin,high
+Bender (Tighina),46.831,29.477,Moldova,M;E,1,fortress,high
+Soroca,48.158,28.297,Moldova,M;E,1,fortress,high

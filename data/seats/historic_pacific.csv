@@ -1,0 +1,392 @@
+name,lat,lon,country,eras,significance,kind,confidence
+Sydney,-33.868,151.209,Australia,E;N,5,city,high
+Melbourne,-37.814,144.963,Australia,N,5,city,high
+Brisbane,-27.470,153.025,Australia,N,4,city,high
+Perth,-31.953,115.857,Australia,N,4,city,high
+Adelaide,-34.929,138.601,Australia,N,4,city,high
+Hobart,-42.882,147.327,Australia,N,4,port,high
+Canberra,-35.282,149.129,Australia,N,4,capital,high
+Darwin,-12.463,130.845,Australia,N,3,port,high
+Newcastle (NSW),-32.927,151.776,Australia,N,3,port,high
+Wollongong,-34.425,150.893,Australia,N,2,city,high
+Launceston,-41.434,147.137,Australia,N,3,city,high
+Port Arthur,-43.148,147.851,Australia,N,3,ruin,high
+Ballarat,-37.562,143.850,Australia,N,3,mining,high
+Bendigo,-36.757,144.279,Australia,N,3,mining,high
+Kalgoorlie,-30.749,121.466,Australia,N,3,mining,high
+Broken Hill,-31.956,141.468,Australia,N,3,mining,high
+Alice Springs,-23.698,133.881,Australia,N,3,city,high
+Cairns,-16.920,145.771,Australia,N,3,port,high
+Townsville,-19.258,146.818,Australia,N,3,port,high
+Rockhampton,-23.378,150.510,Australia,N,3,city,high
+Uluru (Mutitjulu),-25.345,131.036,Australia,A;C;M;E;N,3,religious,high
+Lake Mungo,-33.740,143.060,Australia,A,3,ruin,low
+Budj Bim (Lake Condah),-38.063,141.900,Australia,A;C;M;E,3,ruin,low
+Ubirr (Kakadu),-12.408,132.955,Australia,A;C;M;E;N,2,religious,high
+Madjedbebe,-12.500,132.900,Australia,A,2,ruin,low
+Murujuga (Burrup Peninsula),-20.580,116.800,Australia,A;C;M,2,religious,low
+Wilpena Pound,-31.520,138.600,Australia,A;N,1,religious,low
+Brewarrina Fish Traps,-29.961,146.863,Australia,A;C;M;E;N,2,ruin,high
+Carnarvon Gorge,-25.050,148.230,Australia,A;C;M,1,religious,low
+Geelong,-38.150,144.360,Australia,N,2,port,high
+Fremantle,-32.056,115.747,Australia,N,3,port,high
+Albany (WA),-35.027,117.884,Australia,N,2,port,high
+Broome,-17.962,122.236,Australia,N,2,port,high
+Port Hedland,-20.311,118.611,Australia,N,2,port,high
+Geraldton,-28.778,114.615,Australia,N,2,port,high
+Bunbury,-33.327,115.641,Australia,N,2,port,high
+Coolgardie,-30.955,121.165,Australia,N,2,mining,high
+Mount Isa,-20.725,139.497,Australia,N,2,mining,high
+Charters Towers,-20.077,146.262,Australia,N,2,mining,high
+Gympie,-26.190,152.665,Australia,N,2,mining,high
+Toowoomba,-27.561,151.954,Australia,N,2,city,high
+Mackay,-21.144,149.186,Australia,N,2,port,high
+Bundaberg,-24.866,152.351,Australia,N,2,city,high
+Maryborough (Qld),-25.538,152.702,Australia,N,2,port,high
+Gladstone,-23.843,151.256,Australia,N,2,port,high
+Cooktown,-15.467,145.250,Australia,E;N,2,port,high
+Thursday Island,-10.582,142.219,Australia,N,2,port,high
+Mer (Murray Island),-9.917,144.050,Australia,M;E;N,2,village,high
+Weipa,-12.624,141.878,Australia,N,2,mining,high
+Birdsville,-25.899,139.351,Australia,N,1,village,high
+Longreach,-23.442,144.250,Australia,N,2,city,high
+Tennant Creek,-19.647,134.189,Australia,N,2,mining,high
+Katherine,-14.465,132.264,Australia,N,2,city,high
+Nhulunbuy (Gove),-12.182,136.778,Australia,N,2,mining,high
+Yirrkala,-12.251,136.890,Australia,N,2,village,high
+Wurrumiyanga (Tiwi Islands),-11.760,130.635,Australia,N,1,village,high
+Hermannsburg (Ntaria),-23.942,132.774,Australia,N,2,religious,high
+Coober Pedy,-29.014,134.755,Australia,N,2,mining,high
+Port Augusta,-32.492,137.764,Australia,N,2,port,high
+Whyalla,-33.033,137.564,Australia,N,2,city,high
+Port Lincoln,-34.726,135.874,Australia,N,2,port,high
+Mount Gambier,-37.829,140.783,Australia,N,2,city,high
+Burra,-33.675,138.930,Australia,N,2,mining,high
+Moonta,-34.072,137.590,Australia,N,2,mining,high
+Woomera,-31.200,136.825,Australia,N,1,village,high
+Marree,-29.650,138.065,Australia,N,1,village,high
+Wagga Wagga,-35.115,147.369,Australia,N,2,city,high
+Bathurst (NSW),-33.420,149.578,Australia,N,2,city,high
+Port Macquarie,-31.431,152.909,Australia,N,2,port,high
+Bourke,-30.090,145.937,Australia,N,1,port,high
+Wilcannia,-31.558,143.378,Australia,N,1,port,high
+Mildura,-34.207,142.136,Australia,N,2,city,high
+Echuca,-36.129,144.752,Australia,N,2,port,high
+Beechworth,-36.359,146.686,Australia,N,2,mining,high
+Portland (Vic),-38.346,141.604,Australia,N,2,port,high
+Warrnambool,-38.382,142.488,Australia,N,2,port,high
+Eden (Twofold Bay),-37.064,149.902,Australia,N,1,port,high
+Gold Coast,-28.017,153.400,Australia,N,2,city,high
+Ipswich (Qld),-27.615,152.760,Australia,N,2,city,high
+Queenstown (Tasmania),-42.081,145.556,Australia,N,2,mining,high
+Strahan,-42.153,145.329,Australia,N,2,port,high
+Sarah Island (Macquarie Harbour),-42.396,145.448,Australia,N,2,ruin,high
+Burnie,-41.052,145.906,Australia,N,2,port,high
+Devonport (Tasmania),-41.180,146.351,Australia,N,2,port,high
+Wybalenna (Flinders Island),-39.950,147.930,Australia,N,2,ruin,low
+Currie (King Island),-39.933,143.850,Australia,N,1,village,high
+Cossack,-20.678,117.192,Australia,N,1,ruin,high
+New Norcia,-30.970,116.213,Australia,N,2,religious,high
+Denham (Shark Bay),-25.928,113.533,Australia,E;N,1,port,high
+Lord Howe Island,-31.553,159.082,Australia,N,2,village,high
+Macquarie Island Station,-54.499,158.937,Australia,N,1,village,high
+Kingston (Norfolk Island),-29.056,167.959,Norfolk Island,E;N,3,ruin,high
+Auckland,-36.848,174.763,New Zealand,M;E;N,5,city,high
+Wellington,-41.287,174.776,New Zealand,M;E;N,4,capital,high
+Christchurch,-43.532,172.636,New Zealand,N,4,city,high
+Dunedin,-45.874,170.504,New Zealand,N,3,city,high
+Hamilton (NZ),-37.787,175.279,New Zealand,N,2,city,high
+Tauranga,-37.687,176.165,New Zealand,M;E;N,2,port,high
+Napier,-39.493,176.912,New Zealand,N,3,port,high
+Gisborne,-38.663,178.018,New Zealand,M;E;N,3,port,high
+Nelson,-41.271,173.284,New Zealand,N,3,port,high
+New Plymouth,-39.057,174.075,New Zealand,M;E;N,2,port,high
+Whanganui,-39.930,175.047,New Zealand,M;E;N,2,port,high
+Palmerston North,-40.356,175.611,New Zealand,N,2,city,high
+Invercargill,-46.413,168.353,New Zealand,N,2,city,high
+Bluff,-46.600,168.333,New Zealand,N,2,port,high
+Whangarei,-35.725,174.324,New Zealand,N,2,city,high
+Russell (Kororareka),-35.263,174.121,New Zealand,E;N,4,port,high
+Waitangi,-35.265,174.081,New Zealand,N,4,village,high
+Kerikeri,-35.224,173.947,New Zealand,E;N,3,religious,high
+Ruapekapeka Pa,-35.397,174.219,New Zealand,N,3,fortress,high
+Rawene (Hokianga),-35.397,173.503,New Zealand,M;E;N,3,port,high
+Whangaroa,-35.047,173.740,New Zealand,E;N,3,port,high
+Ohinemutu (Rotorua),-38.132,176.247,New Zealand,M;E;N,3,village,high
+Kaikoura,-42.400,173.681,New Zealand,M;E;N,3,port,high
+Kaiapoi Pa,-43.320,172.690,New Zealand,E;N,3,fortress,high
+Otakou (Otago Peninsula),-45.795,170.700,New Zealand,M;E;N,3,village,high
+Akaroa,-43.804,172.968,New Zealand,E;N,2,port,high
+Lyttelton,-43.603,172.718,New Zealand,N,2,port,high
+Oamaru,-45.097,170.971,New Zealand,N,2,port,high
+Timaru,-44.397,171.254,New Zealand,N,2,port,high
+Queenstown (NZ),-45.031,168.662,New Zealand,N,2,mining,high
+Arrowtown,-44.939,168.835,New Zealand,N,1,mining,high
+Hokitika,-42.717,170.967,New Zealand,N,2,mining,high
+Greymouth,-42.450,171.207,New Zealand,N,2,port,high
+Picton,-41.291,174.004,New Zealand,N,1,port,high
+Blenheim,-41.514,173.961,New Zealand,N,2,city,high
+Ship Cove (Meretoto),-41.093,174.237,New Zealand,E,2,port,high
+Oban (Stewart Island),-46.898,168.128,New Zealand,N,1,village,high
+Waitangi (Chatham Islands),-43.954,-176.560,New Zealand,M;E;N,3,port,high
+Flower Pot (Pitt Island),-44.233,-176.200,New Zealand,M;E;N,1,village,low
+Thames (NZ),-37.138,175.541,New Zealand,N,2,mining,high
+Ngaruawahia,-37.667,175.150,New Zealand,M;E;N,3,capital,high
+Rangiriri,-37.433,175.133,New Zealand,N,2,fortress,high
+Orakau,-38.052,175.388,New Zealand,N,2,fortress,high
+Parihaka,-39.300,173.870,New Zealand,N,2,village,low
+Taupo,-38.687,176.070,New Zealand,M;E;N,2,city,high
+Waitara,-39.003,174.235,New Zealand,N,1,village,high
+Whakatane,-37.958,176.985,New Zealand,M;E;N,2,port,high
+Maketu,-37.760,176.450,New Zealand,M;E;N,1,village,high
+Kawhia,-38.067,174.817,New Zealand,M;E;N,2,village,high
+Kapiti Island,-40.850,174.917,New Zealand,E;N,2,fortress,high
+Wairau Bar,-41.505,174.065,New Zealand,M,3,ruin,high
+Cape Reinga (Te Rerenga Wairua),-34.430,172.681,New Zealand,M;E;N,2,religious,high
+Raoul Island (Kermadec),-29.268,-177.926,New Zealand,M;N,1,village,high
+Port Ross (Auckland Islands),-50.533,166.267,New Zealand,N,1,ruin,high
+Port Moresby,-9.443,147.180,Papua New Guinea,M;E;N,4,capital,high
+Lae,-6.733,146.999,Papua New Guinea,N,4,port,high
+Rabaul,-4.200,152.183,Papua New Guinea,N,4,port,high
+Kokopo,-4.350,152.263,Papua New Guinea,N,2,city,high
+Madang,-5.222,145.797,Papua New Guinea,N,3,port,high
+Wewak,-3.550,143.633,Papua New Guinea,N,3,port,high
+Goroka,-6.083,145.387,Papua New Guinea,N,3,city,high
+Mount Hagen,-5.858,144.231,Papua New Guinea,N,3,city,high
+Kuk Swamp,-5.783,144.333,Papua New Guinea,A;C;M;E,3,ruin,high
+Daru,-9.080,143.209,Papua New Guinea,N,3,port,high
+Alotau,-10.316,150.457,Papua New Guinea,N,3,port,high
+Kokoda,-8.878,147.738,Papua New Guinea,N,3,village,high
+Buka,-5.432,154.672,Papua New Guinea,N,3,port,high
+Kieta,-6.217,155.633,Papua New Guinea,N,3,port,high
+Panguna,-6.316,155.489,Papua New Guinea,N,2,mining,high
+Kavieng,-2.573,150.796,Papua New Guinea,N,2,port,high
+Lorengau (Manus),-2.021,147.272,Papua New Guinea,N,2,port,high
+Kimbe,-5.557,150.153,Papua New Guinea,N,2,port,high
+Vanimo,-2.683,141.302,Papua New Guinea,N,2,port,high
+Popondetta,-8.754,148.238,Papua New Guinea,N,2,city,high
+Mendi,-6.148,143.657,Papua New Guinea,N,2,city,high
+Kundiawa,-6.017,144.967,Papua New Guinea,N,2,city,high
+Wabag,-5.483,143.717,Papua New Guinea,N,2,city,high
+Tari,-5.850,142.950,Papua New Guinea,N,2,city,high
+Kerema,-7.963,145.774,Papua New Guinea,N,2,city,high
+Kiunga,-6.122,141.293,Papua New Guinea,N,2,port,high
+Tabubil (Ok Tedi),-5.277,141.226,Papua New Guinea,N,2,mining,high
+Wau,-7.338,146.716,Papua New Guinea,N,2,mining,high
+Salamaua,-7.030,147.062,Papua New Guinea,N,2,port,high
+Finschhafen,-6.602,147.851,Papua New Guinea,N,2,port,high
+Samarai,-10.613,150.663,Papua New Guinea,N,2,port,high
+Losuia (Kiriwina),-8.500,151.073,Papua New Guinea,M;E;N,2,market,high
+Londolovit (Lihir),-3.045,152.634,Papua New Guinea,N,1,mining,high
+Misima,-10.683,152.800,Papua New Guinea,N,1,mining,high
+Talasea,-5.283,150.017,Papua New Guinea,A;C;M,2,ruin,high
+Talepakemalai (Mussau),-1.550,149.633,Papua New Guinea,A,3,ruin,low
+Angoram,-4.058,144.070,Papua New Guinea,N,1,village,high
+Aitape,-3.137,142.350,Papua New Guinea,N,1,village,high
+Jayapura,-2.533,140.717,Indonesia,N,3,port,high
+Biak,-1.180,136.083,Indonesia,N,2,port,high
+Manokwari,-0.862,134.064,Indonesia,N,2,port,high
+Sorong,-0.876,131.255,Indonesia,N,2,port,high
+Merauke,-8.493,140.401,Indonesia,N,2,port,high
+Fakfak,-2.924,132.297,Indonesia,E;N,2,port,high
+Timika,-4.544,136.885,Indonesia,N,2,mining,high
+Wamena,-4.100,138.950,Indonesia,N,2,city,high
+Nabire,-3.367,135.483,Indonesia,N,1,city,high
+Agats,-5.540,138.130,Indonesia,N,1,village,high
+Serui (Yapen),-1.883,136.233,Indonesia,N,1,village,high
+Kaimana,-3.660,133.750,Indonesia,E;N,1,port,high
+Honiara,-9.433,159.950,Solomon Islands,N,3,capital,high
+Tulagi,-9.103,160.149,Solomon Islands,N,3,port,high
+Gizo,-8.103,156.842,Solomon Islands,N,3,port,high
+Auki,-8.768,160.701,Solomon Islands,N,3,port,high
+Kirakira,-10.455,161.920,Solomon Islands,N,2,village,high
+Lata (Santa Cruz),-10.724,165.797,Solomon Islands,N,2,village,high
+Buala (Isabel),-8.145,159.592,Solomon Islands,N,2,village,high
+Tigoa (Rennell),-11.558,160.040,Solomon Islands,N,1,village,high
+Taro (Choiseul),-6.711,156.397,Solomon Islands,N,1,village,high
+Munda,-8.327,157.263,Solomon Islands,N,2,port,high
+Seghe (Marovo Lagoon),-8.578,157.878,Solomon Islands,N,1,village,high
+Nusa Roviana,-8.380,157.370,Solomon Islands,M;E;N,2,fortress,low
+Tikopia,-12.300,168.833,Solomon Islands,A;C;M;E;N,2,village,high
+Luaniua (Ontong Java),-5.517,159.567,Solomon Islands,M;E;N,1,village,low
+Vanikoro,-11.650,166.900,Solomon Islands,E;N,1,village,low
+Nenumbo (Reef Islands),-10.267,166.283,Solomon Islands,A,2,ruin,low
+Port Vila,-17.734,168.322,Vanuatu,N,3,capital,high
+Luganville,-15.512,167.177,Vanuatu,N,3,port,high
+Teouma,-17.790,168.400,Vanuatu,A,3,ruin,high
+Mangaasi (Roi Mata's Domain),-17.600,168.150,Vanuatu,M,3,ruin,high
+Lenakel (Tanna),-19.533,169.267,Vanuatu,N,2,village,high
+Port Resolution (Tanna),-19.520,169.490,Vanuatu,E;N,1,port,high
+Lakatoro (Malekula),-16.100,167.417,Vanuatu,N,2,village,high
+Sola (Vanua Lava),-13.876,167.551,Vanuatu,N,1,village,high
+Lamap (Port Sandwich),-16.433,167.800,Vanuatu,E;N,1,village,high
+Pangi (Pentecost),-15.950,168.200,Vanuatu,N,1,village,low
+Dillon's Bay (Erromango),-18.817,169.017,Vanuatu,E;N,1,port,high
+Anelcauhat (Aneityum),-20.233,169.775,Vanuatu,E;N,1,village,high
+Big Bay (Espiritu Santo),-15.117,166.933,Vanuatu,E,1,ruin,low
+Noumea,-22.276,166.458,New Caledonia,N,4,capital,high
+We (Lifou),-20.918,167.265,New Caledonia,N,3,village,high
+Fayaoue (Ouvea),-20.650,166.533,New Caledonia,N,3,village,high
+Tadine (Mare),-21.550,167.883,New Caledonia,N,3,village,high
+Balade,-20.320,164.450,New Caledonia,E;N,2,port,high
+Kone (Lapita site),-21.059,164.862,New Caledonia,A;N,3,city,high
+Thio,-21.613,166.215,New Caledonia,N,2,mining,high
+Bourail,-21.567,165.483,New Caledonia,N,2,city,high
+Vao (Ile des Pins),-22.661,167.489,New Caledonia,N,2,village,high
+Hienghene,-20.692,164.943,New Caledonia,N,2,village,high
+Poindimie,-20.933,165.333,New Caledonia,N,1,village,high
+Koumac,-20.567,164.283,New Caledonia,N,1,mining,high
+Suva,-18.141,178.442,Fiji,N,4,capital,high
+Levuka,-17.683,178.835,Fiji,N,4,port,high
+Bau,-17.971,178.615,Fiji,E;N,3,capital,high
+Rewa (Lomanikoro),-18.090,178.560,Fiji,E;N,3,capital,high
+Bourewa,-18.110,177.247,Fiji,A,3,ruin,high
+Lautoka,-17.617,177.450,Fiji,N,2,port,high
+Nadi,-17.800,177.417,Fiji,N,2,city,high
+Labasa,-16.433,179.367,Fiji,N,2,city,high
+Savusavu,-16.779,179.336,Fiji,N,2,port,high
+Somosomo (Taveuni),-16.783,-179.967,Fiji,E;N,2,village,high
+Tubou (Lakeba),-18.233,-178.800,Fiji,E;N,2,village,high
+Verata (Ucunivanua),-17.830,178.600,Fiji,M;E,2,village,low
+Sigatoka,-18.141,177.507,Fiji,A;C;N,2,village,high
+Ba,-17.533,177.683,Fiji,N,1,city,high
+Ahau (Rotuma),-12.500,177.067,Fiji,M;E;N,2,village,high
+Vunisea (Kadavu),-19.067,178.167,Fiji,N,1,village,high
+Viseisei (Vuda),-17.683,177.400,Fiji,M;E,1,village,high
+Nuku'alofa,-21.139,-175.204,Tonga,E;N,4,capital,high
+Mu'a (Lapaha),-21.172,-175.117,Tonga,M;E,5,capital,high
+Ha'amonga 'a Maui,-21.133,-175.050,Tonga,M,3,ruin,high
+Nukuleka,-21.130,-175.130,Tonga,A,3,ruin,high
+Kolovai (Hihifo),-21.100,-175.333,Tonga,E;N,2,village,high
+Neiafu (Vava'u),-18.650,-173.983,Tonga,E;N,2,port,high
+Pangai (Lifuka),-19.800,-174.350,Tonga,E;N,2,village,high
+Hihifo (Niuatoputapu),-15.950,-173.767,Tonga,A;M;E;N,2,village,high
+Angaha (Niuafo'ou),-15.583,-175.633,Tonga,N,1,village,low
+'Ohonua ('Eua),-21.333,-174.950,Tonga,N,1,village,high
+Apia,-13.833,-171.767,Samoa,N,4,capital,high
+Pulemelei Mound,-13.733,-172.350,Samoa,M,3,ruin,high
+Mulifanua,-13.830,-172.033,Samoa,A;N,2,ruin,high
+Salelologa,-13.733,-172.183,Samoa,N,2,port,high
+Leulumoega,-13.823,-171.950,Samoa,M;E;N,2,village,high
+Lufilufi,-13.867,-171.600,Samoa,M;E;N,2,village,high
+Asau,-13.517,-172.633,Samoa,N,1,village,high
+Falealupo,-13.500,-172.783,Samoa,M;E;N,1,religious,high
+Pago Pago,-14.279,-170.700,American Samoa,N,3,port,high
+Leone (Tutuila),-14.343,-170.785,American Samoa,E;N,1,village,high
+Ta'u (Manu'a),-14.233,-169.500,American Samoa,M;E;N,2,village,high
+To'aga (Ofu),-14.183,-169.650,American Samoa,A,1,ruin,low
+Mata-Utu,-13.283,-176.175,Wallis and Futuna,M;E;N,2,capital,high
+Talietumu (Kolonui),-13.333,-176.183,Wallis and Futuna,M,2,fortress,high
+Leava (Futuna),-14.300,-178.167,Wallis and Futuna,E;N,2,village,high
+Poi (Futuna),-14.249,-178.098,Wallis and Futuna,N,1,religious,low
+Funafuti (Vaiaku),-8.525,179.197,Tuvalu,N,3,capital,high
+Nanumea,-5.688,176.117,Tuvalu,N,1,village,high
+Vaitupu,-7.483,178.683,Tuvalu,N,1,village,high
+Nukunonu,-9.167,-171.817,Tokelau,N,3,village,high
+Fakaofo,-9.382,-171.236,Tokelau,M;E;N,2,village,high
+Atafu,-8.553,-172.517,Tokelau,N,1,village,high
+Alofi,-19.059,-169.919,Niue,N,3,capital,high
+Avarua,-21.207,-159.775,Cook Islands,N,3,capital,high
+Arutanga (Aitutaki),-18.853,-159.794,Cook Islands,N,2,village,high
+Oneroa (Mangaia),-21.923,-157.950,Cook Islands,M;E;N,2,village,high
+Areora (Atiu),-19.994,-158.118,Cook Islands,N,1,village,high
+Omoka (Penrhyn),-9.005,-158.057,Cook Islands,N,1,village,high
+Tauhunu (Manihiki),-10.400,-161.000,Cook Islands,N,1,village,high
+Wale (Pukapuka),-10.883,-165.850,Cook Islands,M;E;N,1,village,high
+Palmerston Island,-18.067,-163.167,Cook Islands,N,1,village,high
+Papeete,-17.535,-149.569,French Polynesia,N,4,capital,high
+Point Venus (Matavai Bay),-17.493,-149.489,French Polynesia,E,2,port,high
+Marae Mahaiatea (Papara),-17.757,-149.405,French Polynesia,E,2,ruin,high
+Taputapuatea (Ra'iatea),-16.838,-151.360,French Polynesia,M;E,3,religious,high
+Uturoa (Ra'iatea),-16.733,-151.433,French Polynesia,N,2,port,high
+Maeva (Huahine),-16.710,-151.010,French Polynesia,M;E;N,2,village,high
+Vaitape (Bora Bora),-16.500,-151.750,French Polynesia,E;N,2,village,high
+Papetoai (Mo'orea),-17.493,-149.878,French Polynesia,E;N,1,religious,high
+Vaiea (Maupiti),-16.450,-152.250,French Polynesia,M;E;N,1,village,high
+Tautira (Tahiti Iti),-17.733,-149.150,French Polynesia,E;N,1,village,high
+Avatoru (Rangiroa),-14.953,-147.705,French Polynesia,N,3,village,high
+Rotoava (Fakarava),-16.054,-145.618,French Polynesia,N,3,village,high
+Tukuhora (Anaa),-17.350,-145.500,French Polynesia,M;E;N,1,village,low
+Makatea,-15.850,-148.250,French Polynesia,N,1,mining,high
+Otepa (Hao),-18.067,-140.933,French Polynesia,N,1,village,high
+Moruroa,-21.833,-138.900,French Polynesia,N,2,fortress,high
+Rikitea (Mangareva),-23.120,-134.969,French Polynesia,M;E;N,3,village,high
+Moerai (Rurutu),-22.450,-151.333,French Polynesia,M;E;N,3,village,high
+Mataura (Tubuai),-23.350,-149.467,French Polynesia,E;N,3,village,high
+Rairua (Raivavae),-23.867,-147.667,French Polynesia,M;N,1,village,high
+Ahurei (Rapa Iti),-27.617,-144.333,French Polynesia,M;E;N,3,fortress,high
+Taiohae (Nuku Hiva),-8.911,-140.100,French Polynesia,M;E;N,4,port,high
+Hatiheu (Nuku Hiva),-8.833,-140.083,French Polynesia,M,2,ruin,high
+Atuona (Hiva Oa),-9.803,-139.042,French Polynesia,N,3,village,high
+Puamau (Hiva Oa),-9.755,-138.860,French Polynesia,M,2,ruin,high
+Hakahau (Ua Pou),-9.355,-140.087,French Polynesia,N,3,village,high
+Vaitahu (Tahuata),-9.933,-139.100,French Polynesia,E;N,2,village,high
+Adamstown,-25.067,-130.100,Pitcairn Islands,E;N,3,village,high
+Hanga Roa,-27.150,-109.433,Chile,M;E;N,5,capital,high
+Orongo,-27.189,-109.443,Chile,M;E,3,religious,high
+Anakena,-27.073,-109.323,Chile,M,3,religious,high
+Rano Raraku,-27.123,-109.289,Chile,M,3,ruin,high
+Honolulu,21.307,-157.858,United States,E;N,5,capital,high
+Hilo,19.724,-155.087,United States,M;E;N,4,port,high
+Lahaina,20.878,-156.683,United States,M;E;N,4,capital,high
+Kailua-Kona,19.640,-155.996,United States,M;E;N,4,capital,high
+Pu'uhonua o Honaunau,19.421,-155.910,United States,M;E,3,religious,high
+Kealakekua Bay (Napo'opo'o),19.479,-155.919,United States,E,3,port,high
+Pu'ukohola Heiau (Kawaihae),20.027,-155.822,United States,E,3,religious,high
+Waipi'o Valley,20.117,-155.590,United States,M;E,3,village,high
+Mo'okini Heiau,20.262,-155.878,United States,M;E,2,religious,high
+Wailuku (Maui),20.891,-156.504,United States,M;E;N,2,city,high
+Pi'ilanihale Heiau (Hana),20.805,-156.001,United States,M,2,religious,high
+Lana'i City,20.828,-156.920,United States,N,1,village,high
+Kaunakakai (Moloka'i),21.093,-157.023,United States,N,2,village,high
+Halawa Valley (Moloka'i),21.157,-156.740,United States,M;E,1,village,high
+Kalaupapa,21.189,-156.983,United States,N,2,village,high
+Lihu'e (Kaua'i),21.981,-159.371,United States,N,2,city,high
+Waimea (Kaua'i),21.957,-159.669,United States,E;N,2,port,high
+Wailua (Kaua'i),22.045,-159.337,United States,M;E,2,religious,high
+Waimea Valley (O'ahu),21.640,-158.063,United States,M;E,1,religious,high
+Nihoa,23.060,-161.922,United States,M,1,ruin,high
+Midway Atoll,28.208,-177.381,United States,N,2,fortress,high
+Wake Island,19.282,166.647,United States,N,2,fortress,high
+Koror,7.342,134.479,Palau,E;N,4,capital,high
+Melekeok (Ngerulmud),7.493,134.637,Palau,M;E;N,2,capital,high
+Kloulklubed (Peleliu),7.034,134.253,Palau,N,2,fortress,high
+Angaur,6.909,134.139,Palau,N,1,mining,high
+Badrulchau (Ngarchelong),7.705,134.633,Palau,A;C;M,2,ruin,high
+Airai,7.367,134.550,Palau,M;E;N,1,village,high
+Hagatna,13.476,144.750,Guam,E;N,4,capital,high
+Umatac,13.296,144.659,Guam,E;N,2,village,high
+Piti (Apra Harbor),13.463,144.693,Guam,N,2,port,high
+Garapan (Saipan),15.206,145.719,Northern Mariana Islands,E;N,3,city,high
+San Jose (Tinian),14.967,145.617,Northern Mariana Islands,M;E;N,3,ruin,high
+Songsong (Rota),14.136,145.142,Northern Mariana Islands,M;E;N,3,village,high
+Nan Madol,6.844,158.335,Federated States of Micronesia,M;E,5,ruin,high
+Kolonia (Pohnpei),6.964,158.208,Federated States of Micronesia,N,3,port,high
+Palikir,6.917,158.158,Federated States of Micronesia,N,2,capital,high
+Leluh (Kosrae),5.333,163.033,Federated States of Micronesia,M;E,3,ruin,high
+Colonia (Yap),9.515,138.129,Federated States of Micronesia,E;N,3,port,high
+Weno (Chuuk),7.446,151.843,Federated States of Micronesia,N,3,port,high
+Satawal,7.383,147.033,Federated States of Micronesia,M;E;N,2,village,high
+Falalop (Ulithi),10.017,139.783,Federated States of Micronesia,N,2,port,high
+Kapingamarangi,1.067,154.767,Federated States of Micronesia,M;E;N,1,village,high
+Nukuoro,3.850,154.967,Federated States of Micronesia,M;E;N,1,village,high
+Majuro (Delap-Uliga-Djarrit),7.090,171.380,Marshall Islands,N,4,capital,high
+Ebeye,8.781,167.737,Marshall Islands,N,3,city,high
+Kwajalein,8.721,167.731,Marshall Islands,N,3,fortress,high
+Jabor (Jaluit),5.922,169.645,Marshall Islands,N,3,port,high
+Bikini,11.600,165.500,Marshall Islands,N,2,village,low
+Enewetak,11.340,162.330,Marshall Islands,N,1,village,low
+Wotje,9.458,170.238,Marshall Islands,N,1,fortress,high
+Yaren,-0.547,166.921,Nauru,N,3,capital,high
+Tarawa (Bairiki),1.329,172.978,Kiribati,N,4,capital,high
+Butaritari,3.071,172.792,Kiribati,N,3,village,high
+Banaba (Ocean Island),-0.863,169.537,Kiribati,N,3,mining,high
+Abemama,0.400,173.867,Kiribati,E;N,2,village,low
+Utiroa (Tabiteuea),-1.217,174.750,Kiribati,N,1,village,low
+London (Kiritimati),1.983,-157.475,Kiribati,E;N,2,village,high
+Kanton,-2.810,-171.683,Kiribati,N,1,village,high
+Tabuaeran (Fanning),3.867,-159.350,Kiribati,N,1,village,low
+Futami (Chichijima),27.094,142.192,Japan,E;N,3,port,high
+Oki (Hahajima),26.633,142.150,Japan,N,1,village,high
+Iwo Jima,24.783,141.323,Japan,N,2,fortress,high
+Clipperton Island,10.283,-109.217,France,N,1,ruin,low

@@ -1,0 +1,58 @@
+10000 seats written to final/seats.yaml
+
+region          seats   quota effective  spacing  per10k  fill
+S_ASIA            877     876       876      7.3    40.1     5
+CHINA             731     730       697      7.0    17.2    34
+N_AMERICA         783     662       718     14.1     4.6    40
+EUR_WEST          406     506       379      7.0    58.5    27
+SE_ASIA_MAIN      352     351       320      7.0    41.1    32
+EUR_EAST          381     321       349     13.4    10.6    23
+W_AFRICA          325     321       321     14.5    15.9     0
+SE_ASIA_ISL       317     321       321      7.0    20.5    91
+MESOAMERICA       346     292       317      8.7    30.5    16
+ANDES             324     273       296      7.0    23.0    58
+EUR_BALKAN        300     263       285      7.0    65.7    45
+EUR_ITALY         112     253       275      7.0    64.0    13
+JAPAN             151     253       275      7.0    73.2    21
+EUR_IBERIA        213     243       172      7.0    64.4    41
+LEVANT_MESO       121     234       253      7.0    21.2    28
+EUR_CENTRAL       198     224       179      7.0    53.9    19
+IRAN_AFG          267     224       248      7.0    23.8    19
+S_CONE            267     224       243     13.6    12.5    14
+MAGHREB           208     204       158      7.0    31.5    50
+E_AFRICA          225     204       222     15.9     9.9     3
+BRAZIL            205     204       204     25.7    10.4     2
+EUR_BRIT          150     195       211      7.0    64.7    29
+EUR_NORDIC        233     195       211      7.5     9.9    13
+ANATOLIA          233     195       206      7.0    55.2    27
+C_ASIA            220     185       201      8.0     9.7    11
+AUSTRALIA         202     185       201      7.0     8.2    58
+SIBERIA           202     175       190     14.7     1.9    11
+ARABIA            127     156       169      7.0     9.9    37
+S_AFRICA          171     156       169     15.4     9.5     3
+C_AFRICA          150     136       148     26.4     6.4     3
+INNER_ASIA        161     136       148      7.0     5.7    46
+EGYPT_NILE         47     127       137      7.0    11.7     7
+KOREA              83     107       116      7.0    63.1    22
+SAHARA             98      97        97      7.0     3.0     6
+CARIBBEAN         117      97       100      7.0   100.1    17
+AMAZON             90      88        88     27.0     4.6     0
+POLYNESIA          61      83        43      7.0   426.0    18
+SUMATRA            72      78        51      7.0    35.6    21
+NEW_GUINEA         82      68        74      7.0    20.9    22
+CAUCASUS           66      63        55      7.0    60.2    11
+N_SAMERICA         77      63        69     11.4    15.1     6
+NEW_ZEALAND        59      54        42      7.0    38.8    17
+MADAGASCAR         50      49        49     18.1    18.1     1
+MELANESIA          52      49        37      7.0   129.7    15
+BORNEO             45      44        44      9.9    14.1     1
+MICRONESIA         43      34        37      9.2  1053.9     7
+
+from GeoNames: 8616 (of which 2663 also in the curated list); curated-only sites: 394; unnamed fill: 990
+capitals (PPLC) placed: 233 of 241
+islands with a seat: 617
+off-land drops (10): Arno, Eydhafushi, Felidhoo, La Aguada, Lib, Mahibadhoo, Mejit, Satawal, Toga Village, Ujae
+named: Funafuti=Y, Male=Y, Majuro=Y, Tarawa=Y, Nauru=n, Amsterdam=Y, Brussels=Y, Antwerp=Y, Rotterdam=n, Utrecht=n, Bruges=n, Ghent=Y, Leiden=n, Haarlem=n, The Hague=Y, Luxembourg=Y, Timbuktu=Y, Agadez=Y, Tamanrasset=n, Siwa=Y, Nan Madol=Y, Honolulu=Y, Papeete=Y, Apia=Y, Nuku'alofa=n, Suva=Y, Manaus=Y, Iquitos=Y, Kinshasa=Y, Lagos=Y, Kano=Y, Great Zimbabwe=Y, Babylon=Y, Ur=n, Xi'an=Y, Kyoto=Y, Cusco=Y, Teotihuacan=Y, Cahokia=n
+must-haves not placed (17): Brazzaville <- Kinshasa; Hanoi/Thang Long <- Hanoi; Utrecht <- Amsterdam; Carthage <- Tunis; New Delhi <- Delhi; Xianyang <- Xi'an; Tyre <- Sidon; Dhaka <- Gazipur, Dhaka; Byblos <- Beirut; Bogota (Bacata) <- Zipaquira, Bogota; Taxila <- Fatehjang, Islamabad; Castries <- Gros Islet; Road Town <- ?; Palikir <- Nan Madol; Philipsburg <- The Valley, Gustavia; Marigot <- The Valley, Gustavia; Vatican City <- Rome
+pairs closer than the floor: 0; cells not land: 0
+score quantiles (min/10/50/90/max): 0.03 0.12 0.40 0.88 1.88

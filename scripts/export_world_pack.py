@@ -13,6 +13,12 @@ A world pack is a folder with a manifest.json and a few rasters that the Unity p
                  (>= 1000 m3/s) river passing through the cell. Rasterised from data/river_tiles
                  (HydroRIVERS channels, all LOD bands), one cell wide.
 
+--island-expand E (0..1, default 0) is the app's small-island expander: an island under --island-min-deg
+(default 0.15 deg) on its longer side is scaled about its centre E of the way toward that size and burned
+all-touched, so atolls and islets that the pixel grid would lose still mark cells as land (the game can
+then put a city site on Funafuti or Male). Pieces of larger land clipped at a coast tile edge are never
+scaled.
+
 A pack is a FRAME of the Earth: a lon/lat box (--bounds W S E N; W > E crosses the antimeridian)
 at a pixel density (--ppd pixels per degree, or --width to fix the pixel width). The default is the
 whole globe on the app's 4096x2048 working grid.
@@ -334,22 +340,58 @@ def vector_tile_polys(frame, tileset, lod="f"):
     return geoms
 
 
-def build_landmask(frame, fine):
+def expand_islands(land, expand, min_deg, tile_deg, min_area_km2=0.3):
+    """The app's small-island expander for the export: an island whose bounding box is under min_deg on
+    its longer side is scaled about its centre toward min_deg, by `expand` of the way (1 = all the way;
+    nothing shrinks, nothing larger is touched), and comes back in a second list to be burned with
+    all_touched so an atoll's thin strips still mark the cells they cross. A polygon clipped at a coast
+    tile's edge is a piece of something larger and is left alone, whatever its size."""
+    if expand <= 0:
+        return land, []
+    from shapely.geometry import shape, mapping
+    from shapely import affinity
+    keep, small = [], []
+    for g in land:
+        geom = shape(g) if isinstance(g, dict) else g
+        x0, y0, x1, y1 = geom.bounds
+        L = max(x1 - x0, y1 - y0, 1e-9)
+        clipped = tile_deg and any(abs(v / tile_deg - round(v / tile_deg)) < 1e-6 for v in (x0, y0, x1, y1))
+        # A rock or skerry under the area floor is left as it is (and so, mostly, lost to the grid):
+        # the expander is for islets people live on.
+        area_km2 = geom.area * 111.2 * 111.2 * max(0.05, math.cos(math.radians((y0 + y1) / 2)))
+        if L >= min_deg or clipped or area_km2 < min_area_km2:
+            keep.append(g)
+            continue
+        f = 1.0 + expand * (min_deg / L - 1.0)
+        small.append(mapping(affinity.scale(geom, f, f, origin=((x0 + x1) / 2, (y0 + y1) / 2))))
+    return keep, small
+
+
+def build_landmask(frame, fine, island_expand=0.0, island_min_deg=0.15, island_min_area=0.3):
     stem = "hires" if fine else "10m"
     land = vector_tile_polys(frame, "coast_tiles") if fine else None
     coast_src = "coast_tiles/f (OpenStreetMap)"
+    tile_deg = None
     if land is None:
         land = polys_in_frame(os.path.join(DATA, f"coast_{stem}.json"), frame)
         coast_src = f"coast_{stem}"
+    else:
+        idx = json.load(open(os.path.join(DATA, "coast_tiles", "index.json"), encoding="utf-8"))
+        L = idx["lods"].get("f") or next(iter(idx["lods"].values()))
+        tile_deg = float(L["deg"])
     lakes = vector_tile_polys(frame, "lake_tiles") if fine else None
     lake_src = "lake_tiles/f (HydroLAKES)"
     if lakes is None:
         lakes = polys_in_frame(os.path.join(DATA, f"lakes_{stem}.json"), frame)
         lake_src = f"lakes_{stem}"
+    land, small = expand_islands(land, island_expand, island_min_deg, tile_deg, island_min_area)
     mask = burn(frame, [(g, 1) for g in land])
+    if small:
+        mask |= burn(frame, [(g, 1) for g in small], all_touched=True)
+        coast_src += f", {len(small)} small islands expanded x{island_expand:g} toward {island_min_deg:g} deg"
     if lakes:
         mask[burn(frame, [(g, 1) for g in lakes]) == 1] = 0
-    return (mask * 255).astype(np.uint8), f"{coast_src} + {lake_src} ({len(land)} + {len(lakes)} polygons)"
+    return (mask * 255).astype(np.uint8), f"{coast_src} + {lake_src} ({len(land) + len(small)} + {len(lakes)} polygons)"
 
 
 def river_shapes(frame):
@@ -386,6 +428,10 @@ def main():
         ap.add_argument(f"--{layer}-source", choices=("auto", "base", "fine"), default="auto")
     ap.add_argument("--elev", default=os.path.join(DATA, "elev_4096.png"), help="base elevation raster")
     ap.add_argument("--koppen", default=os.path.join(DATA, "koppen_2048.png"), help="base Koppen raster")
+    ap.add_argument("--island-expand", type=float, default=0.0,
+                    help="the app's small-island expander: islands under --island-min-deg across are scaled toward it by this much (0..1) and burned all-touched")
+    ap.add_argument("--island-min-deg", type=float, default=0.15, help="the size (degrees, longer side) small islands are expanded toward")
+    ap.add_argument("--island-min-area", type=float, default=0.3, help="km2; islets smaller than this are not expanded (rocks and skerries)")
     args = ap.parse_args()
 
     w, s, e, n = args.bounds
@@ -409,7 +455,7 @@ def main():
     Image.fromarray(np.ascontiguousarray(kop), "L").save(os.path.join(args.out, "koppen.png"), optimize=True)
     print(f"koppen {kop.shape[1]}x{kop.shape[0]} from {kop_src}")
 
-    mask, land_src = build_landmask(frame, fine["coast"])
+    mask, land_src = build_landmask(frame, fine["coast"], args.island_expand, args.island_min_deg, args.island_min_area)
     Image.fromarray(mask, "L").save(os.path.join(args.out, "landmask.png"), optimize=True)
     print(f"landmask from {land_src}: {100.0 * (mask > 0).mean():.1f}% land")
 
@@ -437,6 +483,7 @@ def main():
                         "classes": ["" if k is None else k for k in KOPPEN_KEYS]},
         },
         "frame": {"requestedBounds": [w, s, e, n], "ppd": frame.ppd, "snap": args.snap,
+                  "islandExpand": args.island_expand, "islandMinDeg": args.island_min_deg, "islandMinAreaKm2": args.island_min_area,
                   "sources": {"elevation": elev_src, "koppen": kop_src, "landMask": land_src, "rivers": "river_tiles"}},
         "attribution": [
             "Elevation: ETOPO 2022 (NOAA NCEI), " + ("30 arc-second" if fine["elev"] else "decimated to the working grid"),

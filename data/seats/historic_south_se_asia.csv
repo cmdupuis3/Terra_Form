@@ -1,0 +1,881 @@
+name,lat,lon,country,eras,significance,kind,confidence
+Mohenjo-daro,27.324,68.138,Pakistan,A,4,ruin,high
+Harappa,30.628,72.864,Pakistan,A,4,ruin,high
+Mehrgarh,29.383,67.617,Pakistan,A,3,ruin,high
+Ganweriwala,28.583,71.150,Pakistan,A,2,ruin,low
+Kot Diji,27.343,68.707,Pakistan,A,2,ruin,high
+Amri,26.165,68.013,Pakistan,A,2,ruin,high
+Chanhudaro,26.173,68.321,Pakistan,A,2,ruin,high
+Rehman Dheri,31.954,70.819,Pakistan,A,2,ruin,high
+Sutkagan Dor,25.516,62.032,Pakistan,A,2,port,high
+Sokhta Koh,25.300,63.500,Pakistan,A,1,ruin,low
+Pirak,29.400,67.900,Pakistan,A,1,ruin,low
+Taxila,33.746,72.837,Pakistan,A;C;M,4,city,high
+Pushkalavati/Charsadda,34.148,71.741,Pakistan,A;C,3,city,high
+Peshawar,34.015,71.525,Pakistan,C;M;E;N,4,city,high
+Shahbaz Garhi,34.216,72.149,Pakistan,C,2,religious,high
+Takht-i-Bahi,34.321,71.946,Pakistan,C,3,religious,high
+Butkara/Mingora,34.776,72.361,Pakistan,C;M;N,2,religious,high
+Udegram,34.800,72.300,Pakistan,C;M,1,fortress,low
+Hund/Udabhandapura,34.025,72.433,Pakistan,M,2,capital,high
+Multan,30.196,71.475,Pakistan,C;M;E;N,4,city,high
+Uch Sharif,29.236,71.062,Pakistan,M;E,2,religious,high
+Lahore,31.558,74.351,Pakistan,M;E;N,5,capital,high
+Sialkot,32.492,74.531,Pakistan,C;M;E;N,2,city,high
+Debal/Banbhore,24.752,67.519,Pakistan,C;M,3,port,high
+Mansura/Brahmanabad,25.882,68.777,Pakistan,M,3,capital,high
+Aror/Rohri,27.683,68.900,Pakistan,C;M,2,capital,high
+Sehwan Sharif,26.424,67.861,Pakistan,M;E,2,religious,high
+Thatta,24.747,67.924,Pakistan,M;E,3,capital,high
+Hyderabad (Sindh),25.396,68.374,Pakistan,E;N,3,city,high
+Karachi,24.861,67.010,Pakistan,E;N,5,port,high
+Sukkur,27.705,68.857,Pakistan,M;E;N,2,city,high
+Shikarpur,27.957,68.638,Pakistan,E;N,2,market,high
+Larkana,27.558,68.212,Pakistan,N,1,city,high
+Umerkot,25.361,69.736,Pakistan,M;E,2,fortress,high
+Bahawalpur,29.395,71.683,Pakistan,E;N,2,city,high
+Derawar Fort,28.768,71.334,Pakistan,M;E,2,fortress,high
+Dera Ghazi Khan,30.056,70.635,Pakistan,E;N,1,city,high
+Dera Ismail Khan,31.832,70.902,Pakistan,E;N,1,city,high
+Bannu,32.986,70.604,Pakistan,N,1,city,high
+Kohat,33.587,71.442,Pakistan,E;N,1,city,high
+Attock,33.767,72.360,Pakistan,E;N,2,fortress,high
+Rawalpindi,33.600,73.067,Pakistan,E;N,3,city,high
+Islamabad,33.693,73.065,Pakistan,N,3,capital,high
+Rohtas Fort,32.965,73.577,Pakistan,E,2,fortress,high
+Jhelum,32.941,73.728,Pakistan,N,1,city,high
+Gujrat,32.573,74.079,Pakistan,E;N,1,city,high
+Gujranwala,32.157,74.187,Pakistan,E;N,2,city,high
+Faisalabad,31.418,73.079,Pakistan,N,3,city,high
+Sargodha,32.084,72.671,Pakistan,N,1,city,high
+Sahiwal,30.666,73.106,Pakistan,N,1,city,high
+Pakpattan,30.343,73.387,Pakistan,M;E,2,religious,high
+Tulamba,30.517,72.183,Pakistan,C;M,1,ruin,low
+Quetta,30.183,67.000,Pakistan,N,3,city,high
+Kalat,29.025,66.590,Pakistan,E;N,2,capital,high
+Gwadar,25.126,62.323,Pakistan,E;N,2,port,high
+Sibi,29.543,67.877,Pakistan,M;E;N,1,market,high
+Chitral,35.851,71.786,Pakistan,E;N,1,capital,high
+Gilgit,35.920,74.308,Pakistan,M;E;N,2,city,high
+Skardu,35.297,75.633,Pakistan,E;N,1,city,high
+Muzaffarabad,34.370,73.471,Pakistan,E;N,1,city,high
+Mirpur Khas,25.527,69.014,Pakistan,C;N,1,city,high
+Abbottabad,34.150,73.217,Pakistan,N,1,city,high
+Hasan Abdal,33.819,72.689,Pakistan,E,1,religious,high
+Amritsar,31.634,74.872,India,E;N,4,religious,high
+Ludhiana,30.901,75.857,India,E;N,2,city,high
+Jalandhar,31.326,75.576,India,M;E;N,2,city,high
+Patiala,30.339,76.386,India,E;N,2,capital,high
+Bathinda,30.211,74.945,India,M;E;N,2,fortress,high
+Sirhind,30.643,76.383,India,E,2,city,high
+Ropar/Rupnagar,30.969,76.527,India,A;N,1,ruin,high
+Sanghol,30.779,76.389,India,A;C,1,ruin,high
+Chandigarh,30.733,76.779,India,N,3,capital,high
+Kurukshetra/Thanesar,29.969,76.878,India,A;C;M,3,religious,high
+Panipat,29.390,76.963,India,E,2,city,high
+Hansi,29.102,75.963,India,M,2,fortress,high
+Rakhigarhi,29.288,76.114,India,A,3,ruin,high
+Banawali,29.600,75.400,India,A,1,ruin,low
+Bhirrana,29.550,75.550,India,A,1,ruin,low
+Agroha,29.333,75.633,India,C,1,ruin,high
+Rohtak,28.895,76.606,India,C;N,1,city,high
+Faridabad,28.408,77.317,India,N,1,city,high
+Gurgaon,28.459,77.026,India,N,2,city,high
+Shimla,31.104,77.173,India,N,3,capital,high
+Kangra,32.100,76.267,India,M;E,2,fortress,high
+Chamba,32.556,76.126,India,M;E,2,capital,high
+Mandi,31.708,76.931,India,E,1,capital,high
+Kullu,31.958,77.109,India,M;E,1,capital,high
+Dharamshala,32.219,76.323,India,N,1,city,high
+Srinagar,34.084,74.797,India,C;M;E;N,4,capital,high
+Jammu,32.726,74.857,India,M;E;N,3,capital,high
+Martand,33.745,75.222,India,M,2,religious,high
+Parihaspora,34.229,74.657,India,M,2,capital,high
+Leh,34.165,77.584,India,M;E;N,3,capital,high
+Shey,34.071,77.638,India,M;E,1,capital,high
+Kargil,34.557,76.126,India,E;N,1,market,high
+Haridwar,29.946,78.164,India,C;M;E;N,3,religious,high
+Rishikesh,30.087,78.268,India,M;N,1,religious,high
+Dehradun,30.317,78.032,India,E;N,2,capital,high
+Almora,29.597,79.659,India,E,2,capital,high
+Srinagar (Garhwal),30.223,78.783,India,E,1,capital,high
+Badrinath,30.744,79.493,India,M;E;N,2,religious,high
+Kedarnath,30.735,79.067,India,M;N,2,religious,high
+Nainital,29.392,79.456,India,N,1,city,high
+Delhi,28.656,77.231,India,C;M;E;N,5,capital,high
+Meerut,28.984,77.706,India,C;N,2,city,high
+Hastinapur,29.161,78.012,India,A,2,ruin,high
+Ahichchhatra,28.368,79.133,India,A;C,2,ruin,high
+Bareilly,28.367,79.430,India,E;N,2,city,high
+Moradabad,28.839,78.777,India,E;N,1,city,high
+Rampur,28.810,79.025,India,E;N,1,capital,high
+Aligarh,27.897,78.088,India,E;N,2,city,high
+Mathura,27.492,77.674,India,A;C;M;E;N,4,religious,high
+Vrindavan,27.580,77.700,India,E;N,2,religious,high
+Agra,27.177,78.008,India,E;N,5,capital,high
+Fatehpur Sikri,27.095,77.661,India,E,3,capital,high
+Etawah,26.777,79.022,India,M;N,1,city,high
+Kannauj,27.055,79.919,India,C;M,4,capital,high
+Sankisa,27.333,79.700,India,C,1,religious,high
+Farrukhabad,27.390,79.580,India,E;N,1,city,high
+Kanpur,26.449,80.332,India,N,3,city,high
+Lucknow,26.847,80.947,India,E;N,4,capital,high
+Faizabad,26.773,82.146,India,E,2,capital,high
+Ayodhya,26.799,82.204,India,A;C;M;E;N,4,religious,high
+Sravasti,27.509,82.040,India,A;C,3,religious,high
+Kapilavastu/Piprahwa,27.443,83.128,India,A;C,2,religious,high
+Kaushambi,25.336,81.391,India,A;C,3,capital,high
+Allahabad/Prayagraj,25.436,81.846,India,A;C;M;E;N,4,religious,high
+Varanasi,25.318,83.007,India,A;C;M;E;N,5,religious,high
+Sarnath,25.381,83.022,India,C;M,3,religious,high
+Jaunpur,25.746,82.683,India,M;E,3,capital,high
+Gorakhpur,26.760,83.373,India,M;E;N,2,city,high
+Kushinagar,26.741,83.889,India,A;C,3,religious,high
+Chunar,25.130,82.880,India,M;E,1,fortress,high
+Mirzapur,25.146,82.569,India,E;N,1,market,high
+Jhansi,25.449,78.569,India,E;N,2,fortress,high
+Kalinjar,24.998,80.485,India,M;E,2,fortress,high
+Deogarh (UP),24.527,78.238,India,M,1,religious,high
+Saharanpur,29.968,77.546,India,E;N,1,city,high
+Ghaziabad,28.669,77.454,India,N,1,city,high
+Bahraich,27.575,81.594,India,M,1,religious,high
+Jaipur,26.912,75.787,India,E;N,4,capital,high
+Amber,26.985,75.851,India,M;E,2,capital,high
+Ajmer,26.449,74.640,India,M;E;N,4,religious,high
+Pushkar,26.490,74.551,India,M;E;N,2,religious,high
+Jodhpur,26.292,73.021,India,M;E;N,4,capital,high
+Mandore,26.355,73.040,India,M,1,capital,high
+Udaipur,24.585,73.713,India,E;N,3,capital,high
+Chittorgarh,24.888,74.645,India,M;E,4,fortress,high
+Kumbhalgarh,25.148,73.587,India,M;E,2,fortress,high
+Nagda/Eklingji,24.750,73.727,India,M,1,religious,high
+Jaisalmer,26.916,70.916,India,M;E,3,fortress,high
+Bikaner,28.023,73.312,India,E;N,3,capital,high
+Kalibangan,29.473,74.131,India,A,3,ruin,high
+Bairat/Viratnagar,27.450,76.178,India,C,2,religious,high
+Alwar,27.553,76.635,India,E;N,2,capital,high
+Bharatpur,27.217,77.490,India,E;N,2,capital,high
+Deeg,27.472,77.325,India,E,1,capital,high
+Bundi,25.438,75.637,India,M;E,2,capital,high
+Kota,25.214,75.864,India,E;N,2,capital,high
+Ranthambore,26.017,76.455,India,M,2,fortress,high
+Bayana,26.906,77.288,India,M,1,fortress,high
+Nagaur,27.202,73.740,India,M;E,2,fortress,high
+Mount Abu/Dilwara,24.593,72.713,India,M,2,religious,high
+Ranakpur,25.116,73.473,India,M,1,religious,high
+Osian,26.722,72.908,India,M,2,religious,high
+Bhinmal,25.003,72.271,India,C;M,2,city,high
+Jalore,25.345,72.615,India,M,1,fortress,high
+Sambhar,26.908,75.192,India,C;M;E,2,mining,high
+Khetri,28.000,75.800,India,E;N,1,mining,high
+Dholpur,26.700,77.893,India,E;N,1,city,high
+Tonk,26.167,75.783,India,E;N,1,city,high
+Ujjain,23.179,75.785,India,A;C;M;E;N,4,city,high
+Vidisha/Besnagar,23.525,77.808,India,A;C,3,city,high
+Sanchi,23.479,77.740,India,C;M,3,religious,high
+Bhopal,23.259,77.413,India,M;E;N,3,capital,high
+Bhimbetka,22.938,77.613,India,A,2,ruin,high
+Bhojpur (MP),23.100,77.633,India,M,1,religious,high
+Indore,22.720,75.858,India,E;N,3,city,high
+Mandu,22.336,75.405,India,M;E,3,capital,high
+Maheshwar/Mahishmati,22.177,75.588,India,A;C;M;E,2,city,high
+Dhar,22.600,75.300,India,M,2,capital,high
+Omkareshwar,22.245,76.151,India,M;E;N,1,religious,high
+Burhanpur,21.311,76.230,India,E,3,capital,high
+Asirgarh,21.467,76.283,India,M;E,1,fortress,high
+Gwalior,26.218,78.182,India,M;E;N,4,fortress,high
+Orchha,25.351,78.640,India,E,2,capital,high
+Chanderi,24.717,78.133,India,M;E,2,city,high
+Khajuraho,24.832,79.919,India,M,3,religious,high
+Mahoba,25.292,79.873,India,M,2,capital,high
+Eran,24.097,78.183,India,C,1,ruin,high
+Tripuri/Tewar,23.146,79.818,India,C;M,2,capital,high
+Jabalpur,23.182,79.986,India,N,2,city,high
+Bharhut,24.467,80.850,India,C,1,religious,high
+Rewa,24.536,81.304,India,E;N,1,capital,high
+Bagh Caves,22.350,74.783,India,C,1,religious,high
+Mandsaur/Dasapura,24.072,75.070,India,C;M,2,city,high
+Sirpur,21.350,82.183,India,M,2,religious,high
+Raipur,21.251,81.630,India,M;E;N,2,capital,high
+Ratanpur,22.291,82.164,India,M;E,2,capital,high
+Bhilai,21.209,81.380,India,N,1,city,high
+Bastar/Jagdalpur,19.082,82.021,India,E;N,1,capital,high
+Lothal,22.521,72.249,India,A,3,port,high
+Dholavira,23.886,70.213,India,A,3,ruin,high
+Surkotada,23.617,70.833,India,A,1,ruin,high
+Dwarka,22.238,68.968,India,A;C;M;E;N,3,religious,high
+Somnath/Prabhas Patan,20.888,70.401,India,M;E;N,3,religious,high
+Junagadh/Girnar,21.522,70.458,India,C;M;E;N,3,city,high
+Vallabhi,21.887,71.879,India,C;M,3,capital,high
+Bharuch/Barygaza,21.705,72.996,India,C;M;E,4,port,high
+Khambhat/Cambay,22.313,72.619,India,M;E,3,port,high
+Surat,21.170,72.831,India,E;N,4,port,high
+Vadodara/Baroda,22.307,73.181,India,E;N,3,capital,high
+Champaner,22.486,73.537,India,M;E,2,capital,high
+Anhilwara/Patan,23.850,72.126,India,M,4,capital,high
+Siddhpur,23.917,72.383,India,M,1,religious,high
+Modhera,23.583,72.133,India,M,1,religious,high
+Ahmedabad,23.023,72.572,India,M;E;N,4,capital,high
+Rajkot,22.303,70.802,India,E;N,2,city,high
+Bhavnagar,21.764,72.152,India,E;N,1,port,high
+Porbandar,21.642,69.609,India,E;N,1,port,high
+Diu,20.714,70.988,India,E;N,2,port,high
+Daman,20.397,72.833,India,E;N,1,port,high
+Bhuj,23.242,69.667,India,E;N,2,capital,high
+Mandvi,22.833,69.350,India,E;N,1,port,high
+Gandhinagar,23.223,72.650,India,N,1,capital,high
+Jamnagar,22.470,70.057,India,E;N,1,city,high
+Palitana,21.526,71.834,India,M;E;N,2,religious,high
+Navsari,20.950,72.933,India,M;E,1,city,high
+Mumbai,18.940,72.835,India,M;E;N,5,port,high
+Elephanta,18.963,72.931,India,M,1,religious,high
+Sopara/Nala Sopara,19.417,72.850,India,A;C;M,2,port,high
+Kalyan,19.243,73.135,India,C;M;E,2,port,high
+Thane,19.218,72.978,India,M;E;N,1,port,high
+Chaul,18.567,72.933,India,M;E,2,port,high
+Pune,18.520,73.856,India,M;E;N,4,capital,high
+Junnar,19.200,73.883,India,C;M,1,city,high
+Nashik,19.998,73.790,India,C;M;E;N,3,religious,high
+Paithan/Pratishthana,19.483,75.383,India,C;M,3,capital,high
+Ter/Tagara,18.317,76.150,India,C,2,market,high
+Ajanta,20.552,75.703,India,C;M,3,religious,high
+Ellora,20.026,75.179,India,M,3,religious,high
+Aurangabad,19.877,75.343,India,E;N,3,city,high
+Daulatabad/Devagiri,19.943,75.214,India,M,3,fortress,high
+Ahmadnagar,19.095,74.749,India,E,4,capital,high
+Nagpur,21.146,79.088,India,E;N,3,capital,high
+Nanded,19.138,77.321,India,E;N,1,religious,high
+Solapur,17.660,75.906,India,M;N,1,city,high
+Pandharpur,17.679,75.330,India,M;E;N,2,religious,high
+Kolhapur,16.705,74.243,India,C;M;E;N,2,capital,high
+Satara,17.680,74.018,India,E,2,capital,high
+Raigad,18.234,73.440,India,E,2,fortress,high
+Janjira,18.300,72.964,India,E,1,fortress,high
+Dabhol,17.588,73.178,India,M;E,2,port,high
+Vasai/Bassein,19.330,72.812,India,E,2,port,high
+Inamgaon,18.583,74.533,India,A,1,ruin,high
+Daimabad,19.517,74.700,India,A,1,ruin,high
+Karle,18.783,73.470,India,C,1,religious,high
+Chandrapur,19.950,79.296,India,E,1,capital,high
+Old Goa,15.503,73.912,India,M;E,3,port,high
+Panaji,15.491,73.828,India,N,2,capital,high
+Chandor/Chandrapura,15.260,74.050,India,C;M,1,capital,high
+Vijayanagara/Hampi,15.335,76.462,India,M;E,4,capital,high
+Badami,15.920,75.677,India,M,3,capital,high
+Aihole,16.021,75.882,India,M,2,religious,high
+Pattadakal,15.948,75.817,India,M,2,religious,high
+Bijapur,16.830,75.710,India,E,4,capital,high
+Gulbarga,17.329,76.834,India,M;E,4,capital,high
+Bidar,17.913,77.530,India,M;E,4,capital,high
+Kalyani/Basavakalyan,17.872,76.950,India,M,3,capital,high
+Manyakheta/Malkhed,17.197,77.161,India,M,3,capital,high
+Raichur,16.207,77.356,India,M;E,2,fortress,high
+Hubli-Dharwad,15.364,75.124,India,E;N,2,city,high
+Belgaum,15.850,74.498,India,M;E;N,2,city,high
+Halebidu/Dwarasamudra,13.213,75.993,India,M,3,capital,high
+Belur,13.165,75.861,India,M,2,religious,high
+Shravanabelagola,12.858,76.488,India,M,2,religious,high
+Mysore,12.296,76.639,India,E;N,4,capital,high
+Srirangapatna,12.414,76.704,India,E,3,capital,high
+Talakad,12.187,77.029,India,M,1,capital,high
+Bangalore,12.972,77.594,India,E;N,4,city,high
+Chitradurga,14.226,76.400,India,E,1,fortress,high
+Banavasi,14.534,75.019,India,C;M,2,capital,high
+Mangalore,12.914,74.856,India,M;E;N,3,port,high
+Barkur,13.467,74.750,India,M,1,capital,high
+Udupi,13.341,74.747,India,M;E;N,1,religious,high
+Bhatkal,13.985,74.555,India,M;E,1,port,high
+Honnavar,14.280,74.445,India,M;E,1,port,high
+Gokarna,14.550,74.317,India,M;E;N,1,religious,high
+Sringeri,13.417,75.252,India,M,1,religious,high
+Bellary,15.139,76.921,India,E;N,1,city,high
+Lakkundi,15.390,75.717,India,M,1,religious,high
+Sannati,16.833,76.933,India,C,1,religious,high
+Kolar,13.136,78.130,India,M;E;N,2,mining,high
+Keladi/Ikkeri,14.087,75.000,India,E,1,capital,high
+Madikeri,12.421,75.740,India,E;N,1,capital,high
+Hyderabad,17.385,78.487,India,E;N,5,capital,high
+Golconda,17.383,78.401,India,M;E,4,fortress,high
+Warangal,17.969,79.594,India,M,4,capital,high
+Kondapur,17.550,78.017,India,C,1,ruin,high
+Amaravati,16.573,80.358,India,C,3,religious,high
+Nagarjunakonda,16.517,79.233,India,C,3,religious,high
+Vijayawada,16.506,80.648,India,M;N,2,city,high
+Kondavidu,16.267,80.267,India,M,1,fortress,high
+Rajahmundry,17.005,81.778,India,M;E;N,2,city,high
+Vengi/Pedavegi,16.800,81.100,India,C;M,2,capital,high
+Draksharama,16.793,82.065,India,M,1,religious,high
+Visakhapatnam/Simhachalam,17.687,83.218,India,M;N,3,port,high
+Mukhalingam,18.517,83.967,India,M,2,capital,high
+Masulipatnam,16.183,81.133,India,C;M;E,3,port,high
+Tirupati,13.629,79.419,India,M;E;N,3,religious,high
+Chandragiri,13.583,79.317,India,E,2,capital,high
+Nellore,14.443,79.986,India,M;N,1,city,high
+Kurnool,15.828,78.037,India,E;N,1,city,high
+Penukonda,14.083,77.600,India,E,2,capital,high
+Lepakshi,13.804,77.608,India,E,1,religious,high
+Srisailam,16.074,78.868,India,M;E,1,religious,high
+Bhattiprolu,16.100,80.783,India,C,1,religious,high
+Kadapa,14.467,78.824,India,E;N,1,city,high
+Adoni,15.628,77.274,India,E,1,fortress,high
+Khammam,17.247,80.151,India,M;N,1,fortress,high
+Nizamabad,18.673,78.094,India,N,1,city,high
+Chennai/Madras,13.083,80.270,India,E;N,5,port,high
+Kanchipuram,12.834,79.703,India,C;M;E,4,religious,high
+Mamallapuram,12.617,80.193,India,M,3,port,high
+Arikamedu,11.907,79.831,India,C,3,port,high
+Pondicherry,11.934,79.830,India,E;N,3,port,high
+Thanjavur,10.787,79.139,India,M;E,4,capital,high
+Gangaikonda Cholapuram,11.206,79.448,India,M,3,capital,high
+Tiruchirappalli/Uraiyur,10.805,78.686,India,C;M;E;N,3,city,high
+Srirangam,10.862,78.690,India,M;E,2,religious,high
+Madurai,9.925,78.120,India,C;M;E;N,4,capital,high
+Korkai,8.633,78.067,India,A;C,2,port,high
+Kayal,8.650,78.100,India,M,1,port,low
+Tuticorin,8.805,78.145,India,E;N,2,port,high
+Tirunelveli,8.714,77.757,India,M;E;N,2,city,high
+Rameswaram,9.288,79.313,India,M;E;N,2,religious,high
+Kanyakumari,8.088,77.538,India,C;M;N,1,religious,high
+Chidambaram,11.399,79.694,India,M,3,religious,high
+Kumbakonam,10.961,79.388,India,M,2,religious,high
+Nagapattinam,10.766,79.843,India,C;M;E,3,port,high
+Tranquebar,11.029,79.853,India,E,2,port,high
+Karaikal,10.925,79.838,India,E,1,port,high
+Poompuhar/Kaveripattinam,11.146,79.853,India,A;C,2,port,high
+Vellore,12.916,79.133,India,E;N,2,fortress,high
+Gingee,12.250,79.417,India,M;E,2,fortress,high
+Tiruvannamalai,12.230,79.075,India,M;E,2,religious,high
+Salem,11.664,78.146,India,N,1,city,high
+Coimbatore,11.017,76.956,India,N,3,city,high
+Karur/Vanji,10.957,78.081,India,C,2,capital,high
+Kodumanal,11.100,77.500,India,A;C,1,ruin,high
+Adichanallur,8.617,77.883,India,A,1,ruin,high
+Keezhadi,9.850,78.183,India,C,1,ruin,high
+Palani,10.450,77.517,India,M;N,1,religious,high
+Dindigul,10.367,77.980,India,E,1,fortress,high
+Ramanathapuram,9.371,78.831,India,E,1,capital,high
+Pudukkottai,10.380,78.821,India,E;N,1,capital,high
+Ooty,11.410,76.695,India,N,1,city,high
+Tiruvarur,10.773,79.636,India,M,1,religious,high
+Cuddalore/Fort St David,11.748,79.768,India,E,1,port,high
+Muziris/Pattanam,10.158,76.206,India,C,3,port,high
+Kodungallur/Cranganore,10.226,76.195,India,C;M,3,port,high
+Kochi,9.966,76.242,India,M;E;N,4,port,high
+Kozhikode/Calicut,11.258,75.780,India,M;E;N,4,port,high
+Kollam/Quilon,8.886,76.587,India,M;E,3,port,high
+Thiruvananthapuram,8.524,76.936,India,E;N,3,capital,high
+Kannur/Cannanore,11.874,75.370,India,M;E,2,port,high
+Thalassery,11.750,75.490,India,E,1,port,high
+Mahe,11.700,75.536,India,E,1,port,high
+Alappuzha,9.498,76.339,India,E;N,1,port,high
+Thrissur,10.527,76.214,India,M;E;N,2,religious,high
+Palakkad,10.776,76.654,India,E,1,fortress,high
+Ponnani,10.772,75.923,India,M;E,1,port,high
+Bekal,12.392,75.033,India,E,1,fortress,high
+Padmanabhapuram,8.249,77.326,India,E,1,capital,high
+Vizhinjam,8.378,76.988,India,M,1,port,high
+Kavaratti,10.567,72.642,India,N,1,port,high
+Port Blair,11.667,92.736,India,N,2,port,high
+Pataliputra/Patna,25.611,85.144,India,A;C;M;E;N,5,capital,high
+Rajgir/Rajagriha,25.028,85.421,India,A;C,4,capital,high
+Nalanda,25.136,85.444,India,C;M,3,religious,high
+Bodh Gaya,24.696,84.991,India,C;M;N,4,religious,high
+Gaya,24.796,85.004,India,C;M;E;N,2,religious,high
+Vaishali,25.991,85.129,India,A;C,3,capital,high
+Vikramashila,25.325,87.283,India,M,2,religious,high
+Champa/Bhagalpur,25.244,86.972,India,A;C;N,3,city,high
+Munger,25.375,86.473,India,M;E,2,fortress,high
+Sasaram,24.950,84.030,India,E,1,city,high
+Rohtasgarh,24.620,83.917,India,E,1,fortress,high
+Odantapuri/Bihar Sharif,25.197,85.514,India,M,2,city,high
+Darbhanga,26.152,85.897,India,E;N,1,capital,high
+Chirand,25.750,84.800,India,A,1,ruin,high
+Lauriya Nandangarh,26.990,84.410,India,C,1,religious,high
+Ranchi,23.344,85.310,India,N,2,capital,high
+Jamshedpur,22.804,86.203,India,N,2,city,high
+Dhanbad,23.796,86.430,India,N,1,mining,high
+Rajmahal,25.050,87.833,India,E,1,capital,high
+Deoghar,24.483,86.700,India,M;N,1,religious,high
+Kolkata,22.573,88.364,India,E;N,5,capital,high
+Chandernagore,22.867,88.367,India,E,1,port,high
+Serampore,22.750,88.340,India,E,1,port,high
+Hooghly/Satgaon,22.900,88.400,India,M;E,2,port,high
+Tamralipta/Tamluk,22.300,87.917,India,A;C,2,port,high
+Chandraketugarh,22.690,88.690,India,A;C,2,ruin,high
+Murshidabad,24.176,88.272,India,E,4,capital,high
+Gaur,24.868,88.136,India,M;E,4,capital,high
+Pandua,25.133,88.150,India,M,3,capital,high
+Nabadwip,23.407,88.368,India,M;E,2,religious,high
+Bishnupur,23.075,87.317,India,E,2,capital,high
+Cooch Behar,26.324,89.451,India,E;N,1,capital,high
+Burdwan,23.233,87.867,India,E;N,1,city,high
+Plassey,23.800,88.250,India,E,1,ruin,high
+Darjeeling,27.041,88.263,India,N,2,city,high
+Siliguri,26.727,88.395,India,N,1,city,high
+Asansol,23.683,86.983,India,N,1,mining,high
+Bangarh/Kotivarsha,25.400,88.517,India,C;M,1,ruin,high
+Bhubaneswar,20.296,85.825,India,C;M;N,3,religious,high
+Sisupalgarh,20.233,85.850,India,A;C,2,ruin,high
+Puri,19.813,85.831,India,M;E;N,3,religious,high
+Konark,19.888,86.095,India,M,2,religious,high
+Cuttack,20.463,85.883,India,M;E;N,3,capital,high
+Jajpur,20.850,86.333,India,M,1,religious,high
+Ratnagiri (Odisha),20.640,86.330,India,M,1,religious,high
+Sambalpur,21.467,83.967,India,E;N,1,city,high
+Balasore,21.494,86.933,India,E,1,port,high
+Berhampur/Ganjam,19.315,84.793,India,E;N,1,city,high
+Rourkela,22.260,84.854,India,N,1,city,high
+Guwahati/Pragjyotishpura,26.144,91.736,India,C;M;E;N,3,city,high
+Tezpur,26.651,92.793,India,M,1,city,high
+Sivasagar/Rangpur,26.984,94.638,India,E,2,capital,high
+Dimapur,25.906,93.727,India,M,1,capital,high
+Imphal,24.817,93.937,India,M;E;N,2,capital,high
+Shillong,25.579,91.893,India,N,2,capital,high
+Agartala,23.831,91.286,India,E;N,1,capital,high
+Udaipur (Tripura),23.533,91.483,India,M;E,1,capital,high
+Aizawl,23.727,92.718,India,N,1,capital,high
+Kohima,25.675,94.108,India,N,1,capital,high
+Itanagar,27.084,93.605,India,N,1,capital,high
+Dhaka,23.810,90.412,Bangladesh,M;E;N,4,capital,high
+Sonargaon,23.650,90.600,Bangladesh,M;E,3,capital,high
+Vikrampura/Rampal,23.550,90.517,Bangladesh,M,2,capital,low
+Mahasthangarh/Pundranagara,24.962,89.344,Bangladesh,A;C;M,3,city,high
+Paharpur/Somapura,25.031,88.977,Bangladesh,M,3,religious,high
+Mainamati/Comilla,23.433,91.133,Bangladesh,M,2,religious,high
+Wari-Bateshwar,24.000,90.800,Bangladesh,A;C,1,ruin,high
+Bagerhat/Khalifatabad,22.667,89.783,Bangladesh,M,2,religious,high
+Chittagong,22.356,91.783,Bangladesh,M;E;N,4,port,high
+Sylhet,24.895,91.868,Bangladesh,M;E;N,2,city,high
+Rajshahi,24.374,88.601,Bangladesh,E;N,1,city,high
+Khulna,22.816,89.568,Bangladesh,N,1,port,high
+Barisal,22.701,90.353,Bangladesh,E;N,1,port,high
+Rangpur,25.746,89.251,Bangladesh,N,1,city,high
+Mymensingh,24.747,90.420,Bangladesh,N,1,city,high
+Narayanganj,23.623,90.500,Bangladesh,N,1,port,high
+Cox's Bazar,21.427,92.005,Bangladesh,N,1,port,high
+Dinajpur,25.627,88.638,Bangladesh,E;N,1,city,high
+Jessore,23.168,89.209,Bangladesh,E;N,1,city,high
+Bhitargarh,26.300,88.600,Bangladesh,M,1,fortress,low
+Kathmandu,27.717,85.324,Nepal,M;E;N,4,capital,high
+Patan/Lalitpur,27.673,85.325,Nepal,M;E,3,capital,high
+Bhaktapur,27.672,85.428,Nepal,M;E,3,capital,high
+Kirtipur,27.678,85.277,Nepal,M;E,1,fortress,high
+Lumbini,27.469,83.276,Nepal,A;C;M,3,religious,high
+Tilaurakot,27.578,83.055,Nepal,A;C,2,ruin,high
+Janakpur,26.729,85.925,Nepal,A;M;E;N,2,religious,high
+Simraungadh,26.907,85.153,Nepal,M,2,capital,high
+Gorkha,28.000,84.633,Nepal,E,2,capital,high
+Pokhara,28.210,83.986,Nepal,E;N,2,city,high
+Tansen/Palpa,27.867,83.550,Nepal,E,1,capital,high
+Lo Manthang,29.183,83.957,Nepal,M;E,2,capital,high
+Jumla/Sinja,29.275,82.183,Nepal,M,2,capital,high
+Nuwakot,27.917,85.167,Nepal,E,1,fortress,high
+Biratnagar,26.455,87.270,Nepal,N,1,city,high
+Birgunj,27.012,84.877,Nepal,N,1,market,high
+Muktinath,28.817,83.871,Nepal,M;E;N,1,religious,high
+Thimphu,27.472,89.639,Bhutan,E;N,2,capital,high
+Punakha,27.591,89.877,Bhutan,E,3,capital,high
+Paro,27.430,89.413,Bhutan,E;N,2,fortress,high
+Bumthang/Jakar,27.550,90.750,Bhutan,M;E,2,religious,high
+Trongsa,27.500,90.500,Bhutan,E,2,fortress,high
+Phuntsholing,26.860,89.390,Bhutan,N,1,market,high
+Gangtok,27.339,88.607,India,E;N,2,capital,high
+Yuksom,27.374,88.213,India,E,1,capital,high
+Anuradhapura,8.335,80.411,Sri Lanka,C;M,4,capital,high
+Mihintale,8.350,80.517,Sri Lanka,C;M,2,religious,high
+Polonnaruwa,7.940,81.000,Sri Lanka,M,4,capital,high
+Sigiriya,7.957,80.760,Sri Lanka,M,3,fortress,high
+Dambulla,7.856,80.650,Sri Lanka,C;M,2,religious,high
+Kandy,7.291,80.636,Sri Lanka,E;N,4,capital,high
+Gampola,7.164,80.569,Sri Lanka,M,1,capital,high
+Dambadeniya,7.350,80.167,Sri Lanka,M,1,capital,high
+Yapahuwa,7.817,80.317,Sri Lanka,M,2,fortress,high
+Kurunegala,7.487,80.365,Sri Lanka,M;N,1,capital,high
+Kotte,6.890,79.904,Sri Lanka,M;E,3,capital,high
+Colombo,6.927,79.861,Sri Lanka,M;E;N,5,port,high
+Negombo,7.209,79.838,Sri Lanka,E;N,1,port,high
+Galle,6.033,80.217,Sri Lanka,M;E;N,4,port,high
+Matara,5.949,80.535,Sri Lanka,E;N,1,port,high
+Tissamaharama/Mahagama,6.283,81.283,Sri Lanka,C;M,2,capital,high
+Kataragama,6.413,81.333,Sri Lanka,M;E;N,1,religious,high
+Jaffna/Nallur,9.668,80.012,Sri Lanka,M;E;N,4,capital,high
+Mannar,8.981,79.904,Sri Lanka,M;E;N,3,port,high
+Mantai,8.967,79.950,Sri Lanka,C;M,3,port,high
+Trincomalee,8.571,81.234,Sri Lanka,C;M;E;N,3,port,high
+Batticaloa,7.717,81.700,Sri Lanka,E;N,1,port,high
+Kalpitiya,8.233,79.767,Sri Lanka,E,1,fortress,high
+Ratnapura,6.683,80.400,Sri Lanka,M;E;N,2,mining,high
+Nuwara Eliya,6.970,80.782,Sri Lanka,N,1,city,high
+Sitawaka,6.950,80.233,Sri Lanka,E,1,capital,low
+Malé,4.175,73.509,Maldives,M;E;N,3,capital,high
+Utheemu,7.000,72.933,Maldives,E,1,city,low
+Hithadhoo/Addu,-0.600,73.083,Maldives,N,1,port,high
+Sri Ksetra/Pyay,18.800,95.283,Myanmar,C;M,3,capital,high
+Beikthano,20.000,95.383,Myanmar,C,2,ruin,high
+Halin,22.467,95.817,Myanmar,C;M,2,ruin,high
+Bagan,21.172,94.860,Myanmar,M,4,capital,high
+Ava/Inwa,21.859,95.980,Myanmar,M;E,4,capital,high
+Sagaing,21.879,95.979,Myanmar,M;E,2,capital,high
+Amarapura,21.903,96.049,Myanmar,E;N,3,capital,high
+Mandalay,21.975,96.083,Myanmar,N,4,capital,high
+Shwebo,22.570,95.698,Myanmar,E,2,capital,high
+Pegu/Bago,17.335,96.481,Myanmar,M;E,4,capital,high
+Thaton,16.919,97.368,Myanmar,C;M,3,capital,high
+Martaban/Mottama,16.533,97.600,Myanmar,M;E,3,port,high
+Mawlamyine/Moulmein,16.491,97.626,Myanmar,N,2,port,high
+Yangon/Rangoon,16.866,96.195,Myanmar,M;E;N,5,port,high
+Syriam/Thanlyin,16.767,96.250,Myanmar,E,2,port,high
+Toungoo,18.933,96.433,Myanmar,E,3,capital,high
+Mrauk U,20.590,93.195,Myanmar,M;E,4,capital,high
+Vesali (Arakan),20.683,93.167,Myanmar,C;M,2,capital,high
+Dhanyawadi,20.867,93.067,Myanmar,C,1,ruin,low
+Sittwe/Akyab,20.146,92.898,Myanmar,N,2,port,high
+Tavoy/Dawei,14.083,98.200,Myanmar,M;E;N,2,port,high
+Mergui/Myeik,12.439,98.600,Myanmar,M;E;N,3,port,high
+Tenasserim/Tanintharyi,12.083,99.017,Myanmar,M;E,2,city,high
+Pathein/Bassein,16.779,94.733,Myanmar,M;E;N,2,port,high
+Pakokku,21.333,95.083,Myanmar,N,1,market,high
+Monywa,22.108,95.136,Myanmar,N,1,city,high
+Meiktila,20.878,95.858,Myanmar,E;N,1,city,high
+Kyaukse,21.600,96.133,Myanmar,M,1,market,high
+Magwe,20.150,94.933,Myanmar,N,1,city,high
+Yenangyaung,20.467,94.883,Myanmar,E;N,1,mining,high
+Bhamo,24.267,97.233,Myanmar,M;E;N,2,market,high
+Mogaung,25.300,96.933,Myanmar,M;E,2,capital,high
+Mohnyin,24.783,96.367,Myanmar,M,1,capital,high
+Mogok,22.917,96.500,Myanmar,E;N,2,mining,high
+Myitkyina,25.383,97.400,Myanmar,N,1,city,high
+Katha,24.183,96.333,Myanmar,N,1,city,high
+Hsipaw,22.617,97.300,Myanmar,E;N,1,capital,high
+Kengtung,21.292,99.603,Myanmar,M;E;N,2,capital,high
+Taunggyi,20.783,97.033,Myanmar,N,1,city,high
+Mong Nai,20.517,97.867,Myanmar,E,1,capital,low
+Lashio,22.933,97.750,Myanmar,N,1,city,high
+Nyaungshwe/Yawnghwe,20.650,96.933,Myanmar,E;N,1,capital,high
+Hpa-an,16.883,97.633,Myanmar,N,1,city,high
+Loikaw,19.683,97.217,Myanmar,N,1,city,high
+Kalay,23.183,94.067,Myanmar,E;N,1,city,high
+Naypyidaw/Pyinmana,19.763,96.078,Myanmar,N,2,capital,high
+Tagaung,23.500,96.033,Myanmar,C;M,2,capital,high
+Sukhothai,17.017,99.703,Thailand,M,4,capital,high
+Si Satchanalai,17.431,99.788,Thailand,M,3,city,high
+Kamphaeng Phet,16.483,99.517,Thailand,M,2,fortress,high
+Ayutthaya,14.353,100.569,Thailand,M;E,5,capital,high
+Lopburi,14.799,100.653,Thailand,M;E,3,capital,high
+Bangkok,13.754,100.501,Thailand,E;N,5,capital,high
+Nakhon Pathom,13.820,100.063,Thailand,M,3,religious,high
+U Thong,14.374,99.889,Thailand,C;M,2,ruin,high
+Ratchaburi,13.537,99.817,Thailand,M;E,1,city,high
+Suphan Buri,14.474,100.122,Thailand,M,2,city,high
+Phetchaburi,13.111,99.945,Thailand,M;E,2,city,high
+Chanthaburi,12.611,102.104,Thailand,E;N,1,port,high
+Si Thep,15.467,101.150,Thailand,C;M,2,ruin,high
+Phimai,15.221,102.494,Thailand,M,2,religious,high
+Phanom Rung,14.532,102.941,Thailand,M,2,religious,high
+Nakhon Ratchasima/Khorat,14.980,102.098,Thailand,E;N,2,city,high
+Ubon Ratchathani,15.229,104.859,Thailand,E;N,1,city,high
+Udon Thani,17.415,102.787,Thailand,N,1,city,high
+Ban Chiang,17.407,103.238,Thailand,A,2,ruin,high
+Nakhon Phanom,17.400,104.780,Thailand,M;E,1,city,high
+Nong Khai,17.878,102.742,Thailand,E;N,1,market,high
+Khon Kaen,16.432,102.823,Thailand,N,1,city,high
+Chiang Mai,18.787,98.993,Thailand,M;E;N,4,capital,high
+Lamphun/Hariphunchai,18.579,99.009,Thailand,M,3,capital,high
+Lampang,18.292,99.493,Thailand,M;E;N,2,city,high
+Chiang Rai,19.908,99.832,Thailand,M;E;N,2,city,high
+Chiang Saen,20.274,100.084,Thailand,M,2,capital,high
+Phayao,19.167,99.900,Thailand,M,1,city,high
+Nan,18.783,100.783,Thailand,M;E,2,capital,high
+Phrae,18.144,100.141,Thailand,M;E,1,city,high
+Fang,19.917,99.217,Thailand,M,1,city,high
+Tak,16.871,99.125,Thailand,M;E,1,city,high
+Phitsanulok,16.822,100.266,Thailand,M;E,3,city,high
+Nakhon Sawan,15.700,100.117,Thailand,E;N,1,market,high
+Nakhon Si Thammarat/Ligor,8.432,99.963,Thailand,C;M;E,4,capital,high
+Chaiya,9.386,99.198,Thailand,M,2,city,high
+Takua Pa,8.867,98.350,Thailand,M,2,port,high
+Phuket/Thalang,7.890,98.398,Thailand,E;N,2,port,high
+Songkhla/Singora,7.199,100.595,Thailand,M;E;N,2,port,high
+Sathing Phra,7.467,100.433,Thailand,M,1,ruin,low
+Pattani,6.869,101.250,Thailand,M;E;N,3,capital,high
+Yarang,6.767,101.300,Thailand,C;M,1,ruin,high
+Hat Yai,7.007,100.474,Thailand,N,1,city,high
+Kanchanaburi,14.004,99.548,Thailand,E;N,1,city,high
+Khao Sam Kaeo,10.550,99.233,Thailand,A;C,1,ruin,high
+Luang Prabang,19.886,102.135,Laos,M;E;N,4,capital,high
+Vientiane,17.967,102.600,Laos,M;E;N,4,capital,high
+Champasak/Vat Phou,14.848,105.822,Laos,M,3,religious,high
+Pakse,15.120,105.799,Laos,N,1,city,high
+Savannakhet,16.557,104.750,Laos,N,1,city,high
+Thakhek,17.400,104.800,Laos,M;N,1,city,high
+Xieng Khouang/Muang Khoun,19.333,103.367,Laos,M;E,2,capital,high
+Plain of Jars,19.433,103.150,Laos,A;C,2,ruin,high
+Muang Sing,21.183,101.150,Laos,E;N,1,market,high
+Luang Namtha,20.950,101.400,Laos,N,1,city,high
+Attapeu,14.800,106.833,Laos,E;N,1,city,high
+Angkor,13.433,103.867,Cambodia,M,5,capital,high
+Roluos/Hariharalaya,13.342,103.976,Cambodia,M,2,capital,high
+Koh Ker,13.783,104.533,Cambodia,M,3,capital,high
+Sambor Prei Kuk/Isanapura,12.867,105.050,Cambodia,M,3,capital,high
+Banteay Chhmar,14.070,103.100,Cambodia,M,2,religious,high
+Preah Vihear,14.391,104.681,Cambodia,M,2,religious,high
+Preah Khan of Kompong Svay,13.433,104.967,Cambodia,M,1,religious,high
+Phnom Kulen,13.600,104.050,Cambodia,M,1,religious,high
+Longvek,11.867,104.783,Cambodia,E,3,capital,high
+Oudong,11.800,104.750,Cambodia,E;N,3,capital,high
+Phnom Penh,11.569,104.921,Cambodia,M;E;N,4,capital,high
+Angkor Borei,10.993,104.975,Cambodia,C;M,3,ruin,high
+Ba Phnom,11.267,105.317,Cambodia,C;M,1,religious,low
+Kampot,10.610,104.181,Cambodia,E;N,2,port,high
+Sihanoukville,10.627,103.523,Cambodia,N,1,port,high
+Battambang,13.103,103.198,Cambodia,E;N,2,city,high
+Kampong Cham,12.000,105.467,Cambodia,M;N,1,city,high
+Kratie,12.483,106.017,Cambodia,M;N,1,city,high
+Sambor/Sambhupura,12.767,105.967,Cambodia,M,2,ruin,high
+Phnom Chisor,11.233,104.833,Cambodia,M,1,religious,high
+Pailin,12.850,102.600,Cambodia,N,1,mining,high
+Co Loa,21.113,105.871,Vietnam,A;C,3,capital,high
+Hanoi/Thang Long,21.028,105.854,Vietnam,M;E;N,5,capital,high
+Hoa Lu,20.284,105.907,Vietnam,M,3,capital,high
+Luy Lau,21.050,106.067,Vietnam,C,2,capital,high
+Dong Son,19.800,105.767,Vietnam,A,2,ruin,high
+Thanh Hoa,19.808,105.777,Vietnam,M;N,2,city,high
+Tay Do/Ho Citadel,20.077,105.605,Vietnam,M,2,fortress,high
+Pho Hien,20.650,106.067,Vietnam,E,2,port,high
+Hai Phong,20.845,106.688,Vietnam,N,3,port,high
+Van Don,21.033,107.467,Vietnam,M,1,port,low
+Nam Dinh/Tuc Mac,20.420,106.168,Vietnam,M;N,2,city,high
+Lang Son,21.853,106.761,Vietnam,M;E;N,1,market,high
+Cao Bang,22.667,106.258,Vietnam,E;N,1,city,high
+Dien Bien Phu,21.386,103.023,Vietnam,E;N,2,fortress,high
+Vinh,18.679,105.681,Vietnam,E;N,1,city,high
+Dong Hoi,17.483,106.600,Vietnam,E,1,fortress,high
+Hue,16.463,107.590,Vietnam,M;E;N,4,capital,high
+Da Nang,16.054,108.202,Vietnam,E;N,3,port,high
+Hoi An,15.880,108.338,Vietnam,E,3,port,high
+My Son,15.764,108.124,Vietnam,M,3,religious,high
+Tra Kieu/Simhapura,15.820,108.240,Vietnam,C;M,3,capital,high
+Indrapura/Dong Duong,15.670,108.270,Vietnam,M,3,capital,high
+Sa Huynh,14.667,109.050,Vietnam,A,1,ruin,high
+Vijaya/Cha Ban,13.883,109.100,Vietnam,M,4,capital,high
+Quy Nhon,13.783,109.233,Vietnam,M;E;N,2,port,high
+Kauthara/Nha Trang,12.265,109.195,Vietnam,M;E;N,3,port,high
+Panduranga/Phan Rang,11.567,108.983,Vietnam,M;E,3,capital,high
+Phan Thiet,10.933,108.100,Vietnam,E;N,1,port,high
+Da Lat,11.940,108.458,Vietnam,N,1,city,high
+Buon Ma Thuot,12.667,108.050,Vietnam,N,1,city,high
+Saigon/Ho Chi Minh City,10.776,106.700,Vietnam,E;N,5,port,high
+Bien Hoa,10.950,106.817,Vietnam,E;N,1,city,high
+Vung Tau,10.346,107.084,Vietnam,E;N,1,port,high
+Oc Eo,10.250,105.150,Vietnam,C,3,port,high
+Ha Tien,10.383,104.483,Vietnam,E;N,2,port,high
+Can Tho,10.033,105.783,Vietnam,E;N,2,city,high
+My Tho,10.360,106.360,Vietnam,E;N,1,city,high
+Rach Gia,10.012,105.080,Vietnam,E;N,1,port,high
+Cat Tien,11.567,107.367,Vietnam,M,1,ruin,low
+Viet Tri/Phong Chau,21.322,105.402,Vietnam,A;N,1,religious,high
+Mong Cai,21.533,107.967,Vietnam,N,1,market,high
+Cam Ranh,11.917,109.150,Vietnam,N,1,port,high
+Tay Ninh,11.310,106.098,Vietnam,N,1,religious,high
+Son Tay,21.133,105.500,Vietnam,E;N,1,fortress,high
+Bujang Valley,5.733,100.433,Malaysia,C;M,3,port,high
+Kedah/Alor Setar,6.121,100.368,Malaysia,E;N,2,capital,high
+Penang/George Town,5.414,100.329,Malaysia,E;N,4,port,high
+Ipoh,4.597,101.090,Malaysia,N,2,mining,high
+Kuala Kangsar,4.767,100.933,Malaysia,E;N,1,capital,high
+Taiping,4.850,100.733,Malaysia,N,1,mining,high
+Beruas/Gangga Negara,4.500,100.783,Malaysia,M,1,ruin,low
+Kuala Lumpur,3.140,101.687,Malaysia,N,4,capital,high
+Klang,3.043,101.450,Malaysia,M;E;N,1,port,high
+Malacca,2.196,102.251,Malaysia,M;E;N,5,port,high
+Muar,2.044,102.569,Malaysia,M;E,1,port,high
+Johor Lama,1.600,104.067,Malaysia,E,3,capital,high
+Johor Bahru,1.464,103.761,Malaysia,N,2,capital,high
+Kota Tinggi,1.733,103.900,Malaysia,E,1,capital,high
+Kota Bharu,6.125,102.238,Malaysia,E;N,3,capital,high
+Kuala Terengganu,5.330,103.140,Malaysia,M;E;N,2,capital,high
+Pekan,3.483,103.400,Malaysia,E;N,1,capital,high
+Kuantan,3.808,103.326,Malaysia,N,1,city,high
+Seremban,2.726,101.938,Malaysia,N,1,city,high
+Kuala Selangor,3.350,101.250,Malaysia,E,1,fortress,high
+Pangkor,4.217,100.550,Malaysia,E,1,port,high
+Langkawi,6.350,99.800,Malaysia,E;N,1,port,high
+Kuching,1.553,110.359,Malaysia,N,2,capital,high
+Santubong,1.717,110.317,Malaysia,M,2,port,high
+Miri,4.400,113.983,Malaysia,N,1,mining,high
+Kota Kinabalu/Jesselton,5.980,116.073,Malaysia,N,2,port,high
+Sandakan,5.840,118.117,Malaysia,N,2,port,high
+Labuan,5.283,115.233,Malaysia,N,1,port,high
+Kudat,6.883,116.833,Malaysia,N,1,port,high
+Niah Caves,3.817,113.767,Malaysia,A,1,ruin,high
+Kuala Lipis,4.183,102.050,Malaysia,N,1,city,high
+Kota Kuala Kedah,6.100,100.300,Malaysia,E,1,fortress,high
+Jugra,2.850,101.417,Malaysia,N,1,capital,low
+Singapore/Temasek,1.290,103.852,Singapore,M;E;N,5,port,high
+Brunei/Bandar Seri Begawan,4.903,114.940,Brunei,M;E;N,4,capital,high
+Seria,4.600,114.333,Brunei,N,1,mining,high
+Palembang/Srivijaya,-2.991,104.757,Indonesia,M;E;N,5,capital,high
+Jambi/Malayu,-1.610,103.617,Indonesia,M;E;N,3,capital,high
+Muaro Jambi,-1.478,103.667,Indonesia,M,2,religious,high
+Banda Aceh,5.548,95.323,Indonesia,E;N,4,capital,high
+Pasai/Samudra,5.150,97.133,Indonesia,M,3,capital,high
+Pidie/Pedir,5.383,95.967,Indonesia,M;E,1,port,high
+Barus,2.067,98.383,Indonesia,C;M,3,port,high
+Padang,-0.950,100.354,Indonesia,E;N,3,port,high
+Pagaruyung,-0.467,100.633,Indonesia,M;E,3,capital,high
+Bukittinggi,-0.305,100.369,Indonesia,N,1,city,high
+Padang Lawas,1.100,99.800,Indonesia,M,1,religious,low
+Medan,3.595,98.672,Indonesia,N,3,city,high
+Kota Cina,3.733,98.667,Indonesia,M,1,port,high
+Siak Sri Indrapura,0.800,102.050,Indonesia,E,2,capital,high
+Pekanbaru,0.507,101.448,Indonesia,N,2,city,high
+Indragiri/Rengat,-0.400,102.550,Indonesia,E,1,capital,high
+Bengkulu,-3.800,102.267,Indonesia,E;N,2,port,high
+Muntok/Bangka,-2.067,105.167,Indonesia,E;N,2,mining,high
+Bandar Lampung,-5.429,105.262,Indonesia,E;N,2,port,high
+Tanjung Pinang/Riau,0.919,104.455,Indonesia,E;N,2,capital,high
+Daik/Lingga,-0.200,104.600,Indonesia,E;N,1,capital,high
+Muara Takus,0.333,100.650,Indonesia,M,2,religious,high
+Dharmasraya,-0.983,101.567,Indonesia,M,1,capital,low
+Sawahlunto,-0.683,100.783,Indonesia,N,1,mining,high
+Banten,-6.033,106.157,Indonesia,E,3,port,high
+Jakarta/Batavia,-6.175,106.827,Indonesia,M;E;N,5,port,high
+Bogor/Pakuan Pajajaran,-6.597,106.806,Indonesia,M;E;N,3,capital,high
+Bandung,-6.917,107.619,Indonesia,N,3,city,high
+Cirebon,-6.732,108.552,Indonesia,M;E;N,3,port,high
+Tegal,-6.869,109.125,Indonesia,E;N,1,port,high
+Pekalongan,-6.889,109.675,Indonesia,E;N,1,port,high
+Semarang,-6.966,110.417,Indonesia,E;N,3,port,high
+Demak,-6.891,110.638,Indonesia,E,3,capital,high
+Kudus,-6.805,110.841,Indonesia,E,2,religious,high
+Jepara,-6.593,110.668,Indonesia,E,2,port,high
+Lasem,-6.700,111.450,Indonesia,E,1,port,high
+Tuban,-6.897,112.065,Indonesia,M;E,3,port,high
+Gresik,-7.157,112.655,Indonesia,M;E,3,port,high
+Surabaya,-7.257,112.752,Indonesia,M;E;N,4,port,high
+Trowulan/Majapahit,-7.550,112.383,Indonesia,M,4,capital,high
+Kediri/Daha,-7.817,112.017,Indonesia,M,3,capital,high
+Singhasari/Malang,-7.967,112.633,Indonesia,M;N,3,capital,high
+Blitar/Penataran,-8.100,112.167,Indonesia,M,2,religious,high
+Pasuruan,-7.645,112.907,Indonesia,E;N,1,port,high
+Banyuwangi/Blambangan,-8.219,114.369,Indonesia,M;E;N,2,capital,high
+Sumenep,-7.017,113.867,Indonesia,E,2,capital,high
+Bangkalan,-7.033,112.750,Indonesia,E,1,capital,high
+Yogyakarta,-7.797,110.370,Indonesia,E;N,4,capital,high
+Kotagede,-7.828,110.398,Indonesia,E,2,capital,high
+Prambanan,-7.752,110.491,Indonesia,M,3,religious,high
+Borobudur,-7.608,110.204,Indonesia,M,3,religious,high
+Surakarta/Solo,-7.575,110.824,Indonesia,E;N,4,capital,high
+Kartasura,-7.556,110.733,Indonesia,E,2,capital,high
+Dieng,-7.205,109.908,Indonesia,M,2,religious,high
+Sangiran,-7.450,110.833,Indonesia,A,1,ruin,high
+Cilacap,-7.717,109.017,Indonesia,N,1,port,high
+Galuh/Ciamis,-7.333,108.350,Indonesia,M,1,capital,low
+Gelgel,-8.550,115.400,Indonesia,E,2,capital,high
+Klungkung,-8.533,115.400,Indonesia,E;N,2,capital,high
+Denpasar/Badung,-8.650,115.217,Indonesia,E;N,3,capital,high
+Singaraja/Buleleng,-8.112,115.088,Indonesia,E;N,2,port,high
+Pejeng/Bedulu,-8.517,115.283,Indonesia,M,2,capital,high
+Mengwi,-8.550,115.167,Indonesia,E,1,capital,high
+Karangasem/Amlapura,-8.450,115.617,Indonesia,E;N,1,capital,high
+Besakih,-8.374,115.451,Indonesia,M;E;N,2,religious,high
+Mataram (Lombok)/Cakranegara,-8.583,116.117,Indonesia,E;N,2,capital,high
+Bima,-8.460,118.727,Indonesia,E;N,2,capital,high
+Sumbawa Besar,-8.500,117.433,Indonesia,E;N,1,capital,high
+Ende,-8.843,121.661,Indonesia,E;N,2,port,high
+Larantuka,-8.342,122.980,Indonesia,E;N,2,port,high
+Solor,-8.467,123.067,Indonesia,E,1,fortress,high
+Kupang,-10.170,123.607,Indonesia,E;N,3,port,high
+Lifau,-9.200,124.350,Timor-Leste,E,2,port,high
+Dili,-8.556,125.560,Timor-Leste,E;N,3,capital,high
+Banjarmasin,-3.319,114.591,Indonesia,E;N,4,port,high
+Martapura,-3.417,114.850,Indonesia,E,1,capital,high
+Kutai/Muara Kaman,-0.183,116.683,Indonesia,C;M,2,capital,low
+Tenggarong,-0.412,117.000,Indonesia,E;N,2,capital,high
+Samarinda,-0.502,117.154,Indonesia,E;N,2,port,high
+Balikpapan,-1.267,116.828,Indonesia,N,2,mining,high
+Pontianak,-0.026,109.342,Indonesia,E;N,3,port,high
+Sambas,1.367,109.300,Indonesia,E,1,capital,high
+Sukadana (Kalimantan),-1.250,109.950,Indonesia,E,1,port,low
+Kotawaringin,-2.300,111.600,Indonesia,E,1,capital,low
+Tanjung Redeb/Berau,2.150,117.483,Indonesia,E;N,1,capital,high
+Tanjung Selor/Bulungan,2.850,117.367,Indonesia,E;N,1,capital,high
+Amuntai/Negara Dipa,-2.417,115.250,Indonesia,M;E,1,capital,low
+Makassar/Gowa,-5.147,119.432,Indonesia,E;N,4,port,high
+Bone/Watampone,-4.533,120.333,Indonesia,E;N,3,capital,high
+Luwu/Palopo,-2.992,120.197,Indonesia,M;E,2,capital,high
+Wajo/Sengkang,-4.133,120.033,Indonesia,E,1,capital,high
+Bira/Bulukumba,-5.600,120.450,Indonesia,E,1,port,low
+Pare-Pare,-4.013,119.627,Indonesia,E;N,1,port,high
+Rantepao/Toraja,-2.967,119.900,Indonesia,E;N,1,city,high
+Buton/Bau-Bau,-5.467,122.617,Indonesia,E;N,2,capital,high
+Kendari,-3.995,122.513,Indonesia,N,1,port,high
+Manado,1.487,124.846,Indonesia,E;N,3,port,high
+Gorontalo,0.543,123.059,Indonesia,E;N,2,capital,high
+Palu,-0.900,119.867,Indonesia,N,1,city,high
+Banggai,-1.600,123.500,Indonesia,E,1,capital,low
+Ternate,0.790,127.380,Indonesia,M;E;N,3,capital,high
+Tidore,0.683,127.400,Indonesia,M;E,3,capital,high
+Jailolo,1.083,127.467,Indonesia,M;E,1,capital,high
+Bacan/Labuha,-0.633,127.483,Indonesia,E,1,capital,high
+Ambon,-3.695,128.181,Indonesia,E;N,3,port,high
+Banda Neira,-4.527,129.897,Indonesia,E,3,port,high
+Hitu,-3.583,128.100,Indonesia,E,1,port,low
+Saparua,-3.567,128.667,Indonesia,E,1,fortress,high
+Dobo/Aru,-5.767,134.217,Indonesia,E;N,1,market,high
+Jayapura,-2.533,140.717,Indonesia,N,2,port,high
+Fakfak,-2.925,132.300,Indonesia,E;N,1,port,high
+Merauke,-8.500,140.400,Indonesia,N,1,port,high
+Manokwari,-0.867,134.083,Indonesia,N,1,port,high
+Manila,14.590,120.980,Philippines,M;E;N,4,capital,high
+Tondo,14.617,120.967,Philippines,M;E,3,port,high
+Cavite,14.483,120.900,Philippines,E;N,2,port,high
+Pila/Laguna,14.233,121.367,Philippines,M;E,2,city,high
+Taal,13.883,120.933,Philippines,E;N,1,city,high
+Batangas,13.757,121.058,Philippines,E;N,1,port,high
+Tayabas,14.033,121.600,Philippines,E,1,city,high
+Lingayen/Pangasinan,16.017,120.233,Philippines,M;E;N,2,capital,high
+Dagupan,16.043,120.333,Philippines,E;N,1,city,high
+Vigan,17.575,120.387,Philippines,E;N,3,city,high
+Laoag,18.199,120.593,Philippines,E;N,1,city,high
+Lal-lo/Nueva Segovia,18.200,121.667,Philippines,E,1,city,high
+Tuguegarao,17.613,121.727,Philippines,E;N,1,city,high
+Aparri,18.357,121.640,Philippines,E;N,1,port,high
+Baguio,16.412,120.593,Philippines,N,2,city,high
+Banaue/Ifugao,16.917,121.050,Philippines,A;C;M,2,ruin,high
+Malolos,14.843,120.811,Philippines,E;N,2,city,high
+San Fernando (Pampanga),15.033,120.683,Philippines,E;N,1,city,high
+Cabanatuan,15.487,120.967,Philippines,N,1,city,high
+Olongapo/Subic,14.829,120.283,Philippines,N,1,port,high
+Calapan/Mindoro,13.411,121.180,Philippines,E;N,1,port,high
+Naga/Nueva Caceres,13.624,123.185,Philippines,E;N,2,city,high
+Legazpi/Albay,13.139,123.734,Philippines,E;N,1,port,high
+Puerto Princesa,9.740,118.735,Philippines,N,1,port,high
+Taytay (Palawan),10.817,119.517,Philippines,E,1,fortress,high
+Cuyo,10.850,121.017,Philippines,E,1,fortress,high
+Cebu,10.315,123.886,Philippines,M;E;N,4,port,high
+Tagbilaran/Bohol,9.650,123.850,Philippines,E;N,1,port,high
+Iloilo,10.720,122.562,Philippines,E;N,4,port,high
+Roxas/Capiz,11.585,122.751,Philippines,E;N,1,city,high
+Bacolod,10.676,122.950,Philippines,N,2,city,high
+Dumaguete,9.307,123.307,Philippines,E;N,1,port,high
+Kalibo/Aklan,11.706,122.364,Philippines,M;E;N,1,city,high
+Romblon,12.575,122.270,Philippines,E,1,port,high
+Catbalogan/Samar,11.780,124.886,Philippines,E;N,1,port,high
+Limasawa,9.933,125.067,Philippines,E,1,religious,high
+Tacloban/Leyte,11.244,125.004,Philippines,E;N,2,port,high
+Butuan,8.949,125.543,Philippines,M;E;N,3,port,high
+Surigao,9.783,125.483,Philippines,E;N,1,port,high
+Cagayan de Oro,8.482,124.647,Philippines,E;N,2,port,high
+Marawi/Lanao,8.000,124.283,Philippines,E;N,2,capital,high
+Cotabato/Maguindanao,7.223,124.246,Philippines,E;N,3,capital,high
+General Santos/Buayan,6.113,125.172,Philippines,E;N,1,port,high
+Davao,7.073,125.613,Philippines,N,3,port,high
+Zamboanga,6.910,122.074,Philippines,E;N,3,fortress,high
+Jolo/Sulu,6.052,121.002,Philippines,M;E;N,3,capital,high
+Bongao/Tawi-Tawi,5.033,119.767,Philippines,E;N,1,port,high
+Dapitan,8.658,123.425,Philippines,E,1,city,high
+Ozamiz/Misamis,8.150,123.850,Philippines,E,1,fortress,high
+Antipolo,14.586,121.176,Philippines,E;N,1,religious,high
+Tabon Caves,9.267,117.983,Philippines,A,1,ruin,high
+Basco/Batanes,20.450,121.967,Philippines,E;N,1,port,high
