@@ -17,7 +17,14 @@ A world pack is a folder with a manifest.json and a few rasters that the Unity p
 (default 0.15 deg) on its longer side is scaled about its centre E of the way toward that size and burned
 all-touched, so atolls and islets that the pixel grid would lose still mark cells as land (the game can
 then put a city site on Funafuti or Male). Pieces of larger land clipped at a coast tile edge are never
-scaled.
+scaled. Two rules keep it off continental coasts, where every skerry would otherwise claim a cell and
+weld onto the shore: an expansion that would touch bigger land (anything of --island-min-deg or more)
+under a 3x3 stencil is dropped (--island-merge allows it; islets may still union with each other, an
+atoll is many polygons), and --island-isolation KM expands only islets at least that far from bigger
+land. --island-regions names lon/lat boxes where the isolation gate is waived (atoll country, where one
+long rim strip would gate out the rest of its ring): the composite is the plain coast everywhere, the
+expander in those regions and on isolated islets. data/island_regions.json holds the Pacific atoll
+groups and the Maldives; the earth packs use --island-isolation 25 with it.
 
 A pack is a FRAME of the Earth: a lon/lat box (--bounds W S E N; W > E crosses the antimeridian)
 at a pixel density (--ppd pixels per degree, or --width to fix the pixel width). The default is the
@@ -340,34 +347,160 @@ def vector_tile_polys(frame, tileset, lod="f"):
     return geoms
 
 
-def expand_islands(land, expand, min_deg, tile_deg, min_area_km2=0.3):
+def parse_regions(spec):
+    """--island-regions: 'W,S,E,N;W,S,E,N' boxes, or a path to a JSON file holding a list of
+    {"name":..., "bounds":[W,S,E,N]} (or bare [W,S,E,N] lists). W > E crosses the antimeridian."""
+    if not spec:
+        return []
+    if os.path.exists(spec):
+        j = json.load(open(spec, encoding="utf-8"))
+        items = j["regions"] if isinstance(j, dict) else j
+        return [tuple(float(v) for v in (it["bounds"] if isinstance(it, dict) else it)) for it in items]
+    return [tuple(float(v) for v in part.split(",")) for part in spec.split(";") if part.strip()]
+
+
+def in_regions(lon, lat, regions):
+    for w, s, e, n in regions:
+        if not s <= lat <= n:
+            continue
+        if (lon - w) % 360.0 <= (e - w) % 360.0 or w == e:
+            return True
+    return False
+
+
+def expand_islands(land, expand, min_deg, tile_deg, min_area_km2=0.3, isolation_km=0.0, regions=None):
     """The app's small-island expander for the export: an island whose bounding box is under min_deg on
     its longer side is scaled about its centre toward min_deg, by `expand` of the way (1 = all the way;
-    nothing shrinks, nothing larger is touched), and comes back in a second list to be burned with
-    all_touched so an atoll's thin strips still mark the cells they cross. A polygon clipped at a coast
-    tile's edge is a piece of something larger and is left alone, whatever its size."""
+    nothing shrinks, nothing larger is touched), and comes back in a list to be burned with all_touched
+    so an atoll's thin strips still mark the cells they cross. A polygon clipped at a coast tile's edge
+    is a piece of something larger and is left alone, whatever its size.
+
+    isolation_km > 0 keeps the expander off continental coasts, where it would weld skerries onto the
+    shore: only islets at least that far from bigger land (continents and every island of min_deg or
+    more) are expanded. `regions` (lon/lat boxes) waive that gate: inside them every islet expands,
+    which is what atoll country wants, where one long rim strip of min_deg would otherwise count as
+    bigger land and gate out the rest of its own ring. isolation 0 = every islet everywhere, as before.
+
+    Returns (big, rest, small, stats): big are the untouched polygons of min_deg or more (what an islet
+    must never join), rest the islets left as they are (rocks under the area floor, islets the gates
+    turned away), small a list of (original, expanded, area_km2) for the islets to expand, largest first."""
+    stats = {"rocks": 0, "near_land": 0, "in_regions": 0}
     if expand <= 0:
-        return land, []
+        return land, [], [], stats
     from shapely.geometry import shape, mapping
-    from shapely import affinity
-    keep, small = [], []
+    from shapely import affinity, STRtree, clip_by_rect
+    big, big_geoms, rest, cand = [], [], [], []
     for g in land:
         geom = shape(g) if isinstance(g, dict) else g
         x0, y0, x1, y1 = geom.bounds
         L = max(x1 - x0, y1 - y0, 1e-9)
         clipped = tile_deg and any(abs(v / tile_deg - round(v / tile_deg)) < 1e-6 for v in (x0, y0, x1, y1))
+        if L >= min_deg or clipped:
+            big.append(g); big_geoms.append(geom)
+            continue
         # A rock or skerry under the area floor is left as it is (and so, mostly, lost to the grid):
         # the expander is for islets people live on.
-        area_km2 = geom.area * 111.2 * 111.2 * max(0.05, math.cos(math.radians((y0 + y1) / 2)))
-        if L >= min_deg or clipped or area_km2 < min_area_km2:
-            keep.append(g)
+        cy = (y0 + y1) / 2
+        area_km2 = geom.area * 111.2 * 111.2 * max(0.05, math.cos(math.radians(cy)))
+        if area_km2 < min_area_km2:
+            rest.append(g); stats["rocks"] += 1
             continue
+        cand.append((g, geom, L, area_km2))
+
+    if isolation_km > 0 and cand:
+        # Distance to the nearest bigger land in km on the ground: the STRtree finds the big polygons
+        # within the islet's lon-degree radius, each is clipped to that window (a continent is not
+        # rescaled whole) and measured with x squeezed by cos(lat).
+        tree = STRtree(big_geoms)
+        far = []
+        for g, geom, L, area in cand:
+            x0, y0, x1, y1 = geom.bounds
+            cy = (y0 + y1) / 2
+            if regions and in_regions((x0 + x1) / 2, cy, regions):
+                far.append((g, geom, L, area)); stats["in_regions"] += 1
+                continue
+            k = max(0.05, math.cos(math.radians(cy)))
+            r = isolation_km / (111.2 * k)
+            box = (x0 - r, y0 - r, x1 + r, y1 + r)
+            me = affinity.scale(geom, k, 1.0, origin=(0, 0))
+            near = False
+            for i in tree.query(shape({"type": "Polygon", "coordinates": [[[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]], [box[0], box[1]]]]})):
+                try:
+                    piece = clip_by_rect(big_geoms[i], *box)
+                except Exception:   # a degenerate ring in the source polygon: measure the whole thing
+                    piece = big_geoms[i]
+                if piece.is_empty:
+                    continue
+                if me.distance(affinity.scale(piece, k, 1.0, origin=(0, 0))) * 111.2 < isolation_km:
+                    near = True
+                    break
+            if near:
+                rest.append(g); stats["near_land"] += 1
+            else:
+                far.append((g, geom, L, area))
+        cand = far
+
+    small = []
+    for g, geom, L, area in sorted(cand, key=lambda t: -t[3]):
+        x0, y0, x1, y1 = geom.bounds
         f = 1.0 + expand * (min_deg / L - 1.0)
-        small.append(mapping(affinity.scale(geom, f, f, origin=((x0 + x1) / 2, (y0 + y1) / 2))))
-    return keep, small
+        small.append((g, mapping(affinity.scale(geom, f, f, origin=((x0 + x1) / 2, (y0 + y1) / 2))), area))
+    return big, rest, small, stats
 
 
-def build_landmask(frame, fine, island_expand=0.0, island_min_deg=0.15, island_min_area=0.3):
+def _window(frame, bounds, shift, pad=1):
+    """Pixel window (r0, r1, c0, c1) around a lon/lat bbox drawn at `shift`, padded, rows clipped to the
+    frame; columns run past the edge for a wrapping frame (index them modulo frame.w) and are clipped otherwise."""
+    x0, y0, x1, y1 = bounds
+    c0 = math.floor((x0 + shift - frame.lon_min) / frame.res) - pad
+    c1 = math.ceil((x1 + shift - frame.lon_min) / frame.res) + pad
+    r0 = max(0, math.floor((frame.lat_max - y1) / frame.res) - pad)
+    r1 = min(frame.h, math.ceil((frame.lat_max - y0) / frame.res) + pad)
+    if not frame.wrap:
+        c0, c1 = max(0, c0), min(frame.w, c1)
+    return r0, r1, c0, c1
+
+
+def _burn_window(frame, geom, win, shift, all_touched):
+    r0, r1, c0, c1 = win
+    tf = Affine(frame.res, 0.0, frame.lon_min + c0 * frame.res - shift, 0.0, -frame.res, frame.lat_max - r0 * frame.res)
+    return features.rasterize([(geom, 1)], out_shape=(r1 - r0, c1 - c0), transform=tf, fill=0, dtype="uint8",
+                              all_touched=all_touched)
+
+
+def burn_islands(frame, mask, big, small, allow_merge=False):
+    """Burn the expanded islets (all_touched) into `mask`. Unless allow_merge, an islet is expanded only
+    where its expanded cells stay clear of `big` (the plain burn of the bigger land) under a 3x3
+    stencil; one that would join a bigger land mass keeps its plain burn, which for most is nothing.
+    Islets may union with each other: an atoll is many polygons. Returns a stats dict."""
+    from scipy.ndimage import binary_dilation
+    stats = {"expanded": 0, "joins_land": 0, "cells": 0}
+    S = np.ones((3, 3), bool)
+    for orig, geom, _ in small:
+        ring = geom["coordinates"][0]
+        xs = [p[0] for p in ring]; ys = [p[1] for p in ring]
+        bounds = (min(xs), min(ys), max(xs), max(ys))
+        for shift in frame.shifts():
+            win = _window(frame, bounds, shift)
+            r0, r1, c0, c1 = win
+            if r1 <= r0 or c1 <= c0:
+                continue
+            cols = np.arange(c0, c1) % frame.w
+            E = _burn_window(frame, geom, win, shift, True).astype(bool)
+            if not E.any():
+                continue
+            if not allow_merge and (binary_dilation(E, structure=S) & big[r0:r1][:, cols].astype(bool)).any():
+                stats["joins_land"] += 1
+                continue
+            sub = mask[r0:r1][:, cols].astype(bool)
+            stats["cells"] += int((E & ~sub).sum())
+            mask[r0:r1, cols] = (sub | E).astype(np.uint8)
+            stats["expanded"] += 1
+    return stats
+
+
+def build_landmask(frame, fine, island_expand=0.0, island_min_deg=0.15, island_min_area=0.3,
+                   island_isolation_km=0.0, island_regions=None, island_merge=False):
     stem = "hires" if fine else "10m"
     land = vector_tile_polys(frame, "coast_tiles") if fine else None
     coast_src = "coast_tiles/f (OpenStreetMap)"
@@ -384,14 +517,26 @@ def build_landmask(frame, fine, island_expand=0.0, island_min_deg=0.15, island_m
     if lakes is None:
         lakes = polys_in_frame(os.path.join(DATA, f"lakes_{stem}.json"), frame)
         lake_src = f"lakes_{stem}"
-    land, small = expand_islands(land, island_expand, island_min_deg, tile_deg, island_min_area)
-    mask = burn(frame, [(g, 1) for g in land])
+    big, rest, small, gate = expand_islands(land, island_expand, island_min_deg, tile_deg, island_min_area,
+                                            island_isolation_km, island_regions)
+    # Every polygon burns plain first, the islets' originals included; the expansions go on top, and
+    # the plain burn of the bigger land is what they must keep clear of.
+    bigmask = burn(frame, [(g, 1) for g in big])
+    mask = bigmask.copy() if small and not island_merge else bigmask
+    n_polys = len(big)
+    if rest or small:
+        n_polys += len(rest) + len(small)
+        mask |= burn(frame, [(g, 1) for g in rest] + [(o, 1) for o, _, _ in small])
     if small:
-        mask |= burn(frame, [(g, 1) for g in small], all_touched=True)
-        coast_src += f", {len(small)} small islands expanded x{island_expand:g} toward {island_min_deg:g} deg"
+        stats = burn_islands(frame, mask, bigmask, small, island_merge)
+        del bigmask
+        coast_src += (f", {stats['expanded']} of {len(small)} small islands expanded x{island_expand:g} toward "
+                      f"{island_min_deg:g} deg, {stats['cells']} cells ({stats['joins_land']} would join bigger land; "
+                      f"{gate['near_land']} within {island_isolation_km:g} km of it, {gate['in_regions']} in the "
+                      f"gate-free regions, {gate['rocks']} rocks)")
     if lakes:
         mask[burn(frame, [(g, 1) for g in lakes]) == 1] = 0
-    return (mask * 255).astype(np.uint8), f"{coast_src} + {lake_src} ({len(land) + len(small)} + {len(lakes)} polygons)"
+    return (mask * 255).astype(np.uint8), f"{coast_src} + {lake_src} ({n_polys} + {len(lakes)} polygons)"
 
 
 def river_shapes(frame):
@@ -432,6 +577,12 @@ def main():
                     help="the app's small-island expander: islands under --island-min-deg across are scaled toward it by this much (0..1) and burned all-touched")
     ap.add_argument("--island-min-deg", type=float, default=0.15, help="the size (degrees, longer side) small islands are expanded toward")
     ap.add_argument("--island-min-area", type=float, default=0.3, help="km2; islets smaller than this are not expanded (rocks and skerries)")
+    ap.add_argument("--island-isolation", type=float, default=0.0,
+                    help="km; only islets at least this far from bigger land (anything of --island-min-deg or more) are expanded, so continental coasts keep their skerries as they are")
+    ap.add_argument("--island-regions", default="",
+                    help="lon/lat boxes where the isolation gate is waived and every islet expands (atoll country): 'W,S,E,N;W,S,E,N' or a JSON file of {name, bounds} items, e.g. data/island_regions.json; with a huge --island-isolation this is 'expand only here'")
+    ap.add_argument("--island-merge", action="store_true",
+                    help="let an expanded islet touch other land (by default an expansion that would join another land mass under a 3x3 stencil is dropped and the islet keeps its plain burn)")
     args = ap.parse_args()
 
     w, s, e, n = args.bounds
@@ -455,7 +606,9 @@ def main():
     Image.fromarray(np.ascontiguousarray(kop), "L").save(os.path.join(args.out, "koppen.png"), optimize=True)
     print(f"koppen {kop.shape[1]}x{kop.shape[0]} from {kop_src}")
 
-    mask, land_src = build_landmask(frame, fine["coast"], args.island_expand, args.island_min_deg, args.island_min_area)
+    regions = parse_regions(args.island_regions)
+    mask, land_src = build_landmask(frame, fine["coast"], args.island_expand, args.island_min_deg, args.island_min_area,
+                                    args.island_isolation, regions, args.island_merge)
     Image.fromarray(mask, "L").save(os.path.join(args.out, "landmask.png"), optimize=True)
     print(f"landmask from {land_src}: {100.0 * (mask > 0).mean():.1f}% land")
 
@@ -484,6 +637,7 @@ def main():
         },
         "frame": {"requestedBounds": [w, s, e, n], "ppd": frame.ppd, "snap": args.snap,
                   "islandExpand": args.island_expand, "islandMinDeg": args.island_min_deg, "islandMinAreaKm2": args.island_min_area,
+                  "islandIsolationKm": args.island_isolation, "islandRegions": [list(r) for r in regions], "islandMerge": args.island_merge,
                   "sources": {"elevation": elev_src, "koppen": kop_src, "landMask": land_src, "rivers": "river_tiles"}},
         "attribution": [
             "Elevation: ETOPO 2022 (NOAA NCEI), " + ("30 arc-second" if fine["elev"] else "decimated to the working grid"),

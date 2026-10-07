@@ -1,0 +1,9 @@
+{
+  "note": "Boxes [W, S, E, N] where export_world_pack.py --island-regions waives the isolation gate: every islet of 0.3 km2 or more expands here (never onto bigger land). Atoll country only; high-island groups (Fiji, Vanuatu, the Solomons, Hawaii, the Caribbean) are left to the isolation rule.",
+  "regions": [
+    {"name": "Micronesia: Palau, the Carolines, the Marianas, the Marshalls, Wake", "bounds": [130, 0, 180, 22]},
+    {"name": "The Gilberts and Tuvalu", "bounds": [172, -11, 180, 0]},
+    {"name": "Polynesia: Tokelau, Samoa, Tonga, the Cooks, the Line and Phoenix islands, the Societies, the Tuamotus, the Marquesas, the Australs, Pitcairn", "bounds": [-180, -30, -125, 7]},
+    {"name": "The Maldives, Lakshadweep and Chagos", "bounds": [71, -8, 74.5, 14]}
+  ]
+}
