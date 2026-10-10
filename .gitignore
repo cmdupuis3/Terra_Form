@@ -5,3 +5,5 @@ __pycache__/
 # Overpass cache for the river gate -- regenerable (scripts/fetch_osm_waterways.py)
 osm_waterways/
 osm_named_rivers/
+# Copernicus DEM window cache (scripts/export_city_sites.py) -- regenerable
+cache/
