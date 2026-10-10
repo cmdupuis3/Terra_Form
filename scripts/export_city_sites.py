@@ -12,7 +12,8 @@ there is for each layer and written to <out>/<seat id>/:
   koppen.png         index8 Beck 2023 class on the outer lattice, from data/koppen_tiles (1 km polygons);
                      unclassified land takes the nearest class
   water.png          index8 on a 30 m lattice over the outer span: 0 land, 1 sea, 2 lake, 3 river channel,
-                     4 salt pan; OSM land polygons, HydroLAKES, OSM waterways (rivers), Natural Earth playas
+                     4 salt pan; OSM land polygons (harbour works taken out, rings rounded: clean_coast),
+                     HydroLAKES, OSM waterways (rivers), Natural Earth playas
   vectors.bin        "CWCS" v1 (little-endian): polylines in local metres (coast rings, lake rings with
                      their level, playa rings, OSM rivers, HydroRIVERS reaches with discharge)
   site.json          frame, grids, sources, stats
@@ -249,18 +250,153 @@ def shore_signed_distance(frame, land_polys, lake_polys, water, reach_cells=12):
         land = land.difference(unary_union(polygons(lake_polys)))
     if land.is_empty:
         return enc
-    boundary = land.boundary
-    shapely.prepare(boundary); shapely.prepare(land)
+    shapely.prepare(land)
     near = (distance_transform_edt(~wet) <= reach_cells) | (distance_transform_edt(wet) <= reach_cells)
     jj, ii = np.nonzero(near)
     xs = -frame.half + ii * frame.res
     ys = frame.half - jj * frame.res          # row 0 is the north edge
     pts = shapely.points(xs, ys)
-    d = shapely.distance(pts, boundary)
+    # The shore cut into short pieces in a tree, so each point measures to its nearest pieces only (the rounded
+    # rings carry a vertex every few metres; one distance to the whole boundary was minutes a site).
+    pieces = []
+    for line in (land.boundary.geoms if hasattr(land.boundary, "geoms") else [land.boundary]):
+        c = np.asarray(line.coords)
+        for a in range(0, len(c) - 1, 32):
+            pieces.append(shapely.linestrings(c[a:a + 33]))
+    tree = shapely.STRtree(pieces)
+    hit, dist = tree.query_nearest(pts, return_distance=True, all_matches=False)
+    d = np.empty(len(pts)); d[hit[0]] = dist
     inland = shapely.contains_xy(land, xs, ys)
     signed = np.where(inland, -d, d)
     enc[jj, ii] = np.clip(np.rint(128.0 + signed / 2.0), 0, 255).astype(np.uint8)
     return enc
+
+
+# ---------------------------------------------------------------- the coastline, cleaned and rounded
+
+# The OSM land polygons come simplified (lod f: 0.0002 deg, ~22 m, on a 0.0001 deg grid), so the shore is a
+# polyline whose vertices, 100-500 m apart, are its corners; and they carry the harbour works: piers, jetties,
+# breakwaters and the slips and dock basins between them. Neither reads well on a city map. The coast is
+# cleaned in the local metre frame before anything is burned from it, so the water raster, the shore distance
+# and the vectors agree:
+#   1. thin land the morphological opening (radius ART_R) takes away is dropped where it meets the land that
+#      stays at exactly one place (a pier, a jetty, a groyne, a sharp point) and is small or straight-edged
+#      (on islets: straight-edged or jetty-narrow, so an atoll strip's tip stays);
+#      thin necks joining two thick parts (an atoll island's narrow waist) meet it at two and stay, as do
+#      thin islands, except long straight thin ones (detached breakwaters);
+#   2. thin water the closing (radius ART_R) fills is filled where it is straight-edged (a slip, a dock basin)
+#      or small (a sharp notch); natural inlets and channels stay;
+#   3. every ring is resampled every ROUND_STEP metres and smoothed along its length by a Gaussian of
+#      ROUND_SIGMA metres (ROUND_SIGMA_ISLET on islets, so atoll strips keep their size): corners become curves of about
+#      that radius, while shapes larger than a few hundred metres barely move. An interpolating spline would
+#      pass through the vertices, and here the vertices are the corners, so the shore is filtered instead.
+ART_R = 45.0            # metres: land or water narrower than twice this is a candidate
+RECT_MIN = 0.65         # area over the minimum rotated rectangle's: at least this is straight-edged
+SMALL_PIECE = 0.03e6    # m2: a one-contact thin piece under this goes whatever its shape (on islets, if narrow)
+PIER_WIDTH = 25.0       # metres: on islets, a one-contact thin piece narrower than this on average is a jetty
+BREAKWATER_ASPECT = 5.0 # a detached piece this elongated and straight-edged is a breakwater
+ROUND_STEP = 10.0       # metres between resampled vertices
+ROUND_SIGMA = 70.0      # metres: the smoothing Gaussian along the shore
+ROUND_SIGMA_ISLET = 25.0  # metres, on islands under SMALL_LAND_KM2 (atoll islets are strips a few cells wide)
+
+
+def _parts(g):
+    if g.is_empty:
+        return []
+    return [p for p in (g.geoms if hasattr(g, "geoms") else [g]) if p.geom_type == "Polygon" and not p.is_empty]
+
+
+def _rectangularity(p):
+    r = p.minimum_rotated_rectangle
+    return p.area / r.area if r.area > 0 else 0.0, r
+
+
+def _aspect(rect):
+    xs, ys = rect.exterior.coords.xy
+    a = math.hypot(xs[1] - xs[0], ys[1] - ys[0]); b = math.hypot(xs[2] - xs[1], ys[2] - ys[1])
+    return max(a, b) / max(min(a, b), 1e-6)
+
+
+def _smooth_ring(coords, step=ROUND_STEP, sigma=ROUND_SIGMA):
+    """The closed ring resampled every step metres along its length and smoothed by a circular Gaussian of
+    sigma metres (capped at a twentieth of the perimeter, so small islands are not shrunk away)."""
+    from scipy.ndimage import gaussian_filter1d
+    c = np.asarray(coords, float)
+    if len(c) < 4:
+        return [tuple(p) for p in c]
+    if not np.allclose(c[0], c[-1]):
+        c = np.vstack([c, c[:1]])
+    seg = np.hypot(*np.diff(c, axis=0).T)
+    s = np.concatenate([[0.0], np.cumsum(seg)])
+    perim = s[-1]
+    if perim <= 0:
+        return [tuple(p) for p in c]
+    m = max(8, int(round(perim / step)))
+    t = np.linspace(0.0, perim, m, endpoint=False)
+    x = np.interp(t, s, c[:, 0]); y = np.interp(t, s, c[:, 1])
+    sg = min(sigma, perim / 20.0) / (perim / m)
+    if sg > 0.3:
+        x = gaussian_filter1d(x, sg, mode="wrap"); y = gaussian_filter1d(y, sg, mode="wrap")
+    out = list(zip(x.tolist(), y.tolist()))
+    out.append(out[0])
+    return out
+
+
+def clean_coast(land, half, log=print):
+    """The land geometry (local metres) with the harbour works taken out and every ring rounded; see above.
+    Returns (geometry, counts)."""
+    import shapely
+    from shapely.geometry import Polygon, box
+    from shapely.ops import unary_union
+    land = land.intersection(box(-half - 1000, -half - 1000, half + 1000, half + 1000))
+    counts = {"piers": 0, "breakwaters": 0, "slips": 0, "fillets": 0}
+    corner_area = math.pi * ART_R * ART_R * 0.5
+    # 1. Thin land.
+    opened = land.buffer(-ART_R).buffer(ART_R)
+    shapely.prepare(opened)
+    islands = _parts(land)
+    tree = shapely.STRtree(islands)
+    drop = []
+    for p in _parts(land.difference(opened)):
+        if p.area < 1.0:
+            drop.append(p); continue
+        contacts = len(_parts(p.buffer(2.0).intersection(opened)))
+        rect, r = _rectangularity(p)
+        # On islets (an atoll's strips) a thin end is land, not a pier, unless it is straight-edged or a
+        # jetty's width (mean width 2 area / perimeter under PIER_WIDTH; an islet's tip is wider).
+        owner = tree.query(p.representative_point(), predicate="intersects")
+        islet = len(owner) > 0 and islands[owner[0]].area < SMALL_LAND_KM2 * 1e6
+        narrow = 2.0 * p.area / max(p.length, 1e-6) < PIER_WIDTH
+        if contacts == 1 and ((p.area < SMALL_PIECE and (not islet or narrow)) or rect >= RECT_MIN):
+            drop.append(p); counts["piers"] += 1
+        elif contacts == 0 and rect >= RECT_MIN and _aspect(r) >= BREAKWATER_ASPECT and p.area < 0.05e6:
+            drop.append(p); counts["breakwaters"] += 1
+    if drop:
+        land = land.difference(unary_union(drop).buffer(0.5))
+    # 2. Thin water.
+    closed = land.buffer(ART_R).buffer(-ART_R)
+    fill = []
+    for p in _parts(closed.difference(land)):
+        if p.area < 1.0:
+            fill.append(p); continue
+        rect, _ = _rectangularity(p)
+        if p.area < corner_area:
+            fill.append(p); counts["fillets"] += 1
+        elif rect >= RECT_MIN:
+            fill.append(p); counts["slips"] += 1
+    if fill:
+        land = unary_union([land, unary_union(fill).buffer(0.5)])
+    # 3. Round every ring.
+    rounded = []
+    for p in _parts(land):
+        sigma = ROUND_SIGMA_ISLET if p.area < SMALL_LAND_KM2 * 1e6 else ROUND_SIGMA
+        ext = _smooth_ring(list(p.exterior.coords), sigma=sigma)
+        holes = [_smooth_ring(list(h.coords), sigma=sigma) for h in p.interiors if len(h.coords) >= 4]
+        rounded += _parts(shapely.make_valid(Polygon(ext, [h for h in holes if len(h) >= 4])))
+    out = unary_union(rounded) if rounded else land
+    log(f"  coast: {counts['piers']} piers and points, {counts['breakwaters']} breakwaters, {counts['slips']} slips taken out, "
+        f"{counts['fillets']} notches filled")
+    return out, counts
 
 
 def clip_local(geom, half):
@@ -352,6 +488,21 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0)):
     # Water at 30 m: sea everywhere, land polygons, lakes, playas back to land, rivers on land.
     land_polys = [water_f.to_local(g) for g in tileset_polys("coast_tiles", bounds)]
     land_polys = [g for g in land_polys if clip_local(g, water_f.half)]
+    # The coast cleaned of harbour works and rounded (clean_coast), before anything is burned from it.
+    coast_counts = {}
+    if land_polys:
+        import shapely
+        from shapely.geometry import shape, mapping
+        from shapely.ops import unary_union
+        parts = []
+        for g in land_polys:
+            v = shapely.make_valid(shape(g))
+            parts += [q for q in (v.geoms if hasattr(v, "geoms") else [v]) if q.geom_type in ("Polygon", "MultiPolygon") and not q.is_empty]
+        t_coast = time.time()
+        cleaned, coast_counts = clean_coast(unary_union(parts), water_f.half, log)
+        land_polys = [mapping(q) for q in _parts(cleaned)]
+        land_polys = [g for g in land_polys if clip_local(g, water_f.half)]
+        log(f"  coast cleaned {time.time() - t_coast:.1f} s")
     lake_polys = [water_f.to_local(g) for g in tileset_polys("lake_tiles", bounds)]
     lake_polys = [g for g in lake_polys if clip_local(g, water_f.half)]
     playas = [water_f.to_local(g) for g in playa_polys(bounds)]
@@ -412,6 +563,7 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0)):
         "riverShare": wshare.get(3, 0.0), "saltShare": wshare.get(4, 0.0),
         "slopeP50": float(np.percentile(slope, 50)), "slopeP90": float(np.percentile(slope, 90)), "slopeMax": float(slope.max()),
         "koppenClasses": [int(v) for v in kvals], "koppenShares": [float(c) / kop.size for c in kcounts],
+        "coastCleanup": coast_counts,
         "lakes": len(lake_polys), "rivers": len(rivers), "reaches": len(reaches), "coastRings": sum(1 for l in lines if l[0] == 1),
     }
 
