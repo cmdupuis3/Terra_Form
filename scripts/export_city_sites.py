@@ -6,8 +6,12 @@ The plan is the game's docs/CITY-TERRAIN-PLAN.md. For each seat asked for, a squ
 metre frame (transverse Mercator centred on the seat, x east, y north) is filled from the finest source
 there is for each layer and written to <out>/<seat id>/:
 
-  height_inner.png   rg16 metres (R high byte, G low byte; -500..6000 m over 16 bits), INNER samples at
-                     INNER_M spacing, pixel-is-point, row 0 north, from Copernicus GLO-30 (a DSM)
+  height_inner.png   m16 metres: (R * 256 + G) * stepMetres + minMeters (R high byte, G low byte; B 0),
+                     whole metres by default (--height-step), INNER samples at INNER_M spacing,
+                     pixel-is-point, row 0 north, from Copernicus GLO-30 (a DSM). The game takes the
+                     terracing a coarse step leaves out again (smoothing held within half a step).
+                     Whole metres halve the height PNGs against the old rg16 (0.1 m) and lose nothing
+                     the sources carry: GLO-30's own vertical error is a few metres.
   height_outer.png   the same for the OUTER samples at OUTER_M spacing, from Copernicus GLO-90
   koppen.png         index8 Beck 2023 class on the outer lattice, from data/koppen_tiles (1 km polygons);
                      unclassified land takes the nearest class
@@ -44,7 +48,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.normpath(os.path.join(HERE, "..", "data"))
 OSM_WATERWAYS = os.path.normpath(os.path.join(HERE, "..", "osm_waterways"))
 sys.path.insert(0, HERE)
-from elev16 import enc as rg16_encode, SEA, PEAK          # the world pack's height encoding
+from elev16 import SEA                                   # the world pack's height floor, -500 m
 from export_world_pack import decode_coast_tile, rings_to_polygon
 
 WGS84 = CRS.from_epsg(4326)
@@ -52,6 +56,7 @@ INNER, INNER_M = 271, 30.0
 OUTER_M = 90.0
 OUTER = 267                 # the 24 km default; export_site derives the count from --outer-km
 WATER_M = 30.0
+HEIGHT_STEP = 1.0           # metres a height unit (m16); --height-step
 GLO = {"inner": ("copernicus-dem-30m", "10"), "outer": ("copernicus-dem-90m", "30")}
 WATER_CLASSES = ["land", "sea", "lake", "river", "saltpan"]
 ATTRIBUTION = ("Copernicus WorldDEM-30 (c) DLR e.V. 2010-2014 and (c) Airbus Defence and Space GmbH 2014-2018, "
@@ -465,7 +470,13 @@ def outer_samples(outer_km):
     return n if n % 2 == 1 else n + 1
 
 
-def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0)):
+def m16_encode(a, step):
+    """metres -> m16 RGB pixels: round((a - SEA) / step) as R high byte, G low byte, B 0."""
+    g = np.clip(np.rint((a - SEA) / step), 0, 65535).astype(np.uint16)
+    return np.stack([(g >> 8).astype(np.uint8), (g & 255).astype(np.uint8), np.zeros(g.shape, np.uint8)], -1)
+
+
+def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), height_step=HEIGHT_STEP):
     lat0, lon0 = seat["lat"], seat["lon"]
     # The window centre may be moved from the seat (east, north km) to take in more land or relief.
     lat = lat0 + offset_km[1] / 111.32
@@ -569,8 +580,8 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0)):
 
     # Write.
     os.makedirs(out_dir, exist_ok=True)
-    Image.fromarray(rg16_encode(h_in, 16), "RGB").save(os.path.join(out_dir, "height_inner.png"), optimize=True)
-    Image.fromarray(rg16_encode(h_out, 16), "RGB").save(os.path.join(out_dir, "height_outer.png"), optimize=True)
+    Image.fromarray(m16_encode(h_in, height_step), "RGB").save(os.path.join(out_dir, "height_inner.png"), optimize=True)
+    Image.fromarray(m16_encode(h_out, height_step), "RGB").save(os.path.join(out_dir, "height_outer.png"), optimize=True)
     Image.fromarray(kop, "L").save(os.path.join(out_dir, "koppen.png"), optimize=True)
     Image.fromarray(water, "L").save(os.path.join(out_dir, "water.png"), optimize=True)
     Image.fromarray(shore, "L").save(os.path.join(out_dir, "shore.png"), optimize=True)
@@ -578,8 +589,8 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0)):
     site = {
         "format": "culturewars-citysite", "version": 1, "id": int(seat["id"]), "name": seat["name"] or "",
         "lat": lat0, "lon": lon0, "centreLat": lat, "centreLon": lon, "offsetKmEast": offset_km[0], "offsetKmNorth": offset_km[1], "proj4": inner.crs.to_proj4(), "rows": "north-first",
-        "inner": {"file": "height_inner.png", "encoding": "rg16", "size": INNER, "metres": INNER_M, "minMeters": SEA, "maxMeters": PEAK},
-        "outer": {"file": "height_outer.png", "encoding": "rg16", "size": OUTER, "metres": OUTER_M, "minMeters": SEA, "maxMeters": PEAK},
+        "inner": {"file": "height_inner.png", "encoding": "m16", "size": INNER, "metres": INNER_M, "minMeters": SEA, "maxMeters": SEA + 65535 * height_step, "stepMetres": height_step},
+        "outer": {"file": "height_outer.png", "encoding": "m16", "size": OUTER, "metres": OUTER_M, "minMeters": SEA, "maxMeters": SEA + 65535 * height_step, "stepMetres": height_step},
         "koppen": {"file": "koppen.png", "encoding": "index8", "size": OUTER, "metres": OUTER_M},
         "water": {"file": "water.png", "encoding": "index8", "size": nwater, "metres": WATER_M, "classes": WATER_CLASSES},
         "shore": {"file": "shore.png", "encoding": "sdist8", "size": nwater, "metres": WATER_M, "stepMetres": 2.0, "zero": 128},
@@ -622,6 +633,7 @@ def main():
     ap.add_argument("--cache", default=os.path.normpath(os.path.join(HERE, "..", "cache", "copernicus")))
     ap.add_argument("--outer-km", type=float, default=24.0, help="outer ring span in km (24 is the plan's default)")
     ap.add_argument("--offset", default="", help="per-seat centre offsets, 'id:eastKm,northKm;id:...'")
+    ap.add_argument("--height-step", type=float, default=HEIGHT_STEP, help="metres a height unit in the m16 PNGs (1 = whole metres)")
     args = ap.parse_args()
     offsets = {}
     for part in filter(None, args.offset.split(";")):
@@ -639,7 +651,7 @@ def main():
     for sid in wanted:
         if sid not in seats:
             print(f"seat {sid}: not in {args.pack}", file=sys.stderr); continue
-        site = export_site(seats[sid], os.path.join(args.out, str(sid)), args.cache, print, args.outer_km, offsets.get(sid, (0.0, 0.0)))
+        site = export_site(seats[sid], os.path.join(args.out, str(sid)), args.cache, print, args.outer_km, offsets.get(sid, (0.0, 0.0)), args.height_step)
         byid[sid] = {"id": sid, "name": site["name"], "lat": site["lat"], "lon": site["lon"], "dir": str(sid), "version": 1,
                      "outerKm": args.outer_km}
     index["sites"] = [byid[k] for k in sorted(byid)]
