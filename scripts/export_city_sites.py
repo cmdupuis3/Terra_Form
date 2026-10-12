@@ -21,6 +21,7 @@ there is for each layer and written to <out>/<seat id>/:
                      perennial river lines, Natural Earth playas
   shore.png          signed distance to the coast (water positive), 128 + d / 2 m, within ~360 m of it
   river.png          the same for the mapped river and canal banks (Overture river areas)
+  reef.png           the same for the reefs (Overture base/land subtype reef; the water class stays sea there)
   vectors.bin        "CWCS" v1 (little-endian): polylines in local metres (coast rings, lake rings with
                      their level, playa rings, Overture waterways with class and the discharge of the
                      HydroRIVERS reach along them, HydroRIVERS reaches with discharge)
@@ -230,40 +231,62 @@ def playa_polys(bounds):
 # cache, so a re-export is offline. Line classes kept: every river, named streams, canals (not ditches or
 # drains); polygons: rivers and canals (their mapped banks), lakes, lagoons, reservoirs and plain water
 # over OVERTURE_MIN_HA (pools, ponds, basins and sewage works are not city-map water).
-OVERTURE_BUCKET = "overturemaps-us-west-2/release/{release}/theme=base/type=water"
+OVERTURE_BUCKET = "overturemaps-us-west-2/release/{release}/theme=base/type={kind}"
 OVERTURE_MIN_HA = 2.0
 LINE_RIVER, LINE_STREAM, LINE_CANAL, LINE_INTERMITTENT = 0, 1, 2, 8
+
+
+def _overture_table(kind, bounds, cache, release, log, prefix=""):
+    """The rows of Overture's base-theme `kind` ("water", "land") under the bounds: subtype, class, is_intermittent
+    (water only), name and WKB geometry, from a parquet cache keyed by the bounds (and the prefix), fetched with bbox
+    pushdown when missing. Returns (table, release)."""
+    import pyarrow as pa, pyarrow.parquet as pq
+    os.makedirs(cache, exist_ok=True)
+    key = prefix + "_".join(f"{b:.3f}" for b in bounds)
+    hits = [f for f in os.listdir(cache) if f.startswith(key + "_") and f.endswith(".parquet")]
+    if hits:
+        return pq.read_table(os.path.join(cache, hits[0])), hits[0][len(key) + 1:-len(".parquet")]
+    import pyarrow.compute as pc, pyarrow.dataset as ds, pyarrow.fs as pfs
+    if not release:
+        from fetch_osm_waterways import latest_release
+        release = latest_release()
+    t0 = time.time()
+    fs = pfs.S3FileSystem(anonymous=True, region="us-west-2")
+    dset = ds.dataset(OVERTURE_BUCKET.format(release=release, kind=kind), filesystem=fs, format="parquet")
+    w, s, e, n = bounds
+    flt = ((pc.field("bbox", "xmax") >= w) & (pc.field("bbox", "xmin") <= e) &
+           (pc.field("bbox", "ymax") >= s) & (pc.field("bbox", "ymin") <= n))
+    cols = ["subtype", "class", "names", "geometry"] + (["is_intermittent"] if kind == "water" else [])
+    tb = dset.to_table(columns=cols, filter=flt)
+    tb = pa.table({"subtype": tb["subtype"], "class": tb["class"],
+                   "is_intermittent": tb["is_intermittent"] if kind == "water" else pa.nulls(tb.num_rows, pa.bool_()),
+                   "name": pa.array([nm["primary"] if nm else None for nm in tb["names"].to_pylist()], pa.string()),
+                   "geometry": tb["geometry"]})
+    pq.write_table(tb, os.path.join(cache, f"{key}_{release}.parquet"))
+    log(f"  overture {kind}: {tb.num_rows} features {time.time() - t0:.0f} s ({release})")
+    return tb, release
+
+
+def overture_reefs(bounds, cache, release, log):
+    """The reef polygons (OSM natural=reef via Overture base/land) under the bounds, lon/lat geojson. The OSM land
+    polygons hold only an atoll's islets; its rim, and the lagoon it encloses, are reef."""
+    import shapely
+    from shapely.geometry import mapping
+    tb, _ = _overture_table("land", bounds, cache, release, log, prefix="land_")
+    geoms = shapely.from_wkb(tb["geometry"].to_numpy(zero_copy_only=False))
+    out = []
+    for g, st in zip(geoms, tb["subtype"].to_pylist()):
+        if st == "reef" and g is not None and g.geom_type in ("Polygon", "MultiPolygon"):
+            out += [mapping(p) for p in getattr(g, "geoms", [g])]
+    return out
 
 
 def overture_water(bounds, cache, release, log):
     """(lines, river_polys, lake_polys, release) in lon/lat: lines are (geojson, name, cls) with cls one of
     LINE_RIVER/STREAM/CANAL plus LINE_INTERMITTENT; polygons are geojson."""
-    import pyarrow as pa, pyarrow.parquet as pq
     import shapely
     from shapely.geometry import mapping
-    os.makedirs(cache, exist_ok=True)
-    key = "_".join(f"{b:.3f}" for b in bounds)
-    hits = [f for f in os.listdir(cache) if f.startswith(key + "_") and f.endswith(".parquet")]
-    if hits:
-        release = hits[0][len(key) + 1:-len(".parquet")]
-        tb = pq.read_table(os.path.join(cache, hits[0]))
-    else:
-        import pyarrow.compute as pc, pyarrow.dataset as ds, pyarrow.fs as pfs
-        if not release:
-            from fetch_osm_waterways import latest_release
-            release = latest_release()
-        t0 = time.time()
-        fs = pfs.S3FileSystem(anonymous=True, region="us-west-2")
-        dset = ds.dataset(OVERTURE_BUCKET.format(release=release), filesystem=fs, format="parquet")
-        w, s, e, n = bounds
-        flt = ((pc.field("bbox", "xmax") >= w) & (pc.field("bbox", "xmin") <= e) &
-               (pc.field("bbox", "ymax") >= s) & (pc.field("bbox", "ymin") <= n))
-        tb = dset.to_table(columns=["subtype", "class", "names", "is_intermittent", "geometry"], filter=flt)
-        tb = pa.table({"subtype": tb["subtype"], "class": tb["class"], "is_intermittent": tb["is_intermittent"],
-                       "name": pa.array([nm["primary"] if nm else None for nm in tb["names"].to_pylist()], pa.string()),
-                       "geometry": tb["geometry"]})
-        pq.write_table(tb, os.path.join(cache, f"{key}_{release}.parquet"))
-        log(f"  overture {tb.num_rows} water features {time.time() - t0:.0f} s ({release})")
+    tb, release = _overture_table("water", bounds, cache, release, log)
     geoms = shapely.from_wkb(tb["geometry"].to_numpy(zero_copy_only=False))
     lines, rivers, lakes = [], [], []
     lat = 0.5 * (bounds[1] + bounds[3])
@@ -559,6 +582,7 @@ def clean_coast(land, half, log=print):
 
 
 BROADEN_RES = 15.0      # metres: the raster an atoll's land is broadened on
+PUSH_REACH = 1500.0     # metres from the original land over which the reefs' push fades out
 
 
 def broaden_land(land_polys, half, target_half_m, max_factor, log=print):
@@ -567,7 +591,10 @@ def broaden_land(land_polys, half, target_half_m, max_factor, log=print):
     is the depth of its centre line (the distance-to-coast ridge within target_half_m); the shore is pushed out
     along its normal by target_half_m - h, at most (max_factor - 1) h, so a 200 m strip becomes a
     2 x target_half_m one and land already that wide is left alone. The ring keeps its true shape and place;
-    the lagoon narrows by the growth. Returns the new land as local-metre geojson polygons, rounded."""
+    the lagoon narrows by the growth. Returns the new land as local-metre geojson polygons, rounded, and push(polys),
+    which moves other polygons (the reefs) out with the shore: a point d metres from the original land goes
+    g (1 - d / PUSH_REACH) further out along the same line, g the growth at its nearest land, so the reef flat
+    that fringed a motu fringes the broadened one and reefs far from land stay where they are."""
     import shapely
     from shapely.geometry import shape, mapping
     from shapely.ops import unary_union
@@ -579,7 +606,7 @@ def broaden_land(land_polys, half, target_half_m, max_factor, log=print):
     land = features.rasterize([(g, 1) for g in land_polys], out_shape=(n, n), transform=tr, fill=0, dtype="uint8",
                               all_touched=True).astype(bool)
     if not land.any():
-        return land_polys
+        return land_polys, (lambda polys: polys)
     depth = distance_transform_edt(land) * r
     h = maximum_filter(depth, size=int(2 * target_half_m / r) | 1)
     grow = np.where(land, np.clip(target_half_m - h, 0.0, (max_factor - 1.0) * h), 0.0)
@@ -595,7 +622,34 @@ def broaden_land(land_polys, half, target_half_m, max_factor, log=print):
         out += [mapping(q) for q in _parts(shapely.make_valid(Polygon(ext_ring, [q for q in holes if len(q) >= 4])))]
     grown = float(new.sum() - land.sum()) * r * r / 1e6
     log(f"  atoll broadened to {2 * target_half_m:.0f} m: +{grown:.2f} km2 of land (was {land.sum() * r * r / 1e6:.2f} km2)")
-    return out
+
+    def push(polys):
+        if not polys:
+            return polys
+        src = features.rasterize([(g, 1) for g in polys], out_shape=(n, n), transform=tr, fill=0, dtype="uint8",
+                                 all_touched=True).astype(bool)
+        # Each cell's source: on the line from its nearest original land cell, at the distance that the push moved
+        # to this one (the push d -> d + g (1 - d / reach) is monotone while g < reach, so it inverts in closed form).
+        D = dist * r
+        g = np.minimum(grow[iy, ix], 0.9 * PUSH_REACH)
+        d = np.where(D >= PUSH_REACH, D, (D - g) / (1.0 - g / PUSH_REACH))
+        f = np.where(D > 0, np.clip(d, 0.0, None) / np.maximum(D, 1e-6), 0.0)
+        jj, ii = np.indices((n, n))
+        sy = np.clip(np.rint(iy + (jj - iy) * f).astype(np.int64), 0, n - 1)
+        sx = np.clip(np.rint(ix + (ii - ix) * f).astype(np.int64), 0, n - 1)
+        moved = (d >= 0) & ~new & src[sy, sx]
+        if not moved.any():
+            return []
+        shapes_ = [shape(g_) for g_, v in features.shapes(moved.astype(np.uint8), mask=moved, transform=tr)]
+        merged_ = unary_union([shapely.make_valid(q) for q in shapes_]).buffer(0)
+        res = []
+        for q in _parts(merged_):
+            ring = _smooth_ring(list(q.exterior.coords), sigma=2 * r)
+            holes_ = [_smooth_ring(list(h_.coords), sigma=2 * r) for h_ in q.interiors if len(h_.coords) >= 4]
+            res += [mapping(v) for v in _parts(shapely.make_valid(Polygon(ring, [h_ for h_ in holes_ if len(h_) >= 4])))]
+        log(f"  reefs pushed out with the shore: {len(polys)} -> {len(res)} pieces")
+        return res
+    return out, push
 
 
 def fill_new_land(h, frame, before, after, floor_m=2.0):
@@ -748,6 +802,7 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
         land_polys = [g for g in land_polys if clip_local(g, water_f.half)]
         log(f"  coast cleaned {time.time() - t_coast:.1f} s")
     land_before = land_polys
+    push_reefs = None
     if broaden and land_polys:
         grow, keep = land_polys, []
         if broaden.get("lowOnlyM"):
@@ -759,7 +814,7 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
                 (grow if top < float(broaden["lowOnlyM"]) else keep).append(g)
             log(f"  {len(grow)} low island(s) to broaden, {len(keep)} high kept")
         if grow:
-            grow = broaden_land(grow, water_f.half, float(broaden["targetHalfWidthM"]), float(broaden["maxFactor"]), log)
+            grow, push_reefs = broaden_land(grow, water_f.half, float(broaden["targetHalfWidthM"]), float(broaden["maxFactor"]), log)
         land_polys = [g for g in grow + keep if clip_local(g, water_f.half)]
         h_in = fill_new_land(h_in, inner, land_before, land_polys)
         h_out = fill_new_land(h_out, outer, land_before, land_polys)
@@ -799,6 +854,13 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
     if wet_lines or river_polys:
         riv = burn(water_f, [(g, 1) for g in wet_lines], all_touched=True) | burn(water_f, [(g, 1) for g in river_polys])
         water[(riv == 1) & (water == 0)] = 3
+    # Reefs (submerged, so the water class stays sea): their own signed distance, for the reef flats, the lagoons
+    # they enclose and the surf on their outer edge.
+    reef_polys = [water_f.to_local(g) for g in overture_reefs(bounds, overture_cache, overture_release, log)]
+    reef_polys = [_simplified(g) for g in reef_polys if clip_local(g, water_f.half)]
+    if push_reefs is not None:
+        reef_polys = push_reefs(reef_polys)   # the edge reefs move out with a broadened atoll's shore
+    reef_sd = polygon_signed_distance(water_f, reef_polys)
     t_river = time.time()
     river_sd = polygon_signed_distance(water_f, river_polys)
     log(f"  river banks {len(river_polys)} polygons {time.time() - t_river:.1f} s")
@@ -844,7 +906,7 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
         "slopeP50": float(np.percentile(slope, 50)), "slopeP90": float(np.percentile(slope, 90)), "slopeMax": float(slope.max()),
         "koppenClasses": [int(v) for v in kvals], "koppenShares": [float(c) / kop.size for c in kcounts],
         "coastCleanup": coast_counts,
-        "lakes": len(lake_polys), "rivers": len(rivers), "riverAreas": len(river_polys), "reaches": len(reaches), "coastRings": sum(1 for l in lines if l[0] == 1),
+        "lakes": len(lake_polys), "rivers": len(rivers), "riverAreas": len(river_polys), "reefs": len(reef_polys), "reaches": len(reaches), "coastRings": sum(1 for l in lines if l[0] == 1),
     }
 
     # Write.
@@ -855,6 +917,7 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
     Image.fromarray(water, "L").save(os.path.join(out_dir, "water.png"), optimize=True)
     Image.fromarray(shore, "L").save(os.path.join(out_dir, "shore.png"), optimize=True)
     Image.fromarray(river_sd, "L").save(os.path.join(out_dir, "river.png"), optimize=True)
+    Image.fromarray(reef_sd, "L").save(os.path.join(out_dir, "reef.png"), optimize=True)
     write_vectors(os.path.join(out_dir, "vectors.bin"), lines)
     site = {
         "format": "culturewars-citysite", "version": 1, "id": int(seat["id"]), "name": seat["name"] or "",
@@ -865,6 +928,7 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
         "water": {"file": "water.png", "encoding": "index8", "size": nwater, "metres": WATER_M, "classes": WATER_CLASSES},
         "shore": {"file": "shore.png", "encoding": "sdist8", "size": nwater, "metres": WATER_M, "stepMetres": 2.0, "zero": 128},
         "river": {"file": "river.png", "encoding": "sdist8", "size": nwater, "metres": WATER_M, "stepMetres": 2.0, "zero": 128},
+        "reef": {"file": "reef.png", "encoding": "sdist8", "size": nwater, "metres": WATER_M, "stepMetres": 2.0, "zero": 128},
         "vectors": "vectors.bin",
         "sources": {"height": "Copernicus GLO-30 (inner) and GLO-90 (outer) DSM, COG on AWS, bilinear",
                     "koppen": "Beck et al. 2023, 1 km, Terra_Form koppen_tiles polygons",
