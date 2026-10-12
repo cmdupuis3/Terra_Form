@@ -35,7 +35,7 @@ ATOLL_SURVEY_KM = 72.0        # an atoll's corner can be 25 km from its seat (Ta
 RES = 90.0                    # survey lattice, metres
 FINE = 3                      # land is burned at RES / FINE (30 m) and averaged, so atoll strips are not lost
 WINDOW_KM = 36.0              # the mainland window (the testbeds' span)
-CORE_HALF_M = 1536.0          # the city capture: 256 cells of 12 m
+CORE_HALF_M = 4608.0          # the city capture: 256 cells of 36 m (CityScreen.MetresPerUnit since 2026-10-11; was 12 m)
 INNER_HALF_M = 4050.0         # the inner ring (the 30 m mesh)
 
 DEFAULT_WEIGHTS = {

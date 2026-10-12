@@ -499,6 +499,23 @@ def _aspect(rect):
     return max(a, b) / max(min(a, b), 1e-6)
 
 
+REEF_SIGMA = 50.0       # metres: the Gaussian the reef outlines are rounded with
+
+
+def _smooth_polys(polys, sigma):
+    """Local-metre geojson polygons with every ring resampled and rounded by _smooth_ring (OSM's reef outlines are
+    coarse polylines whose vertices are corners; the lagoon's edge should curve)."""
+    import shapely
+    from shapely.geometry import shape, mapping, Polygon
+    out = []
+    for g in polys:
+        for q in _parts(shapely.make_valid(shape(g))):
+            ring = _smooth_ring(list(q.exterior.coords), sigma=sigma)
+            holes = [_smooth_ring(list(h.coords), sigma=sigma) for h in q.interiors if len(h.coords) >= 4]
+            out += [mapping(v) for v in _parts(shapely.make_valid(Polygon(ring, [h for h in holes if len(h) >= 4])))]
+    return out
+
+
 def _smooth_ring(coords, step=ROUND_STEP, sigma=ROUND_SIGMA):
     """The closed ring resampled every step metres along its length and smoothed by a circular Gaussian of
     sigma metres (capped at a twentieth of the perimeter, so small islands are not shrunk away)."""
@@ -860,6 +877,7 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
     reef_polys = [_simplified(g) for g in reef_polys if clip_local(g, water_f.half)]
     if push_reefs is not None:
         reef_polys = push_reefs(reef_polys)   # the edge reefs move out with a broadened atoll's shore
+    reef_polys = _smooth_polys(reef_polys, REEF_SIGMA)
     reef_sd = polygon_signed_distance(water_f, reef_polys)
     t_river = time.time()
     river_sd = polygon_signed_distance(water_f, river_polys)
