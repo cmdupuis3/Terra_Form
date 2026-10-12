@@ -17,9 +17,13 @@ there is for each layer and written to <out>/<seat id>/:
                      unclassified land takes the nearest class
   water.png          index8 on a 30 m lattice over the outer span: 0 land, 1 sea, 2 lake, 3 river channel,
                      4 salt pan; OSM land polygons (harbour works taken out, rings rounded: clean_coast),
-                     HydroLAKES, OSM waterways (rivers), Natural Earth playas
+                     Overture base/water lakes (HydroLAKES where Overture has nothing), river areas and
+                     perennial river lines, Natural Earth playas
+  shore.png          signed distance to the coast (water positive), 128 + d / 2 m, within ~360 m of it
+  river.png          the same for the mapped river and canal banks (Overture river areas)
   vectors.bin        "CWCS" v1 (little-endian): polylines in local metres (coast rings, lake rings with
-                     their level, playa rings, OSM rivers, HydroRIVERS reaches with discharge)
+                     their level, playa rings, Overture waterways with class and the discharge of the
+                     HydroRIVERS reach along them, HydroRIVERS reaches with discharge)
   site.json          frame, grids, sources, stats
 
 and <out>/index.json lists the sites written. The two height lattices nest exactly: the inner span is a
@@ -41,12 +45,11 @@ from PIL import Image
 import rasterio
 from rasterio import features
 from rasterio.crs import CRS
-from rasterio.transform import from_origin
+from rasterio.transform import from_origin, Affine
 from rasterio.warp import reproject, Resampling, transform, transform_geom
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.normpath(os.path.join(HERE, "..", "data"))
-OSM_WATERWAYS = os.path.normpath(os.path.join(HERE, "..", "osm_waterways"))
 sys.path.insert(0, HERE)
 from elev16 import SEA                                   # the world pack's height floor, -500 m
 from export_world_pack import decode_coast_tile, rings_to_polygon
@@ -62,26 +65,58 @@ WATER_CLASSES = ["land", "sea", "lake", "river", "saltpan"]
 ATTRIBUTION = ("Copernicus WorldDEM-30 (c) DLR e.V. 2010-2014 and (c) Airbus Defence and Space GmbH 2014-2018, "
                "provided under COPERNICUS by the European Union and ESA; all rights reserved. Koppen-Geiger: Beck "
                "et al. 2023. Coastline (c) OpenStreetMap contributors (ODbL). Lakes: HydroLAKES (Messager et al. "
-               "2016, CC BY 4.0). Rivers: OpenStreetMap waterways (ODbL), HydroRIVERS. Playas: Natural Earth.")
+               "2016, CC BY 4.0). Rivers and lakes: OpenStreetMap contributors (ODbL) via Overture Maps; HydroRIVERS. "
+               "Playas: Natural Earth.")
 
 
 class Frame:
     """A square window of n pixel-is-point samples at `res` metres, centred on the site, in a local
-    transverse Mercator frame (x east, y north, metres). Row 0 is the north edge."""
-    def __init__(self, lat, lon, n, res):
+    transverse Mercator frame (x east, y north, metres). Row 0 is the north edge.
+
+    `warp` (2x2, row-major) maps the window's map metres to true local metres about the centre, for a
+    window that is not the ground at true scale (CITY-SITE-SCORE-PLAN 4a: an atoll strip broadened
+    across its minor axis, a small island expanded to fill the map). Everything burned or measured in
+    the window is in map metres (`transform`, `to_local`); only the DEM reads go through the true
+    ground (`geo_transform`)."""
+    def __init__(self, lat, lon, n, res, warp=None, centre=(0.0, 0.0)):
         self.lat, self.lon, self.n, self.res = lat, lon, n, res
         self.half = (n - 1) * res / 2.0
+        self.cx, self.cy = float(centre[0]), float(centre[1])           # the window's own centre in the frame, metres
         self.crs = CRS.from_proj4(f"+proj=tmerc +lat_0={lat} +lon_0={lon} +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
-        self.transform = from_origin(-self.half - res / 2.0, self.half + res / 2.0, res, res)
+        self.transform = from_origin(self.cx - self.half - res / 2.0, self.cy + self.half + res / 2.0, res, res)
+        w = None if warp is None else np.reshape(np.asarray(warp, float), (2, 2))
+        self.warp = None if w is None or np.allclose(w, np.eye(2)) else w
+        if self.warp is None:
+            self.geo_transform = self.transform
+        else:
+            a, b, c, d = self.warp.ravel()
+            self.geo_transform = Affine(a, b, 0.0, c, d, 0.0) * self.transform
+            self.unwarp = np.linalg.inv(self.warp)
 
     def lonlat_bounds(self, pad_m=0.0):
         h = self.half + pad_m
-        xs = [-h, h, h, -h, 0, 0, -h, h]; ys = [-h, -h, h, h, -h, h, 0, 0]
-        lons, lats = transform(self.crs, WGS84, xs, ys)
+        xs = self.cx + np.array([-h, h, h, -h, 0, 0, -h, h], float); ys = self.cy + np.array([-h, -h, h, h, -h, h, 0, 0], float)
+        if self.warp is not None:
+            xs, ys = self.warp @ np.vstack([xs, ys])
+        lons, lats = transform(self.crs, WGS84, list(xs), list(ys))
         return min(lons), min(lats), max(lons), max(lats)
 
     def to_local(self, geom):
-        return transform_geom(WGS84, self.crs, geom)
+        g = transform_geom(WGS84, self.crs, geom)
+        if self.warp is None:
+            return g
+        m = self.unwarp
+
+        def walk(c):
+            if isinstance(c[0], (int, float)):
+                return (m[0, 0] * c[0] + m[0, 1] * c[1], m[1, 0] * c[0] + m[1, 1] * c[1])
+            return [walk(q) for q in c]
+        return {"type": g["type"], "coordinates": walk(g["coordinates"])}
+
+    def tag(self):
+        """A cache tag for the warp, empty for the true ground."""
+        t = "" if self.warp is None else "_w" + "_".join(f"{v:.4f}" for v in self.warp.ravel())
+        return t + (f"_c{self.cx:.0f}_{self.cy:.0f}" if self.cx or self.cy else "")
 
 
 def touches(b, bounds):
@@ -98,7 +133,7 @@ def glo_tile_name(res_code, lat, lon):
 
 def read_copernicus(frame, ring, cache, log):
     """The frame filled from the GLO tiles under it, bilinear, metres; sea and missing tiles are 0."""
-    tag = f"{ring}_{frame.n}_{int(frame.res)}"
+    tag = f"{ring}_{frame.n}_{int(frame.res)}{frame.tag()}"
     cpath = os.path.join(cache, f"{frame.lat:.4f}_{frame.lon:.4f}_{tag}.npy")
     if os.path.exists(cpath):
         log(f"  {ring}: cached {os.path.basename(cpath)}")
@@ -122,7 +157,7 @@ def read_copernicus(frame, ring, cache, log):
                     missing.append(name)          # an all-sea tile is not published
                     continue
                 with src:
-                    reproject(source=rasterio.band(src, 1), destination=dst, dst_transform=frame.transform,
+                    reproject(source=rasterio.band(src, 1), destination=dst, dst_transform=frame.geo_transform,
                               dst_crs=frame.crs, resampling=Resampling.bilinear, src_nodata=src.nodata,
                               dst_nodata=np.nan, init_dest_nodata=False)
                 used.append(name)
@@ -190,23 +225,105 @@ def playa_polys(bounds):
     return out
 
 
-def osm_rivers(bounds):
-    """OSM waterway=river centrelines under the bounds, from the 20-degree osm_waterways files."""
-    out = []
-    if not os.path.isdir(OSM_WATERWAYS):
-        return out
-    for lo in range(int(math.floor(bounds[0] / 20.0)) * 20, int(math.floor(bounds[2] / 20.0)) * 20 + 1, 20):
-        for la in range(int(math.floor(bounds[1] / 20.0)) * 20, int(math.floor(bounds[3] / 20.0)) * 20 + 1, 20):
-            path = os.path.join(OSM_WATERWAYS, f"{lo}_{la}.json")
-            if not os.path.exists(path):
+# Overture "base/water" (OSM waterways and water areas, full detail) for the site's box: the city-scale
+# rivers, canals, river banks, lakes and lagoons. The box's rows are cached as parquet beside the Copernicus
+# cache, so a re-export is offline. Line classes kept: every river, named streams, canals (not ditches or
+# drains); polygons: rivers and canals (their mapped banks), lakes, lagoons, reservoirs and plain water
+# over OVERTURE_MIN_HA (pools, ponds, basins and sewage works are not city-map water).
+OVERTURE_BUCKET = "overturemaps-us-west-2/release/{release}/theme=base/type=water"
+OVERTURE_MIN_HA = 2.0
+LINE_RIVER, LINE_STREAM, LINE_CANAL, LINE_INTERMITTENT = 0, 1, 2, 8
+
+
+def overture_water(bounds, cache, release, log):
+    """(lines, river_polys, lake_polys, release) in lon/lat: lines are (geojson, name, cls) with cls one of
+    LINE_RIVER/STREAM/CANAL plus LINE_INTERMITTENT; polygons are geojson."""
+    import pyarrow as pa, pyarrow.parquet as pq
+    import shapely
+    from shapely.geometry import mapping
+    os.makedirs(cache, exist_ok=True)
+    key = "_".join(f"{b:.3f}" for b in bounds)
+    hits = [f for f in os.listdir(cache) if f.startswith(key + "_") and f.endswith(".parquet")]
+    if hits:
+        release = hits[0][len(key) + 1:-len(".parquet")]
+        tb = pq.read_table(os.path.join(cache, hits[0]))
+    else:
+        import pyarrow.compute as pc, pyarrow.dataset as ds, pyarrow.fs as pfs
+        if not release:
+            from fetch_osm_waterways import latest_release
+            release = latest_release()
+        t0 = time.time()
+        fs = pfs.S3FileSystem(anonymous=True, region="us-west-2")
+        dset = ds.dataset(OVERTURE_BUCKET.format(release=release), filesystem=fs, format="parquet")
+        w, s, e, n = bounds
+        flt = ((pc.field("bbox", "xmax") >= w) & (pc.field("bbox", "xmin") <= e) &
+               (pc.field("bbox", "ymax") >= s) & (pc.field("bbox", "ymin") <= n))
+        tb = dset.to_table(columns=["subtype", "class", "names", "is_intermittent", "geometry"], filter=flt)
+        tb = pa.table({"subtype": tb["subtype"], "class": tb["class"], "is_intermittent": tb["is_intermittent"],
+                       "name": pa.array([nm["primary"] if nm else None for nm in tb["names"].to_pylist()], pa.string()),
+                       "geometry": tb["geometry"]})
+        pq.write_table(tb, os.path.join(cache, f"{key}_{release}.parquet"))
+        log(f"  overture {tb.num_rows} water features {time.time() - t0:.0f} s ({release})")
+    geoms = shapely.from_wkb(tb["geometry"].to_numpy(zero_copy_only=False))
+    lines, rivers, lakes = [], [], []
+    lat = 0.5 * (bounds[1] + bounds[3])
+    m2_per_deg2 = 111320.0 ** 2 * math.cos(math.radians(lat))
+    for g, st, cl, it, nm in zip(geoms, tb["subtype"].to_pylist(), tb["class"].to_pylist(),
+                                 tb["is_intermittent"].to_pylist(), tb["name"].to_pylist()):
+        if g is None or g.is_empty:
+            continue
+        if g.geom_type in ("LineString", "MultiLineString"):
+            if st == "river":
+                cls = LINE_RIVER
+            elif st == "stream" and nm:
+                cls = LINE_STREAM
+            elif st == "canal" and cl == "canal":
+                cls = LINE_CANAL
+            else:
                 continue
-            for f in json.load(open(path, encoding="utf-8"))["features"]:
-                if f.get("k") != "river" or len(f["g"]) < 2:
+            cls |= LINE_INTERMITTENT if it else 0
+            for p in getattr(g, "geoms", [g]):
+                if len(p.coords) >= 2:
+                    lines.append((mapping(p), nm or "", cls))
+        elif g.geom_type in ("Polygon", "MultiPolygon"):
+            for p in getattr(g, "geoms", [g]):
+                if p.area * m2_per_deg2 < OVERTURE_MIN_HA * 1e4:
                     continue
-                xs = [p[0] for p in f["g"]]; ys = [p[1] for p in f["g"]]
-                if touches((min(xs), min(ys), max(xs), max(ys)), bounds):
-                    name = f.get("n"); name = "" if name in (None, "None") else str(name)
-                    out.append(({"type": "LineString", "coordinates": [[float(x), float(y)] for x, y in f["g"]]}, name))
+                if st == "river" or (st == "canal" and cl == "canal"):
+                    rivers.append(mapping(p))
+                elif (st == "lake" and cl in ("lake", "lagoon", "oxbow")) or (st == "reservoir" and cl == "reservoir") \
+                        or (st == "water" and cl == "water"):
+                    lakes.append(mapping(p))
+    return lines, rivers, lakes, release
+
+
+WATERWAY_SIMPLIFY_M = 3.0
+
+
+def _simplified(g):
+    """A local-metre geojson line or polygon simplified at WATERWAY_SIMPLIFY_M (topology kept)."""
+    import shapely
+    from shapely.geometry import shape, mapping
+    return mapping(shapely.simplify(shape(g), WATERWAY_SIMPLIFY_M, preserve_topology=True))
+
+
+def line_discharge(lines, reaches, near_m=1000.0, step_m=200.0):
+    """Each local-metre line's discharge (m3/s): the median of the nearest HydroRIVERS reach's over points
+    every step_m along it, within near_m; 0 where under a third of its points find one (a river HydroRIVERS
+    does not carry). The median keeps a tributary from taking the main river's flow at the confluence."""
+    import shapely
+    if not reaches:
+        return [0.0] * len(lines)
+    rl = [shapely.linestrings(np.asarray(g["coordinates"])) for g, _ in reaches]
+    rq = np.array([d for _, d in reaches])
+    tree = shapely.STRtree(rl)
+    out = []
+    for g in lines:
+        ls = shapely.linestrings(np.asarray(g["coordinates"]))
+        k = max(2, int(ls.length / step_m) + 1)
+        pts = shapely.line_interpolate_point(ls, np.linspace(0.0, ls.length, k))
+        hit, dist = tree.query_nearest(pts, max_distance=near_m, return_distance=True, all_matches=False)
+        out.append(float(np.median(rq[hit[1]])) if len(hit[1]) * 3 >= k else 0.0)
     return out
 
 
@@ -273,6 +390,43 @@ def shore_signed_distance(frame, land_polys, lake_polys, water, reach_cells=12):
     d = np.empty(len(pts)); d[hit[0]] = dist
     inland = shapely.contains_xy(land, xs, ys)
     signed = np.where(inland, -d, d)
+    enc[jj, ii] = np.clip(np.rint(128.0 + signed / 2.0), 0, 255).astype(np.uint8)
+    return enc
+
+
+def polygon_signed_distance(frame, polys, reach_cells=12):
+    """Signed distance (metres, inside positive) from each cell centre to the outline of the local-metre
+    polygons (the rivers' and canals' mapped banks), encoded as shore_signed_distance's is; cells further
+    than reach_cells from the outline saturate (255 inside, 0 outside)."""
+    import shapely
+    from shapely.geometry import shape
+    from shapely.ops import unary_union
+    from scipy.ndimage import distance_transform_edt
+    if not polys:
+        return np.zeros((frame.n, frame.n), np.uint8)
+    parts = []
+    for g in polys:
+        v = shapely.make_valid(shape(g))
+        parts += [q for q in (v.geoms if hasattr(v, "geoms") else [v]) if q.geom_type in ("Polygon", "MultiPolygon") and not q.is_empty]
+    area = unary_union(parts)
+    if area.is_empty:
+        return np.zeros((frame.n, frame.n), np.uint8)
+    inside = burn(frame, [(area, 1)]) == 1
+    enc = np.where(inside, 255, 0).astype(np.uint8)
+    near = (distance_transform_edt(~inside) <= reach_cells) | (distance_transform_edt(inside) <= reach_cells)
+    jj, ii = np.nonzero(near)
+    xs = -frame.half + ii * frame.res
+    ys = frame.half - jj * frame.res
+    pieces = []
+    for line in (area.boundary.geoms if hasattr(area.boundary, "geoms") else [area.boundary]):
+        c = np.asarray(line.coords)
+        for a in range(0, len(c) - 1, 32):
+            pieces.append(shapely.linestrings(c[a:a + 33]))
+    tree = shapely.STRtree(pieces)
+    hit, dist = tree.query_nearest(shapely.points(xs, ys), return_distance=True, all_matches=False)
+    d = np.empty(len(xs)); d[hit[0]] = dist
+    shapely.prepare(area)
+    signed = np.where(shapely.contains_xy(area, xs, ys), d, -d)
     enc[jj, ii] = np.clip(np.rint(128.0 + signed / 2.0), 0, 255).astype(np.uint8)
     return enc
 
@@ -404,6 +558,65 @@ def clean_coast(land, half, log=print):
     return out, counts
 
 
+BROADEN_RES = 15.0      # metres: the raster an atoll's land is broadened on
+
+
+def broaden_land(land_polys, half, target_half_m, max_factor, log=print):
+    """An atoll's land widened about its centre line (CITY-SITE-SCORE-PLAN 4a, the user 2026-10-11: build a
+    centreline along the ring and expand the atoll perpendicular to it). Each piece of land's local half-width h
+    is the depth of its centre line (the distance-to-coast ridge within target_half_m); the shore is pushed out
+    along its normal by target_half_m - h, at most (max_factor - 1) h, so a 200 m strip becomes a
+    2 x target_half_m one and land already that wide is left alone. The ring keeps its true shape and place;
+    the lagoon narrows by the growth. Returns the new land as local-metre geojson polygons, rounded."""
+    import shapely
+    from shapely.geometry import shape, mapping
+    from shapely.ops import unary_union
+    from scipy.ndimage import distance_transform_edt, maximum_filter
+    r = BROADEN_RES
+    ext = half + 1000.0
+    n = int(2 * ext / r) + 1
+    tr = from_origin(-ext, ext, r, r)
+    land = features.rasterize([(g, 1) for g in land_polys], out_shape=(n, n), transform=tr, fill=0, dtype="uint8",
+                              all_touched=True).astype(bool)
+    if not land.any():
+        return land_polys
+    depth = distance_transform_edt(land) * r
+    h = maximum_filter(depth, size=int(2 * target_half_m / r) | 1)
+    grow = np.where(land, np.clip(target_half_m - h, 0.0, (max_factor - 1.0) * h), 0.0)
+    dist, (iy, ix) = distance_transform_edt(~land, return_indices=True)
+    new = land | (dist * r <= grow[iy, ix])
+    parts = [shape(g) for g, v in features.shapes(new.astype(np.uint8), mask=new, transform=tr)]
+    merged = unary_union([shapely.make_valid(p) for p in parts]).buffer(0)
+    out = []
+    from shapely.geometry import Polygon
+    for p in _parts(merged):
+        ext_ring = _smooth_ring(list(p.exterior.coords), sigma=2 * r)
+        holes = [_smooth_ring(list(q.coords), sigma=2 * r) for q in p.interiors if len(q.coords) >= 4]
+        out += [mapping(q) for q in _parts(shapely.make_valid(Polygon(ext_ring, [q for q in holes if len(q) >= 4])))]
+    grown = float(new.sum() - land.sum()) * r * r / 1e6
+    log(f"  atoll broadened to {2 * target_half_m:.0f} m: +{grown:.2f} km2 of land (was {land.sum() * r * r / 1e6:.2f} km2)")
+    return out
+
+
+def fill_new_land(h, frame, before, after, floor_m=2.0):
+    """Heights for land the broadening added: the nearest original land sample's, at least floor_m (Copernicus
+    gives the reef and lagoon 0 m)."""
+    from scipy.ndimage import distance_transform_edt
+    old = burn(frame, [(g, 1) for g in before], all_touched=True) == 1
+    now = burn(frame, [(g, 1) for g in after]) == 1
+    add = now & ~old
+    if not add.any():
+        return h
+    if old.any():
+        _, (iy, ix) = distance_transform_edt(~old, return_indices=True)
+        src = h[iy, ix]
+    else:
+        src = np.zeros_like(h)
+    h = h.copy()
+    h[add] = np.maximum(src[add], floor_m)
+    return h
+
+
 def clip_local(geom, half):
     """Drop a local-metre geometry that lies wholly outside the window (rasterize handles the rest)."""
     coords = geom["coordinates"]
@@ -444,7 +657,8 @@ def fill_nearest(k):
 
 def write_vectors(path, lines):
     """lines: (kind, cls, name, level, discharge, [(x, y), ...]). Kinds: 1 coast ring (cls 0 exterior,
-    1 hole), 2 lake ring (level = surface metres), 3 playa ring, 4 OSM river, 5 HydroRIVERS reach
+    1 hole), 2 lake ring (level = surface metres), 3 playa ring, 4 waterway (cls 0 river, 1 stream,
+    2 canal, + 8 intermittent; discharge m3/s of the HydroRIVERS reach along it, 0 unknown), 5 HydroRIVERS reach
     (discharge m3/s, cls 1 minor / 2 medium / 3 major)."""
     with open(path, "wb") as f:
         f.write(b"CWCS"); f.write(struct.pack("<II", 1, len(lines)))
@@ -476,21 +690,40 @@ def m16_encode(a, step):
     return np.stack([(g >> 8).astype(np.uint8), (g & 255).astype(np.uint8), np.zeros(g.shape, np.uint8)], -1)
 
 
-def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), height_step=HEIGHT_STEP):
+def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), height_step=HEIGHT_STEP,
+                overture_cache=None, overture_release=None, frame=None):
+    """`frame`, when given, is the window score_city_sites.py chose: its offsetKmEast/North and spanKm
+    override offset_km and outer_km, `warp` maps map metres to true metres, and `verticalScale` multiplies
+    the heights above sea level (an expanded island's)."""
     lat0, lon0 = seat["lat"], seat["lon"]
+    warp, vscale, city, broaden = None, 1.0, (0.0, 0.0), None
+    if frame:
+        offset_km = (frame["offsetKmEast"], frame["offsetKmNorth"])
+        outer_km = frame["spanKm"]
+        warp = frame.get("warp")
+        vscale = float(frame.get("verticalScale", 1.0))
+        # The city off the window's centre, on whole outer cells so the inner ring's corners stay outer vertices.
+        city = (round(frame.get("cityKmEast", 0.0) * 1000.0 / OUTER_M) * OUTER_M,
+                round(frame.get("cityKmNorth", 0.0) * 1000.0 / OUTER_M) * OUTER_M)
+        frame = dict(frame, cityKmEast=city[0] / 1000.0, cityKmNorth=city[1] / 1000.0)
+        broaden = frame.get("broaden")
     # The window centre may be moved from the seat (east, north km) to take in more land or relief.
     lat = lat0 + offset_km[1] / 111.32
     lon = lon0 + offset_km[0] / (111.32 * math.cos(math.radians(lat0)))
     OUTER = outer_samples(outer_km)
-    inner, outer = Frame(lat, lon, INNER, INNER_M), Frame(lat, lon, OUTER, OUTER_M)
+    inner, outer = Frame(lat, lon, INNER, INNER_M, warp, city), Frame(lat, lon, OUTER, OUTER_M, warp)
     nwater = int(round((OUTER - 1) * OUTER_M / WATER_M)) + 1
-    water_f = Frame(lat, lon, nwater, WATER_M)
+    water_f = Frame(lat, lon, nwater, WATER_M, warp)
     assert abs(water_f.half - outer.half) < 1e-6 and abs(((outer.half - inner.half) / OUTER_M) % 1.0) < 1e-6
+    assert max(abs(city[0]), abs(city[1])) + inner.half <= outer.half + 1e-6, "the city's inner ring must lie inside the window"
     bounds = outer.lonlat_bounds(pad_m=500)
     log(f"site {seat['id']} {seat['name']} ({lat:.4f}, {lon:.4f}) bounds {tuple(round(b, 3) for b in bounds)}")
 
     h_in = read_copernicus(inner, "inner", cache, log)
     h_out = read_copernicus(outer, "outer", cache, log)
+    if vscale != 1.0:
+        h_in = np.where(h_in > 0, h_in * vscale, h_in).astype(np.float32)
+        h_out = np.where(h_out > 0, h_out * vscale, h_out).astype(np.float32)
 
     # Koppen on the outer lattice, nearest-filled.
     kshapes = [(outer.to_local(g), v) for g, v in koppen_polys(bounds)]
@@ -514,14 +747,39 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
         land_polys = [mapping(q) for q in _parts(cleaned)]
         land_polys = [g for g in land_polys if clip_local(g, water_f.half)]
         log(f"  coast cleaned {time.time() - t_coast:.1f} s")
-    lake_polys = [water_f.to_local(g) for g in tileset_polys("lake_tiles", bounds)]
-    lake_polys = [g for g in lake_polys if clip_local(g, water_f.half)]
+    land_before = land_polys
+    if broaden and land_polys:
+        grow, keep = land_polys, []
+        if broaden.get("lowOnlyM"):
+            # A lagoon's mixed islands: only the low ones (motus, reef islets) are broadened; the high ones stay.
+            grow = []
+            for g in land_polys:
+                cells = burn(outer, [(g, 1)], all_touched=True) == 1
+                top = float(h_out[cells].max()) if cells.any() else 0.0
+                (grow if top < float(broaden["lowOnlyM"]) else keep).append(g)
+            log(f"  {len(grow)} low island(s) to broaden, {len(keep)} high kept")
+        if grow:
+            grow = broaden_land(grow, water_f.half, float(broaden["targetHalfWidthM"]), float(broaden["maxFactor"]), log)
+        land_polys = [g for g in grow + keep if clip_local(g, water_f.half)]
+        h_in = fill_new_land(h_in, inner, land_before, land_polys)
+        h_out = fill_new_land(h_out, outer, land_before, land_polys)
     playas = [water_f.to_local(g) for g in playa_polys(bounds)]
     playas = [g for g in playas if clip_local(g, water_f.half)]
-    rivers = [(water_f.to_local(g), name) for g, name in osm_rivers(bounds)]
-    rivers = [(g, n) for g, n in rivers if clip_local(g, water_f.half)]
     reaches = [(water_f.to_local(g), d) for g, d in hydro_reaches(bounds)]
     reaches = [(g, d) for g, d in reaches if clip_local(g, water_f.half)]
+    # Rivers, canals, their banks, lakes and lagoons from Overture (OSM at full detail); HydroLAKES only where
+    # Overture has nothing for the box. Each line takes the discharge of the HydroRIVERS reach along it.
+    ov_lines, ov_rivers, ov_lakes, ov_release = overture_water(bounds, overture_cache, overture_release, log)
+    rivers = [(water_f.to_local(g), name, cls) for g, name, cls in ov_lines]
+    rivers = [(g, n, c) for g, n, c in rivers if clip_local(g, water_f.half)]
+    river_polys = [water_f.to_local(g) for g in ov_rivers]
+    river_polys = [g for g in river_polys if clip_local(g, water_f.half)]
+    lake_polys = [water_f.to_local(g) for g in ov_lakes] if (ov_lines or ov_rivers or ov_lakes) else         [water_f.to_local(g) for g in tileset_polys("lake_tiles", bounds)]
+    lake_polys = [g for g in lake_polys if clip_local(g, water_f.half)]
+    # OSM's full detail is a vertex every few metres; WATERWAY_SIMPLIFY_M keeps the shapes at a fraction of the bytes.
+    rivers = [(_simplified(g), n, c) for g, n, c in rivers]
+    lake_polys = [_simplified(g) for g in lake_polys]
+    discharge = line_discharge([g for g, _, _ in rivers], reaches)
 
     land = burn(water_f, [(g, 1) for g in land_polys])
     # Small land (islets, atoll rims under a lattice cell wide) is burned all-touched too, so it is not
@@ -531,13 +789,19 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
         land |= burn(water_f, [(g, 1) for g in small], all_touched=True)
     water = np.where(land == 1, 0, 1).astype(np.uint8)
     if lake_polys:
+        # On the land only: OSM maps harbour basins and such as water too, and the coastline already has the sea.
         lakes = burn(water_f, [(g, i + 1) for i, g in enumerate(lake_polys)]).astype(np.int32)
-        water[lakes > 0] = 2
+        water[(lakes > 0) & (water == 0)] = 2
     if playas:
         water[burn(water_f, [(g, 1) for g in playas]) == 1] = 4
-    if rivers:
-        riv = burn(water_f, [(g, 1) for g, _ in rivers], all_touched=True)
+    # The river channel class: the mapped banks, and the perennial lines (dry wadis are not water).
+    wet_lines = [g for g, _, c in rivers if not c & LINE_INTERMITTENT]
+    if wet_lines or river_polys:
+        riv = burn(water_f, [(g, 1) for g in wet_lines], all_touched=True) | burn(water_f, [(g, 1) for g in river_polys])
         water[(riv == 1) & (water == 0)] = 3
+    t_river = time.time()
+    river_sd = polygon_signed_distance(water_f, river_polys)
+    log(f"  river banks {len(river_polys)} polygons {time.time() - t_river:.1f} s")
 
     t_shore = time.time()
     shore = shore_signed_distance(water_f, land_polys, lake_polys, water)
@@ -551,12 +815,17 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
         lake_out = burn(outer, [(g, i + 1) for i, g in enumerate(lake_polys)]).astype(np.int32)
         for i, g in enumerate(lake_polys):
             cells = h_out[lake_out == i + 1]
-            level = float(np.median(cells)) if cells.size else None
+            if cells.size:
+                level = float(np.median(cells))
+            else:   # under one outer cell: the nearest outer sample to its first vertex
+                x, y = g["coordinates"][0][0]
+                level = float(h_out[int(np.clip(round((outer.half - y) / OUTER_M), 0, OUTER - 1)),
+                                    int(np.clip(round((x + outer.half) / OUTER_M), 0, OUTER - 1))])
             lines += ring_lines(2, g, level)
     for g in playas:
         lines += ring_lines(3, g)
-    for g, name in rivers:
-        lines.append((4, 0, name, None, 0.0, [(float(x), float(y)) for x, y in g["coordinates"]]))
+    for (g, name, cls), q in zip(rivers, discharge):
+        lines.append((4, cls, name, None, q, [(float(x), float(y)) for x, y in g["coordinates"]]))
     for g, d in reaches:
         cls = 3 if d >= 1000 else (2 if d >= 100 else 1)
         lines.append((5, cls, "", None, float(d), [(float(x), float(y)) for x, y in g["coordinates"]]))
@@ -575,7 +844,7 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
         "slopeP50": float(np.percentile(slope, 50)), "slopeP90": float(np.percentile(slope, 90)), "slopeMax": float(slope.max()),
         "koppenClasses": [int(v) for v in kvals], "koppenShares": [float(c) / kop.size for c in kcounts],
         "coastCleanup": coast_counts,
-        "lakes": len(lake_polys), "rivers": len(rivers), "reaches": len(reaches), "coastRings": sum(1 for l in lines if l[0] == 1),
+        "lakes": len(lake_polys), "rivers": len(rivers), "riverAreas": len(river_polys), "reaches": len(reaches), "coastRings": sum(1 for l in lines if l[0] == 1),
     }
 
     # Write.
@@ -585,6 +854,7 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
     Image.fromarray(kop, "L").save(os.path.join(out_dir, "koppen.png"), optimize=True)
     Image.fromarray(water, "L").save(os.path.join(out_dir, "water.png"), optimize=True)
     Image.fromarray(shore, "L").save(os.path.join(out_dir, "shore.png"), optimize=True)
+    Image.fromarray(river_sd, "L").save(os.path.join(out_dir, "river.png"), optimize=True)
     write_vectors(os.path.join(out_dir, "vectors.bin"), lines)
     site = {
         "format": "culturewars-citysite", "version": 1, "id": int(seat["id"]), "name": seat["name"] or "",
@@ -594,18 +864,22 @@ def export_site(seat, out_dir, cache, log, outer_km=24.0, offset_km=(0.0, 0.0), 
         "koppen": {"file": "koppen.png", "encoding": "index8", "size": OUTER, "metres": OUTER_M},
         "water": {"file": "water.png", "encoding": "index8", "size": nwater, "metres": WATER_M, "classes": WATER_CLASSES},
         "shore": {"file": "shore.png", "encoding": "sdist8", "size": nwater, "metres": WATER_M, "stepMetres": 2.0, "zero": 128},
+        "river": {"file": "river.png", "encoding": "sdist8", "size": nwater, "metres": WATER_M, "stepMetres": 2.0, "zero": 128},
         "vectors": "vectors.bin",
         "sources": {"height": "Copernicus GLO-30 (inner) and GLO-90 (outer) DSM, COG on AWS, bilinear",
                     "koppen": "Beck et al. 2023, 1 km, Terra_Form koppen_tiles polygons",
-                    "coast": "OSM land polygons (Terra_Form coast_tiles lod f)", "lakes": "HydroLAKES (lake_tiles lod f)",
-                    "rivers": "OSM waterway=river centrelines; HydroRIVERS reaches", "playas": "Natural Earth playas"},
+                    "coast": "OSM land polygons (Terra_Form coast_tiles lod f)",
+                    "lakes": f"Overture base/water {ov_release} (OSM)" if ov_release else "HydroLAKES (lake_tiles lod f)",
+                    "rivers": f"Overture base/water {ov_release} (OSM waterways and river areas); HydroRIVERS reaches (discharge)", "playas": "Natural Earth playas"},
         "attribution": ATTRIBUTION, "exported": time.strftime("%Y-%m-%d"), "stats": stats,
     }
+    if frame:
+        site["frame"] = frame
     json.dump(site, open(os.path.join(out_dir, "site.json"), "w", encoding="utf-8"), indent=1)
     log(f"  inner {stats['innerMin']:.0f}..{stats['innerMax']:.0f} m, outer {stats['outerMin']:.0f}..{stats['outerMax']:.0f} m, "
         f"land {100 * stats['landShare']:.0f}%, slope p90 {stats['slopeP90']:.1f} max {stats['slopeMax']:.1f} deg, koppen "
         + ", ".join(f"{v}:{100 * s:.0f}%" for v, s in zip(stats['koppenClasses'], stats['koppenShares']))
-        + f", lakes {len(lake_polys)}, rivers {len(rivers)}, reaches {len(reaches)}")
+        + f", lakes {len(lake_polys)}, rivers {len(rivers)} ({len(river_polys)} areas), reaches {len(reaches)}")
     return site
 
 
@@ -633,14 +907,23 @@ def main():
     ap.add_argument("--cache", default=os.path.normpath(os.path.join(HERE, "..", "cache", "copernicus")))
     ap.add_argument("--outer-km", type=float, default=24.0, help="outer ring span in km (24 is the plan's default)")
     ap.add_argument("--offset", default="", help="per-seat centre offsets, 'id:eastKm,northKm;id:...'")
+    ap.add_argument("--overture-cache", default=os.path.normpath(os.path.join(HERE, "..", "cache", "overture")))
+    ap.add_argument("--overture-release", default=None, help="Overture release for new fetches (default: latest)")
     ap.add_argument("--height-step", type=float, default=HEIGHT_STEP, help="metres a height unit in the m16 PNGs (1 = whole metres)")
+    ap.add_argument("--frames", default=None, help="frames.json from score_city_sites.py: each seat's chosen window")
+    ap.add_argument("--extra-seat", action="append", default=[],
+                    help="'id:name:lat:lon', a site not in seats.yaml (a preview; give it an id no seat uses)")
     args = ap.parse_args()
+    frames = json.load(open(args.frames, encoding="utf-8")) if args.frames else {}
     offsets = {}
     for part in filter(None, args.offset.split(";")):
         sid, xy = part.split(":"); dx, dy = xy.split(",")
         offsets[int(sid)] = (float(dx), float(dy))
 
     seats = {s["id"]: s for s in read_seats(args.pack)}
+    for spec in args.extra_seat:
+        sid, name, la, lo = spec.split(":")
+        seats[int(sid)] = {"id": int(sid), "name": name, "lat": float(la), "lon": float(lo)}
     wanted = [int(x) for x in args.seats.split(",") if x.strip()]
     os.makedirs(args.out, exist_ok=True)
     ipath = os.path.join(args.out, "index.json")
@@ -651,9 +934,11 @@ def main():
     for sid in wanted:
         if sid not in seats:
             print(f"seat {sid}: not in {args.pack}", file=sys.stderr); continue
-        site = export_site(seats[sid], os.path.join(args.out, str(sid)), args.cache, print, args.outer_km, offsets.get(sid, (0.0, 0.0)), args.height_step)
+        fr = frames.get(str(sid))
+        site = export_site(seats[sid], os.path.join(args.out, str(sid)), args.cache, print, args.outer_km, offsets.get(sid, (0.0, 0.0)), args.height_step,
+                           args.overture_cache, args.overture_release, fr)
         byid[sid] = {"id": sid, "name": site["name"], "lat": site["lat"], "lon": site["lon"], "dir": str(sid), "version": 1,
-                     "outerKm": args.outer_km}
+                     "outerKm": fr["spanKm"] if fr else args.outer_km}
     index["sites"] = [byid[k] for k in sorted(byid)]
     json.dump(index, open(ipath, "w", encoding="utf-8"), indent=1)
     print(f"{len(wanted)} site(s) in {time.time() - t0:.0f} s -> {args.out}")
