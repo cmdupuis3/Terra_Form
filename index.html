@@ -4,19 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Terraform · WBS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0c1820; --ink2:#0f1f29; --panel:#142732; --panel2:#10222c;
-    --line:#22414f; --line2:#1a323d;
-    --paper:#e9e3d3; --muted:#8ba3ad; --dim:#5f7c88;
-    --accent:#45c1d0; --warn:#e0913f; --sel:#b06fe0;
+    --ink:#17191c; --ink2:#1d2024; --panel:#292d32; --panel2:#22252a;
+    --line:#41464f; --line2:#33373e;
+    --paper:#e3e6eb; --muted:#acb3be; --dim:#919aa7;
+    --accent:#9dbcf4; --warn:#e7b56d; --sel:#bcabec;
     --t-ocean:#123a51; --t-coast:#2f6d8c; --t-grass:#5c8a4a; --t-plains:#a7a44e;
     --t-desert:#cbb56f; --t-tundra:#808a72; --t-snow:#e9ece0;
-    --disp:'Space Grotesk',system-ui,sans-serif;
-    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    --disp:'Segoe UI',system-ui,sans-serif;
+    --mono:'Cascadia Code',Consolas,ui-monospace,monospace;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
@@ -41,7 +38,8 @@
   .map-box{position:relative; overflow:hidden; border:1px solid var(--line); border-radius:3px; background:#0a151c;}
   .map-box canvas{display:block; width:100%; height:100%; cursor:grab}
   .map-box.dragging canvas{cursor:grabbing}
-  .readout{position:absolute; top:8px; left:8px; font-family:var(--mono); font-size:10.5px; color:var(--paper); background:rgba(8,18,24,.72); border:1px solid var(--line2); border-radius:2px; padding:5px 8px; pointer-events:none; backdrop-filter:blur(2px); z-index:2;}
+  .readout{display:flex;flex-wrap:wrap;gap:5px 18px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .readout>span{white-space:nowrap}
   .readout b{color:var(--accent); font-weight:600}
   .axis-lat,.axis-lon{position:absolute; z-index:2; pointer-events:none}
   .axis-lat{left:0; top:0; bottom:0}
@@ -136,23 +134,131 @@
   .shelf-paste{margin-top:10px}
   .shelf-textarea{width:100%; min-height:90px; font-family:var(--mono); font-size:11px; color:var(--paper); background:var(--ink); border:1px solid var(--line); border-radius:2px; padding:7px 8px; resize:vertical}
   .shelf-textarea:focus{outline:none; border-color:var(--accent)}
-  @media (max-width:820px){ main{flex-direction:column} .rail{flex-basis:auto; border-left:none; border-top:1px solid var(--line)} .stage{height:60vh} }
+
+  /* Editor chrome: quiet surfaces, consistent controls, and a persistent export dock. */
+  :root{color-scheme:dark}
+  [hidden]{display:none!important}
+  button,input,textarea,summary{-webkit-tap-highlight-color:transparent}
+  button{touch-action:manipulation}
+  button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  header{align-items:center;height:49px;padding:0 18px;gap:18px}
+  .brand{font-size:13px;letter-spacing:.1em}
+  .tagline{font-size:12px;border-left:1px solid var(--line);padding-left:18px}
+  .pill{border:0;color:var(--muted);font-family:var(--disp);letter-spacing:0;font-size:11px;padding:0;opacity:1}
+  .stage{padding:0;gap:0;background:var(--ink);overflow:hidden}
+  .tabs{padding:0 12px;border-bottom:1px solid var(--line2);gap:4px;min-height:43px;align-items:stretch;background:var(--ink2)}
+  .tab{font-family:var(--disp);font-size:12px;text-transform:none;letter-spacing:0;background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;padding:11px 10px}
+  .tab:hover{background:var(--panel)}
+  .tab[aria-pressed="true"]{background:transparent;color:var(--accent);border-color:var(--accent);font-weight:600}
+  .tab[data-mode="compose"]{margin-left:6px}
+  .tabind{font-size:10px;border:0;background:transparent;padding:4px 8px;letter-spacing:.04em}
+  .tabind::before{content:"";display:inline-block;width:5px;height:5px;margin:0 6px 1px 0;border-radius:50%;background:currentColor}
+  .viewer-wrap{margin:12px;border:1px solid #30343b;border-radius:4px;background:#121417;min-height:120px}
+  .map-box{border-color:#3b414b;border-radius:2px;background:#121417}
+  body.composing .readout,body.composing .axis-lat,body.composing .axis-lon{display:none}
+  .viewport-meta{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 16px;flex-basis:100%;padding-top:6px;border-top:1px solid var(--line2)}
+  body.composing .viewport-meta{flex-basis:auto;margin-left:auto;padding-top:0;border-top:0}
+  .vtools{gap:12px;min-height:42px;padding:6px 14px;border-top:1px solid var(--line2);background:var(--ink2)}
+  .tool-label{width:30px;flex:0 0 30px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim)}
+  .vtools .grp{gap:3px}
+  .vbtn,.destbtn,.seg button{font-family:var(--disp);font-size:12px;letter-spacing:0;text-transform:none;min-height:28px;padding:4px 9px;border-radius:3px;background:var(--panel);border-color:var(--line2)}
+  .vbtn:hover:not(:disabled),.destbtn:hover,.seg button:hover{background:#353b44;border-color:#596371}
+  #zin,#zout{width:28px;padding:2px;font-size:17px}
+  #regen{background:transparent}
+  .toggle{font-family:var(--disp);font-size:12px;gap:5px;line-height:1.5}
+  .toggle input{margin:0 2px 0 0;width:13px;height:13px;flex-shrink:0}
+  #arNote{margin-left:auto;font-family:var(--mono);font-size:10px}
+  #snapshot{color:var(--accent);border-color:#485a76;background:#293446}
+  #shelfCount{margin-left:5px}
+  #selNote{flex-basis:100%;font-size:11px}
+  #selNote:empty{display:none}
+  .stage-footer{padding:8px 14px;min-height:35px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 20px}
+  .legend{padding:0;gap:12px}
+  .lg{font-size:10px}
+  .interaction-hint{margin-left:auto;font-size:11px;color:var(--dim)}
+  .interaction-hint span{margin:0 5px;color:var(--line)}
+  .rail{flex:0 0 340px;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+  .rail-heading{display:flex;justify-content:space-between;align-items:center;flex:0 0 43px;padding:0 16px;border-bottom:1px solid var(--line2);font-size:12px;font-weight:600}
+  .rail-caption{font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.07em;color:var(--dim)}
+  .rail-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+  .panel{padding:0}
+  .panel>summary{display:flex;align-items:center;gap:9px;padding:13px 16px;cursor:pointer;list-style:none;user-select:none}
+  .panel>summary::-webkit-details-marker{display:none}
+  .panel>summary::before{content:"";width:5px;height:5px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);flex-shrink:0}
+  .panel[open]>summary::before{transform:rotate(45deg);margin-top:-3px}
+  .panel>summary:hover{background:var(--panel)}
+  .panel h2{margin:0;font-family:var(--disp);font-size:12px;letter-spacing:0;text-transform:none;color:var(--paper);font-weight:600}
+  .panel h2 .eyebrow-n{font-size:10px;font-weight:400;margin-left:4px}
+  .panel-body{padding:0 16px 14px}
+  .feature-toggle{display:flex;align-items:center;justify-content:space-between;width:calc(100% - 32px);margin:10px 16px;padding:8px 10px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--paper);font-family:var(--disp);font-size:12px;cursor:pointer}
+  .feature-toggle:hover{border-color:var(--accent)}
+  .feature-toggle[aria-pressed="true"]{background:#293446;border-color:var(--accent);color:var(--accent)}
+  .feature-state{font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .feature-toggle[aria-pressed="true"] .feature-state{color:var(--accent)}
+  .panel-help{margin-bottom:12px}
+  .panel-help>summary{font-size:11px;color:var(--dim);cursor:pointer;width:fit-content}
+  .panel-help .sub{margin:8px 0 0;padding-left:10px;border-left:2px solid var(--line);font-size:12px;line-height:1.6;color:var(--muted)}
+  .ctl{margin:12px 0}
+  .ctl .row{gap:8px;flex-wrap:wrap;align-items:center}
+  .ctl label{font-size:12px}
+  .ctl label .eyebrow-n{font-size:10px}
+  .ctl .val{margin-left:auto;font-size:11px;font-variant-numeric:tabular-nums}
+  .valx{font-size:10px;margin-left:auto}
+  .numin{background:#191c20;border-color:var(--line);font-size:12px;border-radius:3px;padding:6px 8px;min-width:0}
+  .numin:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .lockbtn{height:31px;width:32px;border-radius:3px}
+  .stat{font-size:10px;padding:3px 0}
+  .stat b{font-variant-numeric:tabular-nums}
+  .note{font-family:var(--disp);font-size:11px;line-height:1.5}
+  input[type=range]{height:4px;margin:5px 0}
+  input[type=range]::-webkit-slider-thumb{width:12px;height:12px;border-radius:3px;border-width:1px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:3px;border-width:1px}
+  .mslider-thumb{width:12px;height:12px;border-radius:3px;border-width:1px}
+  .gen{flex:0 0 auto;padding:0 14px 14px;background:var(--ink2);border-top:1px solid var(--line);box-shadow:0 -5px 15px #00000016}
+  .export-options>summary{display:flex;align-items:center;justify-content:space-between;padding:12px 0;cursor:pointer;font-size:12px;list-style:none}
+  .export-options>summary::-webkit-details-marker{display:none}
+  .export-options>summary::after{content:"+";color:var(--muted);font-size:16px}
+  .export-options[open]>summary::after{content:"−"}
+  .export-options .rail-caption{margin-left:auto;margin-right:12px}
+  .export-body{max-height:40vh;overflow-y:auto;padding:2px 2px 12px;scrollbar-width:thin}
+  .genbtn{display:flex;align-items:center;justify-content:space-between;background:var(--accent);font-size:12px;font-weight:600;letter-spacing:0;padding:10px 12px;border-radius:3px}
+  .genbtn span{font-size:16px;line-height:1}
+  .dest{padding:10px;background:var(--ink2)}
+  .dest .filename-row{flex-wrap:wrap}
+  .destname{flex-basis:100%}
+  .destsuffix{font-size:10px}
+  .desthint{font-family:var(--disp);font-size:11px}
+  .valid{padding:9px 10px}
+  .shelf-empty{padding:15px 12px;border:1px dashed var(--line);border-radius:3px}
+  @media(max-width:1050px){.rail{flex-basis:310px}.vtools{gap:8px}.tabs{gap:0;padding:0 6px}.tab{padding:11px 8px}.interaction-hint{margin-left:0}.pill{font-size:10px}}
+  @media(max-width:820px){
+    body{height:auto;min-height:100dvh;overflow:auto}
+    main{flex-direction:column;flex:none}
+    header{min-height:49px;height:auto;flex-wrap:wrap;padding:12px 14px;gap:8px 12px}
+    .tagline{padding-left:12px}.pill{margin-left:auto}
+    .stage{height:70vh;min-height:480px;flex:none}
+    .rail{flex:none;border-left:0;border-top:1px solid var(--line);overflow:visible}
+    .rail-scroll{overflow:visible;flex:none}
+    .gen{position:static}.export-body{max-height:none}
+  }
+  @media(max-width:480px){.pill{display:none}.tabs{padding:0 4px}.tab{font-size:11px;padding:9px 7px}.tabind{font-size:9px}.viewer-wrap{margin:8px}.vtools{padding:6px 10px}.tool-label{display:none}#arNote{display:none}.stage-footer{padding:7px 10px}}
+
 </style>
 </head>
 <body>
 <header>
   <div class="brand">TERRA<span>·</span>WBS</div>
-  <div class="tagline">real-world raster &rarr; Civilization&nbsp;IV worldbuilder save</div>
-  <div class="pill" title="Elevation (NASA-derived), coastline (© OpenStreetMap contributors, ODbL), lakes (HydroLAKES, Messager et al. 2016, CC BY 4.0), both Natural Earth 10m when zoomed out, Köppen climate (Beck et al. 2023), and satellite colour (NASA Blue Marble Next Generation, Aug 2004) are all real data.">REAL ELEVATION · COAST (© OSM) · KÖPPEN · SATELLITE</div>
+  <div class="tagline">World map editor</div>
+  <div class="pill" title="Elevation (NASA-derived), coastline (© OpenStreetMap contributors, ODbL), lakes (HydroLAKES, Messager et al. 2016, CC BY 4.0), both Natural Earth 10m when zoomed out, Köppen climate (Beck et al. 2023), and satellite colour (NASA Blue Marble Next Generation, Aug 2004) are all real data.">Earth data · © OSM</div>
 </header>
 
 <main>
   <section class="stage">
     <div class="tabs" role="group" aria-label="View mode">
-      <button class="tab" data-mode="color"     aria-pressed="true">Satellite color</button>
+      <button class="tab" data-mode="color"     aria-pressed="true">Satellite</button>
       <button class="tab" data-mode="elevation" aria-pressed="false">Elevation</button>
       <button class="tab" data-mode="roughness" aria-pressed="false">Roughness</button>
-      <button class="tab" data-mode="climate"   aria-pressed="false">Köppen climate</button>
+      <button class="tab" data-mode="climate"   aria-pressed="false">Climate</button>
       <button class="tab" data-mode="civ"       aria-pressed="false">Civ preview</button>
       <button class="tab" data-mode="compose"   aria-pressed="false" title="Arrange captured snapshots on a blank map">Compose</button>
       <span class="tabind" id="viewSource" title="Coastline & Köppen render source at this zoom">Raster</span>
@@ -161,67 +267,79 @@
     <div class="viewer-wrap">
       <div class="map-box" id="mapBox">
         <canvas id="view"></canvas>
-        <div class="readout" id="readout"></div>
         <div class="axis-lat" id="latAxis"></div>
         <div class="axis-lon" id="lonAxis"></div>
       </div>
     </div>
 
-    <div class="vtools">
+    <div class="vtools" role="group" aria-label="Viewport tools">
+      <span class="tool-label">View</span>
       <div class="grp">
-        <button class="vbtn" id="zin" title="Zoom in">&plus;</button>
-        <button class="vbtn" id="zout" title="Zoom out">&minus;</button>
-        <button class="vbtn" id="zreset" title="Reset view">reset</button>
+        <button class="vbtn" id="zin" aria-label="Zoom in" title="Zoom in">&plus;</button>
+        <button class="vbtn" id="zout" aria-label="Zoom out" title="Zoom out">&minus;</button>
+        <button class="vbtn" id="zreset" title="Reset view">Reset view</button>
       </div>
-      <button class="vbtn" id="regen" title="Reseed the procedural intra-zone colour texture (real height, coastline, lakes &amp; Köppen unchanged)">⟳ reseed texture</button>
-      <label class="toggle"><input type="checkbox" id="tgGrid"> tile grid</label>
-      <label class="toggle"><input type="checkbox" id="tgGrat" checked> graticule</label>
-      <label class="toggle" title="View only — rivers are still written to the generated map. Set top-N to 0 to drop them entirely."><input type="checkbox" id="tgRivers" checked> rivers</label>
-      <span class="toggle" style="color:var(--dim)" id="arNote"></span>
+      <button class="vbtn" id="regen" title="Reseed the procedural intra-zone colour texture (real height, coastline, lakes &amp; Köppen unchanged)">↻ Texture</button>
+      <label class="toggle"><input type="checkbox" id="tgGrid"> Grid</label>
+      <label class="toggle"><input type="checkbox" id="tgGrat" checked> Coordinates</label>
+      <label class="toggle" title="View only — rivers are still written to the generated map. Set top-N to 0 to drop them entirely."><input type="checkbox" id="tgRivers" checked> Rivers</label>
+      <div class="viewport-meta">
+        <div class="readout" id="readout" role="group" aria-label="View statistics"></div>
+        <span class="toggle" style="color:var(--dim)" id="arNote"></span>
+      </div>
     </div>
 
-    <div class="vtools">
+    <div class="vtools" role="group" aria-label="Capture tools">
+      <span class="tool-label">Mask</span>
       <div class="grp" id="selTools" role="group" aria-label="Selection mask">
-        <button class="vbtn selbtn" data-sel="rect" aria-pressed="false" title="Box mask — press and drag a rectangle">&#9647; box</button>
-        <button class="vbtn selbtn" data-sel="lasso" aria-pressed="false" title="Lasso mask — click point by point, or press and drag to draw freehand">&#8943; lasso</button>
+        <button class="vbtn selbtn" data-sel="rect" aria-pressed="false" title="Box mask — press and drag a rectangle">&#9647; Box</button>
+        <button class="vbtn selbtn" data-sel="lasso" aria-pressed="false" title="Lasso mask — click point by point, or press and drag to draw freehand">&#8943; Lasso</button>
       </div>
-      <button class="vbtn" id="selClear" disabled title="Discard the mask">clear mask</button>
-      <button class="vbtn" id="snapshot" title="Freeze the framed region as a snapshot — the evaluated tiles exactly as Generate would write them, cropped to the mask if one is drawn — and add it to the shelf"><span id="snapLabel">&#128247; snapshot</span><span class="eyebrow-n" id="shelfCount"></span></button>
-      <label class="toggle" title="What a mask leaves behind: the margin around a cropped capture, and what Delete fills with on the compose canvas"><input type="checkbox" id="tgMtnDefault"> mountain fill <span class="eyebrow-n">(else ocean)</span></label>
+      <button class="vbtn" id="selClear" disabled title="Discard the mask">Clear</button>
+      <button class="vbtn" id="snapshot" title="Freeze the framed region as a snapshot — the evaluated tiles exactly as Generate would write them, cropped to the mask if one is drawn — and add it to the shelf"><span id="snapLabel">Capture snapshot</span><span class="eyebrow-n" id="shelfCount"></span></button>
+      <label class="toggle" title="What a mask leaves behind: the margin around a cropped capture, and what Delete fills with on the compose canvas"><input type="checkbox" id="tgMtnDefault"> Mountain fill</label>
       <span class="toggle" style="color:var(--sel)" id="selNote"></span>
     </div>
 
-    <div class="legend" id="legend"></div>
+    <div class="stage-footer"><div class="legend" id="legend"></div><div class="interaction-hint" id="interactionHint">Drag to pan <span>·</span> Scroll to zoom <span>·</span> Ctrl + drag to rotate</div></div>
   </section>
 
   <aside class="rail">
-    <div class="panel" data-rail="tune">
-      <h2>Coast &amp; Seas <span class="eyebrow-n">· real data</span></h2>
-      <p class="sub">Land/water from the Natural Earth coastline. Crisp windowed vector inside the cutoff; coarse baked coast outside it.</p>
-      <div class="ctl"><div class="row"><label>Island bias <span class="eyebrow-n">↑ more islands</span></label><span class="val" id="vIsland"></span></div><input type="range" id="islandBias" min="0" max="1" step="0.02" value="0"></div>
-      <div class="ctl"><div class="row"><label>Seaway bias <span class="eyebrow-n">↑ open channels</span></label><span class="val" id="vSeaway"></span></div><input type="range" id="seawayBias" min="0" max="1" step="0.02" value="0"></div>
-      <div class="ctl"><div class="row"><label>Small-island expander <span class="eyebrow-n">↑ enlarge tiny isles</span></label><span class="val" id="vExpand"></span></div><input type="range" id="islandExpand" min="0" max="1" step="0.02" value="0"></div>
-      <div class="ctl"><div class="row"><label for="expandSteep">Expander steepness <span class="eyebrow-n">1 = linear ramp</span></label></div><input class="numin" id="expandSteep" type="number" min="0.2" max="8" step="0.1" value="1.0"></div>
-      <div class="ctl"><div class="row"><label for="expandMaxMult">Expander max × <span class="eyebrow-n">largest scaled isle</span></label></div><input class="numin" id="expandMaxMult" type="number" min="1" max="5" step="0.1" value="1.5"></div>
-    </div>
-    <div class="panel" data-rail="tune">
-      <h2>Output grid</h2>
-      <p class="sub">The framed region becomes this many tiles — the viewer matches this shape. Scroll a box to nudge; lock to keep the ratio.</p>
+    <div class="rail-heading"><span id="inspectorTitle">Map settings</span><span class="rail-caption">INSPECTOR</span></div>
+    <div class="rail-scroll">
+    <details class="panel" data-rail="tune" data-section="output-grid" open>
+      <summary><h2>Output grid</h2></summary>
+      <div class="panel-body">
+      <details class="panel-help"><summary>About these controls</summary><p class="sub">The framed region becomes this many tiles — the viewer matches this shape. Scroll a box to nudge; lock to keep the ratio.</p></details>
       <div class="grid2">
         <div class="ctl"><div class="row"><label for="ow">Width</label></div><input class="numin" id="ow" type="number" min="8" max="160" value="52"></div>
         <div class="ctl"><div class="row"><label for="oh">Height</label></div><input class="numin" id="oh" type="number" min="8" max="120" value="32"></div>
-        <button class="lockbtn" id="lockAR" aria-pressed="false" title="Lock aspect ratio">&#128275;</button>
+        <button class="lockbtn" id="lockAR" aria-label="Lock aspect ratio" aria-pressed="false" title="Lock aspect ratio">&#128275;</button>
       </div>
       <label class="toggle" style="margin-top:8px"><input type="checkbox" id="hexMode"> hex grid <span class="eyebrow-n">(Civ5 import layout)</span></label>
       <div class="stat" style="margin-top:10px"><span>world size</span><b id="stWorld">—</b></div>
       <div class="stat"><span>tiles</span><b id="stTiles">—</b></div>
       <div class="stat"><span>source px / tile edge</span><b id="stPerTile">—</b></div>
       <div class="note" id="perTileNote"></div>
-    </div>
+      </div>
+    </details>
 
-    <div class="panel" id="composePanel" data-rail="compose" hidden>
-      <h2>Compose canvas</h2>
-      <p class="sub">A blank ocean map you arrange snapshots on. Click a snapshot in the shelf to attach it to the cursor, click the map to drop it, then drag to move. Arrows nudge · <b>[</b> / <b>]</b> re-stack · Del removes.</p>
+    <details class="panel" data-rail="tune" data-section="coast-amp-seas-real-data">
+      <summary><h2>Coast &amp; Seas</h2></summary>
+      <div class="panel-body">
+      <details class="panel-help"><summary>About these controls</summary><p class="sub">Land/water from the Natural Earth coastline. Crisp windowed vector inside the cutoff; coarse baked coast outside it.</p></details>
+      <div class="ctl"><div class="row"><label for="islandBias">Island bias <span class="eyebrow-n">↑ more islands</span></label><span class="val" id="vIsland"></span></div><input type="range" id="islandBias" min="0" max="1" step="0.02" value="0"></div>
+      <div class="ctl"><div class="row"><label for="seawayBias">Seaway bias <span class="eyebrow-n">↑ open channels</span></label><span class="val" id="vSeaway"></span></div><input type="range" id="seawayBias" min="0" max="1" step="0.02" value="0"></div>
+      <div class="ctl"><div class="row"><label for="islandExpand">Small-island expander <span class="eyebrow-n">↑ enlarge tiny isles</span></label><span class="val" id="vExpand"></span></div><input type="range" id="islandExpand" min="0" max="1" step="0.02" value="0"></div>
+      <div class="ctl"><div class="row"><label for="expandSteep">Expander steepness <span class="eyebrow-n">1 = linear ramp</span></label></div><input class="numin" id="expandSteep" type="number" min="0.2" max="8" step="0.1" value="1.0"></div>
+      <div class="ctl"><div class="row"><label for="expandMaxMult">Expander max × <span class="eyebrow-n">largest scaled isle</span></label></div><input class="numin" id="expandMaxMult" type="number" min="1" max="5" step="0.1" value="1.5"></div>
+      </div>
+    </details>
+
+    <details class="panel" id="composePanel" data-rail="compose" hidden data-section="compose-canvas" open>
+      <summary><h2>Compose canvas</h2></summary>
+      <div class="panel-body">
+      <details class="panel-help"><summary>About these controls</summary><p class="sub">A blank ocean map you arrange snapshots on. Click a snapshot in the shelf to attach it to the cursor, click the map to drop it, then drag to move. Arrows nudge · <b>[</b> / <b>]</b> re-stack · Del removes.</p></details>
       <div class="grid2">
         <div class="ctl"><div class="row"><label for="cw">Width</label></div><input class="numin" id="cw" type="number" min="8" max="160" value="60"></div>
         <div class="ctl"><div class="row"><label for="chh">Height</label></div><input class="numin" id="chh" type="number" min="8" max="120" value="40"></div>
@@ -243,12 +361,14 @@
         <button type="button" id="compUnerase" disabled title="Undo every mask-and-Delete fill on this canvas">restore erased</button>
         <button type="button" id="compClear">clear canvas</button>
       </div>
-      <div class="note">Generate writes the composite, not the framed region, while this tab is active. Latitudes are meaningless for a collage, so a plain span is written to the save.</div>
-    </div>
+      <div class="note">Export includes all patches on this canvas. Each snapshot keeps its captured terrain settings.</div>
+      </div>
+    </details>
 
-    <div class="panel" id="shelfPanel" data-rail="compose" hidden>
-      <h2>Snapshot Shelf</h2>
-      <p class="sub">Frozen copies of framed regions, each tuned however the sliders were set when captured (&#128247; snapshot, above the map). Click <b>place</b> to drop one onto the Compose canvas.</p>
+    <details class="panel" id="shelfPanel" data-rail="compose" hidden data-section="snapshot-shelf" open>
+      <summary><h2>Snapshot Shelf</h2></summary>
+      <div class="panel-body">
+      <details class="panel-help"><summary>About these controls</summary><p class="sub">Frozen copies of framed regions, each tuned however the sliders were set when captured (Capture snapshot, below the map). Click <b>place</b> to drop one onto the Compose canvas.</p></details>
       <div class="shelf-list" id="shelfList"></div>
       <div class="shelf-paste" id="shelfPasteWrap" hidden>
         <textarea class="shelf-textarea" id="shelfPasteArea" placeholder="Paste snapshot JSON here…" spellcheck="false"></textarea>
@@ -262,12 +382,14 @@
         <button type="button" id="shelfPasteToggle">Paste JSON…</button>
         <button type="button" id="shelfClearAll">Clear all</button>
       </div>
-    </div>
+      </div>
+    </details>
 
-    <div class="panel" data-rail="tune">
-      <h2>Elevation</h2>
-      <p class="sub">Relief sets flat / hills / peak. Land/water comes from the coastline, not a sea-level cut.</p>
-      <div class="ctl"><div class="row"><label>Roughness smoothing halo <span class="eyebrow-n">feeds relief</span></label><span class="val" id="vRough"></span></div><input type="range" id="roughHalo" min="0" max="1" step="0.01" value="0"></div>
+    <details class="panel" data-rail="tune" data-section="elevation">
+      <summary><h2>Elevation</h2></summary>
+      <div class="panel-body">
+      <details class="panel-help"><summary>About these controls</summary><p class="sub">Relief sets flat / hills / peak. Land/water comes from the coastline, not a sea-level cut.</p></details>
+      <div class="ctl"><div class="row"><label for="roughHalo">Roughness smoothing halo <span class="eyebrow-n">feeds relief</span></label><span class="val" id="vRough"></span></div><input type="range" id="roughHalo" min="0" max="1" step="0.01" value="0"></div>
       <div class="ctl">
         <div class="row"><label>Relief basis <span class="eyebrow-n">hills &middot; peak · H↔R</span></label><span class="valx" id="vBlend"></span></div>
         <div id="reliefBasisRange"></div>
@@ -277,63 +399,75 @@
         </div>
       </div>
       <div class="ctl"><div class="row"><label>Relief thresholds &mdash; hills &middot; peak</label><span class="valx" id="vRelief"></span></div><div id="reliefRange"></div></div>
-      <div class="ctl"><div class="row"><label>Mountain passes <span class="eyebrow-n">↑ demote peaks to hills</span></label><span class="val" id="vPass"></span></div><input type="range" id="mtnPass" min="0" max="1" step="0.02" value="0"></div>
-      <div class="ctl"><div class="row"><label>Flat spots <span class="eyebrow-n">↑ flats in rough terrain</span></label><span class="val" id="vFlat"></span></div><input type="range" id="flatSpots" min="0" max="1" step="0.02" value="0"></div>
+      <div class="ctl"><div class="row"><label for="mtnPass">Mountain passes <span class="eyebrow-n">↑ demote peaks to hills</span></label><span class="val" id="vPass"></span></div><input type="range" id="mtnPass" min="0" max="1" step="0.02" value="0"></div>
+      <div class="ctl"><div class="row"><label for="flatSpots">Flat spots <span class="eyebrow-n">↑ flats in rough terrain</span></label><span class="val" id="vFlat"></span></div><input type="range" id="flatSpots" min="0" max="1" step="0.02" value="0"></div>
       <div class="stat"><span>land</span><b id="stLand">—</b></div>
       <div class="stat"><span>hills / peaks</span><b id="stRelief">—</b></div>
-    </div>
+      </div>
+    </details>
 
-    <div class="panel" data-rail="tune">
-      <h2>Base Terrain</h2>
-      <p class="sub">Moisture picks grass / plains / desert (steppe on brightness, iron-red arid soil on hue); bright white is read as salt or snow by the surrounding non-white climate (arid&rarr;salt, cold&rarr;snow). Temperature (Köppen zone, altitude, colour) plus a boreal cold tilt (latitude + tundra/taiga colour) and an alpine snow-cover tilt swap in tundra / snow.</p>
+    <details class="panel" data-rail="tune" data-section="base-terrain">
+      <summary><h2>Base Terrain</h2></summary>
+      <div class="panel-body">
+      <details class="panel-help"><summary>About these controls</summary><p class="sub">Moisture picks grass / plains / desert (steppe on brightness, iron-red arid soil on hue); bright white is read as salt or snow by the surrounding non-white climate (arid&rarr;salt, cold&rarr;snow). Temperature (Köppen zone, altitude, colour) plus a boreal cold tilt (latitude + tundra/taiga colour) and an alpine snow-cover tilt swap in tundra / snow.</p></details>
       <div class="ctl"><div class="row"><label>Dryness &mdash; grass &middot; plains &middot; desert</label><span class="valx" id="vDry"></span></div><div id="drynessRange"></div></div>
       <div class="ctl"><div class="row"><label>Boreal cold tilt &mdash; tundra &middot; ice <span class="eyebrow-n">temperature thresholds: below &rarr; tundra, further below &rarr; ice</span></label><span class="valx" id="vTemp"></span></div><div id="tempRange"></div></div>
       <div class="ctl"><div class="row"><label>Latitude ramp &mdash; tundra &middot; ice <span class="eyebrow-n">tundra cold onset &middot; ice onset (latitude)</span></label><span class="valx" id="vBoreal"></span></div><div id="borealRange"></div></div>
-      <div class="ctl"><div class="row"><label>Alpine cold <span class="eyebrow-n">satellite snow cover</span></label><span class="val" id="vAlpine"></span></div><input type="range" id="alpine" min="0" max="1" step="0.05" value="0.6"></div>
-      <div class="ctl"><div class="row"><label>Climate prior weight <span class="eyebrow-n">Köppen</span></label><span class="val" id="vClim"></span></div><input type="range" id="clim" min="0" max="1" step="0.02" value="0.45"></div>
-    </div>
+      <div class="ctl"><div class="row"><label for="alpine">Alpine cold <span class="eyebrow-n">satellite snow cover</span></label><span class="val" id="vAlpine"></span></div><input type="range" id="alpine" min="0" max="1" step="0.05" value="0.6"></div>
+      <div class="ctl"><div class="row"><label for="clim">Climate prior weight <span class="eyebrow-n">Köppen</span></label><span class="val" id="vClim"></span></div><input type="range" id="clim" min="0" max="1" step="0.02" value="0.45"></div>
+      </div>
+    </details>
 
-    <div class="panel" data-rail="tune">
-      <h2>Features</h2>
-      <p class="sub">Forest &amp; jungle from climate, relief &amp; colour (potential/pre-industrial, not present cover); flood plains on flat desert along rivers (score = colour contrast + discharge + ~20% random); oasis in wet desert spots. Re-roll varies the seeded placement.</p>
-      <label class="toggle" style="font-size:12.5px;color:var(--paper)"><input type="checkbox" id="feat"> emit features <span class="eyebrow-n">forest · jungle · flood plains · oasis</span></label>
+    <details class="panel" data-rail="tune" data-section="features">
+      <summary><h2>Features</h2></summary>
+      <div class="panel-body">
+      <details class="panel-help"><summary>About these controls</summary><p class="sub">Forest &amp; jungle from climate, relief &amp; colour (potential/pre-industrial, not present cover); flood plains on flat desert along rivers (score = colour contrast + discharge + ~20% random); oasis in wet desert spots. Re-roll varies the seeded placement.</p></details>
       <label class="toggle" style="margin-top:6px;font-size:12.5px;color:var(--paper)"><input type="checkbox" id="fpKoppen" checked> keep arid deserts <span class="eyebrow-n">Köppen — enables flood plains; off → colour gives plains/grass variety when zoomed in</span></label>
-      <div class="ctl" style="margin-top:8px"><div class="row"><label>Forest density</label><span class="val" id="vForest"></span></div><input type="range" id="forestDens" min="0" max="1" step="0.02" value="0.5"></div>
-      <div class="ctl"><div class="row"><label>Jungle density</label><span class="val" id="vJungle"></span></div><input type="range" id="jungleDens" min="0" max="1" step="0.02" value="0.5"></div>
-      <div class="ctl"><div class="row"><label>Flood-plain amount <span class="eyebrow-n">flat desert along rivers</span></label><span class="val" id="vFp"></span></div><input type="range" id="fpAmt" min="0" max="1" step="0.02" value="0.5"></div>
-      <div class="ctl"><div class="row"><label>Oasis density <span class="eyebrow-n">base oasis : flood-plain ratio · ×10 desert, ×3 steppe</span></label><span class="val" id="vOasis"></span></div><input type="range" id="oasisDens" min="0" max="0.4" step="0.02" value="0.14"></div>
+      <div class="ctl" style="margin-top:8px"><div class="row"><label for="forestDens">Forest density</label><span class="val" id="vForest"></span></div><input type="range" id="forestDens" min="0" max="1" step="0.02" value="0.5"></div>
+      <div class="ctl"><div class="row"><label for="jungleDens">Jungle density</label><span class="val" id="vJungle"></span></div><input type="range" id="jungleDens" min="0" max="1" step="0.02" value="0.5"></div>
+      <div class="ctl"><div class="row"><label for="fpAmt">Flood-plain amount <span class="eyebrow-n">flat desert along rivers</span></label><span class="val" id="vFp"></span></div><input type="range" id="fpAmt" min="0" max="1" step="0.02" value="0.5"></div>
+      <div class="ctl"><div class="row"><label for="oasisDens">Oasis density <span class="eyebrow-n">base oasis : flood-plain ratio · ×10 desert, ×3 steppe</span></label><span class="val" id="vOasis"></span></div><input type="range" id="oasisDens" min="0" max="0.4" step="0.02" value="0.14"></div>
       <button class="vbtn" id="reroll" title="Re-roll the seeded forest / jungle / flood-plain / oasis placement">⟳ re-roll features</button>
-    </div>
+      </div>
+    </details>
 
-    <div class="panel" data-rail="tune">
-      <h2>Rivers <span class="eyebrow-n">· HydroRIVERS</span></h2>
-      <p class="sub">Top channels by discharge intersecting the current view — each main stem, tributary, and distributary ranks on its own. What you see is what gets written to the save. Click a river to cycle it: <b style="color:#e04a3a">deselected</b> (red, never written) → <b style="color:#2ec26a">selected</b> (green, kept on the map at any zoom and always written) → default.</p>
-      <div class="ctl"><div class="row"><label>Show top-N rivers <span class="eyebrow-n">by discharge</span></label><span class="val" id="vRiverN"></span></div><input type="range" id="riverN" min="0" max="40" step="1" value="12">
+    <button type="button" class="feature-toggle" id="feat" data-rail="tune" aria-pressed="false" title="Include forests, jungles, flood plains, and oases in the map">Emit Features <span class="feature-state" aria-hidden="true">Off</span></button>
+
+    <details class="panel" data-rail="tune" data-section="rivers-hydrorivers">
+      <summary><h2>Rivers</h2></summary>
+      <div class="panel-body">
+      <details class="panel-help"><summary>About these controls</summary><p class="sub">Top channels by discharge intersecting the current view — each main stem, tributary, and distributary ranks on its own. What you see is what gets written to the save. Click a river to cycle it: <b style="color:#e04a3a">deselected</b> (red, never written) → <b style="color:#2ec26a">selected</b> (green, kept on the map at any zoom and always written) → default.</p></details>
+      <div class="ctl"><div class="row"><label for="riverN">Show top-N rivers <span class="eyebrow-n">by discharge</span></label><span class="val" id="vRiverN"></span></div><input type="range" id="riverN" min="0" max="40" step="1" value="12">
         <label class="toggle" style="margin-top:6px"><input type="checkbox" id="riverEstuaries" checked> connect estuaries to coast <span class="eyebrow-n">(civ view)</span></label>
       </div>
-    </div>
+      </div>
+    </details>
 
-    <div class="panel" data-rail="tune">
-      <h2>General Options</h2>
-      <p class="sub">Window width (degrees) at which the coastline &amp; Köppen switch from coarse raster to crisp windowed vector.</p>
-      <div class="ctl"><div class="row"><label>Vector cutoff (window width)</label><span class="val" id="vCoast"></span></div><input type="range" id="coastThr" min="4" max="120" step="1" value="30"></div>
-      <div class="ctl"><div class="row"><label>X nudge <span class="eyebrow-n">shift sampling · tiles</span></label><span class="val" id="vNudgeX"></span></div><input type="range" id="nudgeX" min="-1" max="1" step="0.05" value="0"></div>
-      <div class="ctl"><div class="row"><label>Y nudge <span class="eyebrow-n">shift sampling · tiles</span></label><span class="val" id="vNudgeY"></span></div><input type="range" id="nudgeY" min="-1" max="1" step="0.05" value="0"></div>
+    <details class="panel" data-rail="tune" data-section="general-options">
+      <summary><h2>General Options</h2></summary>
+      <div class="panel-body">
+      <details class="panel-help"><summary>About these controls</summary><p class="sub">Window width (degrees) at which the coastline &amp; Köppen switch from coarse raster to crisp windowed vector.</p></details>
+      <div class="ctl"><div class="row"><label for="coastThr">Vector cutoff (window width)</label><span class="val" id="vCoast"></span></div><input type="range" id="coastThr" min="4" max="120" step="1" value="30"></div>
+      <div class="ctl"><div class="row"><label for="nudgeX">X nudge <span class="eyebrow-n">shift sampling · tiles</span></label><span class="val" id="vNudgeX"></span></div><input type="range" id="nudgeX" min="-1" max="1" step="0.05" value="0"></div>
+      <div class="ctl"><div class="row"><label for="nudgeY">Y nudge <span class="eyebrow-n">shift sampling · tiles</span></label><span class="val" id="vNudgeY"></span></div><input type="range" id="nudgeY" min="-1" max="1" step="0.05" value="0"></div>
+      </div>
+    </details>
     </div>
 
     <div class="gen">
+      <details class="export-options" id="exportOptions"><summary>Export settings <span class="rail-caption">CIV IV · WBS</span></summary>
+      <div class="export-body">
       <div class="ctl" style="margin-top:0">
         <div class="row"><label for="np">Playable civs <span class="eyebrow-n">0 = random civs &amp; starts · else auto-placed on land</span></label></div>
         <input class="numin" id="np" type="number" min="0" max="12" value="0">
       </div>
-      <button class="genbtn" id="generate">Generate .CivBeyondSwordWBSave</button>
       <div class="dest" id="destPanel">
         <div class="dt">Save destination</div>
         <div class="drow">
           <button class="destbtn" id="pickFolder" type="button">Choose folder…</button>
           <span class="destpath" id="destFolder" title="">Downloads (browser default)</span>
         </div>
-        <div class="drow">
+        <div class="drow filename-row">
           <input class="numin destname" id="saveName" type="text" value="terra_generated" spellcheck="false" aria-label="File name">
           <span class="destsuffix">.CivBeyondSwordWBSave</span>
         </div>
@@ -341,14 +475,25 @@
       </div>
       <div class="valid">
         <div class="vt">Validation</div>
-        <div id="validBody"><div class="vline" style="color:var(--dim)"><span>Run generate to validate the output.</span></div></div>
+        <div id="validBody" role="status" aria-live="polite"><div class="vline" style="color:var(--dim)"><span>Export a map to see validation results.</span></div></div>
       </div>
+      </div></details>
+      <button class="genbtn" id="generate" title="Generate a .CivBeyondSwordWBSave file">Export map <span aria-hidden="true">↗</span></button>
     </div>
   </aside>
 </main>
 
 <script>
 "use strict";
+
+/* Inspector disclosures affect presentation only; storage is optional. */
+document.querySelectorAll('.panel[data-section]').forEach(panel=>{
+  const key='terra.ui.panel.'+panel.dataset.section;
+  try{const saved=localStorage.getItem(key);if(saved!==null)panel.open=saved==='open';}catch(e){}
+  panel.addEventListener('toggle',()=>{
+    try{localStorage.setItem(key,panel.open?'open':'closed');}catch(e){}
+  });
+});
 /* ============================================================
    TERRA·WBS — interface prototype (procedural stand-in world)
    ============================================================ */
@@ -694,7 +839,9 @@ function fitMapBox(){
 }
 function relayout(){ fitMapBox(); clampView(); if(!landAlphaCanvas)return; render(); refreshStats(); updateArNote(); }   // masks are null until boot builds them (boot then relayouts itself); a resize before that only sizes the canvas
 window.addEventListener('resize',relayout);
-function updateArNote(){document.getElementById('arNote').textContent='viewer '+out.W+':'+out.H+(hexMode?' · hex':'');}
+// Tool hints and legends can wrap independently of the window size.
+new ResizeObserver(()=>requestAnimationFrame(relayout)).observe(wrap);
+function updateArNote(){const g=activeGrid();document.getElementById('arNote').textContent=g.W+' × '+g.H+(hexMode?' · hex':' tiles');}
 
 /* ---------- classification core ---------- */
 let islandBias=0, seawayBias=0;
@@ -1640,7 +1787,7 @@ function niceStep(range){const raw=range/6,p=Math.pow(10,Math.floor(Math.log10(M
 function drawGraticule(R){ctx.save();ctx.strokeStyle='rgba(69,193,208,0.16)';ctx.lineWidth=1;const RA=view.rot?rotAABB():R,P=worldToCanvas(R);const latT=latOf(RA.y),latB=latOf(RA.y+RA.h),lonL=lonOf(RA.x),lonR=lonOf(RA.x+RA.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,p0=P(RA.x,sy),p1=P(RA.x+RA.w,sy);ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,p0=P(sx,RA.y),p1=P(sx,RA.y+RA.h);ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();}ctx.restore();}
 function drawAxes(R){const latAx=document.getElementById('latAxis'),lonAx=document.getElementById('lonAxis');latAx.innerHTML='';lonAx.innerHTML='';if(view.rot)return;   // frame edges are not iso-lat/lon once rotated: no tick position is meaningful, the readout carries the angle instead
   const latT=latOf(R.y),latB=latOf(R.y+R.h),lonL=lonOf(R.x),lonR=lonOf(R.x+R.w),sLat=niceStep(latT-latB),sLon=niceStep(lonR-lonL);for(let L=Math.ceil(latB/sLat)*sLat;L<=latT;L+=sLat){const sy=(90-L)/180*HSRC,frac=(sy-R.y)/R.h;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.top=(frac*100)+'%';const v=Math.round(L);el.textContent=(v>0?v+'°N':v<0?(-v)+'°S':'0°');latAx.appendChild(el);}for(let L=Math.ceil(lonL/sLon)*sLon;L<=lonR;L+=sLon){const sx=(L+180)/360*WSRC,frac=(sx-R.x)/R.w;if(frac<0.03||frac>0.985)continue;const el=document.createElement('div');el.className='axis-tick';el.style.left=(frac*100)+'%';const v=Math.round(((L+540)%360)-180);el.textContent=(v>0?v+'°E':v<0?(-v)+'°W':'0°');lonAx.appendChild(el);}}
-function updateReadout(R){const latT=latOf(R.y),latB=latOf(R.y+R.h),kmW=(R.w/WSRC)*40075*Math.max(0.05,Math.cos((latT+latB)/2*Math.PI/180));document.getElementById('readout').innerHTML='center&nbsp; <b>'+latOf(view.cy).toFixed(1)+'°, '+wrapLon(lonOf(view.cx)).toFixed(1)+'°</b><br>span&nbsp;&nbsp;&nbsp; <b>'+Math.round(kmW).toLocaleString()+' km</b> wide · '+(latT-latB).toFixed(1)+'° lat'+(view.rot?'<br>rot&nbsp;&nbsp;&nbsp;&nbsp; <b>⟲ '+view.rot.toFixed(1).replace(/\.0$/,'')+'°</b> · ctrl+dblclick resets':'');const vs=document.getElementById('viewSource');if(vs){const vec=vectorCoastActive();vs.textContent=vec?'Vector':'Raster';vs.classList.toggle('vec',vec);}}
+function updateReadout(R){const latT=latOf(R.y),latB=latOf(R.y+R.h),kmW=(R.w/WSRC)*40075*Math.max(0.05,Math.cos((latT+latB)/2*Math.PI/180));document.getElementById('readout').innerHTML='<span>Center <b>'+latOf(view.cy).toFixed(1)+'°, '+wrapLon(lonOf(view.cx)).toFixed(1)+'°</b></span><span>Span <b>'+Math.round(kmW).toLocaleString()+' km</b> · '+(latT-latB).toFixed(1)+'° lat</span>'+(view.rot?'<span title="Ctrl + double-click the map to reset rotation">Rotation <b>'+view.rot.toFixed(1).replace(/\.0$/,'')+'°</b></span>':'');const vs=document.getElementById('viewSource');if(vs){const vec=vectorCoastActive();vs.textContent=vec?'Vector':'Raster';vs.classList.toggle('vec',vec);}}
 
 /* ---------- WBS serializer (verified; kept in sync with scripts/civ4_wbs_core.js, validated by scripts/civ4_wbs_test.js) ---------- */
 function worldSizeFor(W,H){const n=W*H;if(n<=40*24)return'WORLDSIZE_DUEL';if(n<=56*36)return'WORLDSIZE_TINY';if(n<=66*44)return'WORLDSIZE_SMALL';if(n<=84*52)return'WORLDSIZE_STANDARD';if(n<=104*64)return'WORLDSIZE_LARGE';return'WORLDSIZE_HUGE';}
@@ -2157,7 +2304,7 @@ const idbSet=(k,v)=>idbKV('readwrite',s=>s.put(v,k)),idbGet=k=>idbKV('readonly',
 async function ensureRW(h){if(!h)return false;const o={mode:'readwrite'};if(await h.queryPermission(o)==='granted')return true;return await h.requestPermission(o)==='granted';}
 function saveBaseName(){const n=(document.getElementById('saveName').value||'').trim().replace(/\.CivBeyondSwordWBSave$/i,'').replace(/[\\/:*?"<>|]+/g,'_');return n||'terra_generated';}
 function setDestHint(m){document.getElementById('destHint').textContent=m||'';}
-function updateDestUI(){const f=document.getElementById('destFolder');if(saveDir){f.textContent=saveDirName+'\\';f.title=saveDirName;}else{f.textContent=FS_DIR?'Ask each time (folder not set)':(FS_SAVE?'Ask each time (Save As…)':'Downloads (browser default)');f.title='';}}
+function updateDestUI(){const f=document.getElementById('destFolder');if(saveDir){f.textContent=saveDirName+'\\';f.title=saveDirName;}else{f.textContent=FS_DIR?'Ask each time':(FS_SAVE?'Save As…':'Downloads');f.title='';}}
 async function pickFolder(){if(!FS_DIR)return;try{const dir=await window.showDirectoryPicker({id:'terra-wbs-out',mode:'readwrite'});if(!await ensureRW(dir)){setDestHint('Write permission for that folder was declined.');return;}saveDir=dir;saveDirName=dir.name;try{await idbSet('saveDir',dir);}catch(_){}updateDestUI();setDestHint('Saving into "'+saveDirName+'". (Browsers expose only the folder name, not its full path.)');}catch(e){if(e&&e.name!=='AbortError')setDestHint('Could not open the folder picker: '+e.message);}}
 function downloadBlob(text,filename){const blob=new Blob([text],{type:'application/octet-stream'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
 async function writeOut(text,filename){
@@ -2217,6 +2364,7 @@ function refreshStats(){
 
 /* ---------- interactions ---------- */
 let raf=null;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=null;render();refreshStats();});}
+document.getElementById('generate').addEventListener('click',()=>{document.getElementById('exportOptions').open=true;});
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-pressed','false'));t.setAttribute('aria-pressed','true');mode=t.dataset.mode;lastTiles=null;_selDraw=null;_selCursor=null;drawLegend();syncComposeUI();syncSelUI();relayout();}));   // relayout, not schedule: compose has its own grid size, so the map-box aspect changes with the mode. An in-progress stroke is abandoned: the two modes' masks live in different coordinate spaces.
 function bindRange(id,key,after){const el=document.getElementById(id);el.addEventListener('input',()=>{P[key]=parseFloat(el.value);lastTiles=null;if(after)after();schedule();});}
 bindRange('clim','clim');   // relief-basis is now a dual-knob slider (see reliefBasisRange below); sea-level slider removed, P.sea fixed at 0.5
@@ -2283,7 +2431,7 @@ makeMultiSlider(document.getElementById('borealRange'),{min:35,max:95,step:1,val
   onInput:v=>{P.latTundra=v[0];P.latIce=v[1];commit();}});
 document.getElementById('alpine').addEventListener('input',e=>{P.alpine=parseFloat(e.target.value);document.getElementById('vAlpine').textContent=P.alpine.toFixed(2);lastTiles=null;schedule();});
 updateMultiReadouts();
-document.getElementById('feat').addEventListener('change',e=>{P.feat=e.target.checked;lastTiles=null;schedule();});
+document.getElementById('feat').addEventListener('click',e=>{P.feat=!P.feat;e.currentTarget.setAttribute('aria-pressed',String(P.feat));e.currentTarget.querySelector('.feature-state').textContent=P.feat?'On':'Off';lastTiles=null;drawLegend();schedule();});
 document.getElementById('fpKoppen').addEventListener('change',e=>{P.fpKoppen=e.target.checked;lastTiles=null;schedule();});
 document.getElementById('fpAmt').addEventListener('input',e=>{const a=+e.target.value;P.fpThresh=0.25+0.5*Math.pow(1-a,2.2);P.oasisThresh=0.42-0.18*a;document.getElementById('vFp').textContent=Math.round(a*100)+'%';lastTiles=null;schedule();});   // curved flood-plain threshold; oasis density tied to the same slider (more floodplains -> more oases)
 document.getElementById('forestDens').addEventListener('input',e=>{P.forestDens=+e.target.value;document.getElementById('vForest').textContent=Math.round(P.forestDens*100)+'%';lastTiles=null;schedule();});
@@ -3100,7 +3248,7 @@ function renderShelf(){
   if(!SHELF.length){
     const p=document.createElement('p');
     p.className='note shelf-empty';
-    p.textContent='No snapshots yet. A snapshot freezes the framed region exactly as tuned — capture one with the 📷 snapshot button above the map, then arrange several here on the Compose canvas to build a collage world.';
+    p.textContent='Your snapshot shelf is empty. Switch to a map view and choose Capture snapshot, then return here to arrange your regions.';
     list.appendChild(p);
     return;
   }
@@ -3221,6 +3369,12 @@ function selectedPatch(){return comp.sel==null?null:comp.patches.find(p=>p.id===
    pane is untagged and stays in both, since it is the exit from either path. */
 function syncRailPanels(){
   const on=(mode==='compose');
+  document.body.classList.toggle('composing',on);
+  document.getElementById('viewSource').hidden=on;
+  ['zin','zout','zreset','regen','tgGrat'].forEach(id=>{document.getElementById(id).disabled=on;});
+  document.getElementById('inspectorTitle').textContent=on?'Composition':'Map settings';
+  document.getElementById('interactionHint').textContent=on?'Drag to move · Arrows to nudge · [ / ] to reorder':'Drag to pan · Scroll to zoom · Ctrl + drag to rotate';
+  document.getElementById('generate').firstChild.textContent=on?'Export composition ':'Export map ';
   document.querySelectorAll('.rail [data-rail="tune"]').forEach(el=>{el.hidden=on;});
   document.querySelectorAll('.rail [data-rail="compose"]').forEach(el=>{el.hidden=!on;});
 }
