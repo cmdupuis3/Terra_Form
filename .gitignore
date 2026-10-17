@@ -7,3 +7,5 @@ osm_waterways/
 osm_named_rivers/
 # Copernicus DEM window cache (scripts/export_city_sites.py) -- regenerable
 cache/
+# landform codebook training windows -- regenerable (scripts/landform_windows.py, ~2 min)
+data/landform/windows.npz
