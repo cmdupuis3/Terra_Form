@@ -171,6 +171,7 @@
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const t = tiles[y][x], i = y * W + x;
       if (t.plot === PLOT.WATER || t.plot === PLOT.PEAK) continue;
+      if (S.genPan && S.genPan[i]) continue;   // a generated salt pan stays bare (no flood plain, oasis or vegetation)
       const hue = hueA[i], sat = satA[i], val = valA[i], z = t.z, rnd = fhash(x, y, featSeed);
       // ---- flat desert: flood plains (on a river) else oasis ----
       if (isDesert(t) && t.plot === PLOT.FLAT) {
@@ -241,6 +242,7 @@
     let c = TCOLOR[t.terrain].slice();
     if (t.plot === PLOT.HILLS) c = c.map(v => v * 0.93); else if (t.plot === PLOT.PEAK) c = c.map(v => v * 0.84 + 12);
     if (t.feature === 'FEATURE_FOREST') c = [34, 95, 42]; else if (t.feature === 'FEATURE_JUNGLE') c = [18, 64, 26]; else if (t.feature === 'FEATURE_FLOOD_PLAINS') c = [154, 182, 66]; else if (t.feature === 'FEATURE_OASIS') c = [200, 188, 120];
+    else if (t._salt && t.terrain === TERR.DESERT && t.plot !== PLOT.WATER) c = [232, 226, 208];   // salt pan (real playa or generated): the export writes plain desert, the preview shows the flat
     return c;
   }
   /* One character per tile, for the text grid the MCP bridge (mcp/) hands an agent: water is '~' ocean or ',' coast;
@@ -392,6 +394,13 @@
     blankTile: kind => kind === 'barrier'
       ? { terrain: TERR.GRASS, plot: PLOT.PEAK, rgb: [96, 110, 86], z: 5, lat: 0, kc: 0, feature: null, fv: 0, special: null, bonus: null }
       : { terrain: TERR.OCEAN, plot: PLOT.WATER, rgb: [18, 58, 81], z: 5, lat: 0, kc: 0, feature: null, fv: 0, special: null, bonus: null },
+    /* Generated features on the compose canvas (core/generate.js): a lake is water (coastPass re-derives coast vs
+       ocean); a salt pan is flat desert with no feature, the same tile the classifier makes from a real playa. */
+    paint(t, kind) {
+      if (kind === 'lake') return Object.assign({ terrain: TERR.OCEAN, plot: PLOT.WATER, rgb: [18, 58, 81], z: (t && t.z) || 5, lat: (t && t.lat) || 0, kc: (t && t.kc) || 0, feature: null, fv: 0, special: null, bonus: null }, t && t._h != null ? { _h: t._h } : {});
+      if (kind === 'salt_pan') return Object.assign({}, t, { terrain: TERR.DESERT, plot: PLOT.FLAT, feature: null, fv: 0, special: null, bonus: null, _salt: 1 });
+      return null;
+    },
     validateTile(t) {
       if (!KNOWN_TERRAINS.has(t.terrain)) return 'unknown terrain "' + t.terrain + '"';
       if (!Number.isInteger(t.plot) || t.plot < 0 || t.plot > 3) return 'invalid plot value "' + t.plot + '" (expected 0..3)';

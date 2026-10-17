@@ -456,6 +456,7 @@ function sampleRegion(W,H){
     proxA[idx]=Math.exp(-distPolar[pcy*WSRC+pcx]/PROX_SCALE_PX);   // 1 at a polar zone, decaying outward
   }
   if(vectorCoastActive()){const vf=rasterizeVectorLandFrac(W,H,R);for(let i=0;i<N;i++)lf[i]=vf[i];}   // crisp fractional land
+  const genPan=(typeof genApplySamples==='function')?genApplySamples(lf,pA,W,H,R):null;   // generated lakes (less land) and salt pans (more playa) on this part of the world: core/generate.js
   const hf=haloBlur(lf,W,H,haloRadius());                                                             // halo land fraction
   const isLandA=new Uint8Array(N);for(let i=0;i<N;i++)isLandA[i]=lf[i]>=landThreshold(hf[i])?1:0;
   if(seawayBias>0){   // seaways: carve straits through thin land necks (same chokepoint stencil as mountain passes — land flanking on two sides, sea either side); extra sweeps push the channel through
@@ -478,15 +479,20 @@ function sampleRegion(W,H){
   // relief class per land tile from the thresholds (0 flat, 1 hills, 2 peak), then the mountain-pass / flat-spot post-passes
   const relief=new Uint8Array(N);for(let i=0;i<N;i++)relief[i]=!isLandA[i]?0:metricPeak[i]>P.peak?2:metricHill[i]>P.hill?1:0;
   if(mtnPass>0||flatSpots>0)reliefPass(relief,metricHill,metricPeak,W,H);
+  if(genPan)for(let i=0;i<N;i++)if(genPan[i])relief[i]=0;   // a generated salt pan is flat ground, whatever the terrain under it measured
   const moistJit=new Float64Array(N);   // doubles: the old code passed the raw double straight to the classifier, and a float32 round-off could flip a tile sitting exactly on a threshold
   for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++)moistJit[ty*W+tx]=(vnoise(tx/MOIST_SCALE+worldSeed*0.7,ty/MOIST_SCALE+worldSeed*0.3)-0.5)*2*MOIST_JIT;   // SMOOTH low-frequency spatial moisture variation (~MOIST_SCALE-tile blobs); reseed shifts the field via worldSeed
-  return {W,H,h:hA,rough:rgh,reliefHill:metricHill,reliefPeak:metricPeak,relief,land:isLandA,landFrac:lf,kc:kcA,r:rA,g:gA,b:bA,white:wA,playa:pA,lat:ltA,polar:proxA,surrArid:surrAridA,surrTemp:surrTempA,moistJit};
+  return {W,H,h:hA,rough:rgh,reliefHill:metricHill,reliefPeak:metricPeak,relief,land:isLandA,landFrac:lf,kc:kcA,r:rA,g:gA,b:bA,white:wA,playa:pA,lat:ltA,polar:proxA,surrArid:surrAridA,surrTemp:surrTempA,moistJit,genPan:genPan||undefined};
 }
 /* The framed region as the active game's tiles: sample, then hand the samples to the module. land / hills / peaks
    are counted from the samples (every game agrees on what water and relief are; the vocabulary is the module's). */
 function classifyRegion(W,H){
   const S=sampleRegion(W,H),g=activeGame();
   const res=g.classify(S,{W,H,hex:hexMode,grid:g.grid});
+  /* Two core fields on every tile, whatever the game: _h, the tile's mean height (the RG16 0..1 scale), so a snapshot
+     keeps a height field for the compose canvas' lake and river generation (core/generate.js); and _salt on land that
+     is mostly salt pan (real or generated playa), which the text grid shows. Exporters read their own fields only. */
+  for(let y=0;y<H;y++){const row=res.tiles[y];if(!row)continue;for(let x=0;x<W;x++){const t=row[x],i=y*W+x;if(!t||typeof t!=='object')continue;t._h=Math.round(S.h[i]*10000)/10000;if(S.land[i]&&S.playa[i]>=0.5)t._salt=1;}}
   let land=0,hills=0,peaks=0;for(let i=0;i<W*H;i++){if(S.land[i]){land++;if(S.relief[i]===1)hills++;else if(S.relief[i]===2)peaks++;}}
   return {tiles:res.tiles,W,H,land,hills,peaks,samples:S};
 }
@@ -1528,8 +1534,9 @@ function nudgeRiverEdges(nof,wof,W,H,edgeOk){
 }
 function computeRiverEdges(R,W,H,N,tiles){
   const empty={nof:new Map(),wof:new Map()};
-  if(!RMAN||N<=0)return empty;
-  const onSig=[...RIVER_ON].sort().join(',');   // selected rivers alter `keep`, so they must be part of the memo key
+  const GR=(typeof genReaches==='function')?genReaches():[];   // generated rivers on this part of the world (core/generate.js): extra reaches, always kept
+  if((!RMAN&&!GR.length)||(N<=0&&!GR.length))return empty;   // riverN=0 hides the real rivers, never the generated ones
+  const onSig=[...RIVER_ON].sort().join(',')+(GR.length?'|'+genSig():'');   // selected rivers alter `keep`, so they must be part of the memo key (generated ones too)
   const key=_riverGen+'|'+R.x.toFixed(3)+'_'+R.y.toFixed(3)+'_'+R.w.toFixed(3)+'_'+R.h.toFixed(3)+'_'+(view.rot||0).toFixed(3)+'_'+W+'_'+H+'_'+N+'_'+onSig;
   let raw;
   if(_rivMemo.key===key){raw=_rivMemo.raw;}
@@ -1546,11 +1553,14 @@ function computeRiverEdges(R,W,H,N,tiles){
         let x0=1/0,y0=1/0,x1=-1/0,y1=-1/0;for(const q of p){if(q[0]<x0)x0=q[0];if(q[0]>x1)x1=q[0];if(q[1]<y0)y0=q[1];if(q[1]>y1)y1=q[1];}
         return !(x1<0||x0>W||y1<0||y0>H);}):(b=>!(b[2]<lonL||b[0]>lonR||b[3]<latB||b[1]>latT));
     const inv=[];for(const t of RTILE.values()){if(!t||t==='load')continue;for(const f of t.features){if(!vis(f.bbox))continue;inv.push(f);}}
+    for(const f of GR)if(vis(f.bbox))inv.push(f);
     if(!inv.length){raw=empty;_rivMemo={key,raw,inView:0};}
     else{
       const best=new Map();for(const f of inv){const c=best.get(f.rid);if(c==null||f.d>c)best.set(f.rid,f.d);}
-      const keep=new Set([...best.entries()].sort((a,b)=>b[1]-a[1]).slice(0,N).map(e=>e[0]));
+      const genR=new Set(GR.map(f=>f.rid));   // generated rivers never take a real river's top-N slot (a tributary may have just been snapped onto it)
+      const keep=new Set([...best.entries()].filter(e=>!genR.has(e[0])).sort((a,b)=>b[1]-a[1]).slice(0,N).map(e=>e[0]));
       for(const rid of RIVER_ON)if(best.has(rid))keep.add(rid);   // selected rivers stay in view even below the top-N discharge cutoff
+      for(const f of GR)if(best.has(f.rid))keep.add(f.rid);       // generated rivers are never ranked out
       const sel=inv.filter(f=>keep.has(f.rid));
       raw=reachesToEdges(sel,{lonL,lonR,latT,latB},W,H,PJ);
       // per-channel mouths for estuary bridging. A channel's downstream terminal is only a real
@@ -1613,7 +1623,7 @@ function selectedOnly(rv){if(!rv)return rv;const nof=new Map(),wof=new Map();
 const riverLineWidth=()=>Math.max(2.5,Math.min(9,cv.width*0.0042));   // scale with the viewer, not the tile grid, so width stays sane at any out.W and stays clickable
 // Blue overlay drawn along the exact tile edges that get serialized.
 function drawRivers(R){
-  if(!RMAN||riverN<=0||!showRivers)return;
+  if(!showRivers||((!RMAN||riverN<=0)&&!(typeof genReaches==='function'&&genReaches().length)))return;   // riverN=0 hides the real rivers; generated ones (core/generate.js) still draw
   try{
     const tiles=(mode==='civ'&&lastTiles)?lastTiles.tiles:null;
     const {nof,wof}=computeRiverEdges(R,out.W,out.H,riverN,tiles);
@@ -1813,7 +1823,7 @@ let drag=null,dragMoved=false;
 document.getElementById('tgRivers').addEventListener('change',e=>{showRivers=e.target.checked;render();});
 /* Hit test in client pixels, so the clickable band matches the drawn line width regardless of out.W. */
 function riverHitAt(clientX,clientY){
-  if(!RMAN||riverN<=0||!showRivers)return null;
+  if(!showRivers||((!RMAN||riverN<=0)&&!(typeof genReaches==='function'&&genReaches().length)))return null;
   const tiles=(mode==='civ'&&lastTiles)?lastTiles.tiles:null;
   let rv;try{rv=computeRiverEdges(srcRect(),out.W,out.H,riverN,tiles);}catch(_){return null;}
   const r=mapBox.getBoundingClientRect();if(!r.width||!r.height)return null;
@@ -2014,7 +2024,7 @@ function composeCopyTile(t,foreignGame){const c=Object.assign({},t);if(t.rgb)c.r
 /* ---------- compositing ---------- */
 /* eraseGen, not erased.size: erasing one region and then another of equal size would leave the size
    unchanged and serve a stale composite. A monotonic counter can't collide. */
-function composeSig(){let s=comp.W+'x'+comp.H+':'+defaultTileKind+':e'+comp.eraseGen+':r'+(comp.riverGen|0);for(const p of comp.patches)s+='|'+p.id+':'+p.x+','+p.y+':'+(p.landOnly?1:0)+':'+(p.snap&&p.snap.id)+':'+(p.editGen|0);return s;}   // editGen / riverGen: bumped by the per-patch and canvas river edits (TerraForm.api.compose), so the memo cannot serve a stale composite
+function composeSig(){let s=comp.W+'x'+comp.H+':'+defaultTileKind+':e'+comp.eraseGen+':r'+(comp.riverGen|0);for(const p of comp.patches)s+='|'+p.id+':'+p.x+','+p.y+':'+(p.landOnly?1:0)+':'+(p.snap&&p.snap.id)+':'+(p.editGen|0);if(typeof genComposeSig==='function')s+='|'+genComposeSig();return s;}   // editGen / riverGen: bumped by the per-patch and canvas river edits (TerraForm.api.compose), so the memo cannot serve a stale composite
 function composeInvalidate(){_compMemo=null;}
 /* Translating a river edge is a pure re-key: the map keys are grid coordinates and `dir` is an
    ABSOLUTE cardinal, so moving a patch east by 3 tiles cannot rotate its rivers. No direction
@@ -2077,6 +2087,7 @@ function compositeCompose(){
      become inland terrain-adjacent... i.e. re-derived) or the canvas ocean may now touch land it
      never saw. finalizeTiles lets the game re-derive its shore from the flattened tiles; cleanupRiverEdges
      then drops the edges that the reshuffle left flanked by water/coast, which Civ4 rejects. */
+  if(typeof genApplyCompose==='function')genApplyCompose(tiles,nof,wof,W,H);   // generated lakes, salt pans and rivers (core/generate.js): on top of every patch and erasure
   finalizeTiles(tiles,W,H);
   cleanupRiverEdges(nof,wof,tiles,W,H);
   const out2={tiles,rivers:{nof,wof},W,H};
@@ -2167,7 +2178,7 @@ function composeRemovePatch(id){const i=comp.patches.findIndex(p=>p.id===id);if(
 function composeRaise(id){const i=comp.patches.findIndex(p=>p.id===id);if(i<0||i===comp.patches.length-1)return false;const p=comp.patches[i];comp.patches[i]=comp.patches[i+1];comp.patches[i+1]=p;composeDirty();return true;}
 function composeLower(id){const i=comp.patches.findIndex(p=>p.id===id);if(i<=0)return false;const p=comp.patches[i];comp.patches[i]=comp.patches[i-1];comp.patches[i-1]=p;composeDirty();return true;}
 function composeSetLandOnly(id,on){const p=composePatchById(id);if(!p)return false;p.landOnly=!!on;composeDirty();return true;}
-function composeClear(){comp.patches=[];comp.sel=null;_compPending=null;_compGhost=null;_compDrag=null;comp.erased.clear();comp.eraseGen++;comp.riverAdd=[];comp.riverGen=(comp.riverGen|0)+1;composeDirty();}
+function composeClear(){comp.patches=[];comp.sel=null;_compPending=null;_compGhost=null;_compDrag=null;comp.erased.clear();comp.eraseGen++;comp.riverAdd=[];comp.riverGen=(comp.riverGen|0)+1;comp.genItems=[];comp.genGen=(comp.genGen|0)+1;composeDirty();}
 /* Fill every tile whose CENTRE falls inside the compose mask with the default tile. Centres, not
    corners, so a shape drawn tight around a coastline takes the tiles it visibly covers. */
 function composeEraseSelection(){
@@ -2190,10 +2201,12 @@ function composeStats(){const C=compositeCompose();let land=0;for(let y=0;y<C.H;
    and desync the copies. The shelf owns snapshot storage and resolves ids back on load. */
 function composeSerializeState(){return {v:1,kind:'terra-form-compose',W:comp.W,H:comp.H,
   patches:comp.patches.map(p=>Object.assign({snap:p.snap&&p.snap.id,x:p.x,y:p.y,landOnly:!!p.landOnly},p.skip&&p.skip.size?{skip:[...p.skip]}:{},p.riverSkip&&p.riverSkip.size?{riverSkip:[...p.riverSkip]}:{})),
-  riverAdd:(comp.riverAdd&&comp.riverAdd.length)?comp.riverAdd:undefined};}
+  riverAdd:(comp.riverAdd&&comp.riverAdd.length)?comp.riverAdd:undefined,
+  genItems:(comp.genItems&&comp.genItems.length)?comp.genItems:undefined,genNext:comp.genNext||undefined};}   // generated lakes / pans / rivers (core/generate.js), canvas-pinned like erasures
 function composeLoadState(obj,resolve){
   if(!obj||!Array.isArray(obj.patches))return 0;
   comp.patches=[];comp.sel=null;comp.nextId=1;_compPending=null;_compGhost=null;_compDrag=null;
+  comp.genItems=Array.isArray(obj.genItems)?obj.genItems:[];comp.genNext=(obj.genNext|0)||1;comp.genGen=(comp.genGen|0)+1;   // a save without generated features (older ones too) must not inherit the previous collage's
   if(obj.W!=null)comp.W=Math.max(8,Math.min(160,obj.W|0));
   if(obj.H!=null)comp.H=Math.max(8,Math.min(120,obj.H|0));
   let dropped=0;

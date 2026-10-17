@@ -102,6 +102,8 @@ lint, such as rivers that were already endorheic in their source); `placed` / `a
 | `flip_snapshot {id, axis:'x'\|'y'\|'xy', name}` | a mirrored (or 180°-rotated) copy on the shelf: tiles, river edges and flow directions flipped together; disguises recognisable pieces |
 | `catalog_index {entries}`, `catalog_lint` | record each catalog entry's connector labels and measured climate mix (slow, once), then check the catalog for connector types with no partner |
 | `thumbnail {target, path, maxPx}` | the app's tile renderer on the canvas / frame / a snapshot, written as a PNG |
+| `add_lake {at \| lonlat, area, compact, outlet, saltFringe, descend, target}`, `add_salt_pan {at \| lonlat, area, compact, target}`, `add_river {from \| lonlat, discharge, meander, join, target}` | generate a lake, salt pan or river on the frame (world-pinned, on the real elevation) or the compose canvas (tile-pinned, on the collage's heights); see Generated features |
+| `features {action:'list'\|'remove'\|'clear', id, target}` | the generated features of the frame or the canvas; removing a lake also removes its outlet river and salt fringe |
 
 View options on every block: `grid:false`, `bbox`, `step`, `overlay:'rivers'` (prints `=` on every tile a
 river edge touches, so river courses read through a uniform desert) and `overlay:'codes'` (one glyph per
@@ -127,7 +129,59 @@ One character per tile. The alphabet is the game module's `preview.ascii(t)` (ga
 | OpenFront | `~` water; land by magnitude: digits `0`-`9` plains, `a`-`j` highland 10-19, `A`-`K` mountain 20-30 |
 | other games | `~` water  `.` flat  `n` hills  `^` peak |
 
-Civ5 (hex) grids print the half-tile-east rows indented by one space.
+Civ5 (hex) grids print the half-tile-east rows indented by one space. In every game `_` is a **salt pan**
+(land that is mostly playa, real or generated); Civ4 and Civ5 export it as flat desert.
+
+### Generated features
+
+`add_lake`, `add_salt_pan` and `add_river` (core/generate.js) work on both pathways with the same two
+algorithms; `target` picks the pathway (default: whichever the page shows).
+
+- **Frame (a region of the real Earth).** The feature is computed on an analysis grid over the frame (up to
+  6x6 cells per tile, heights interpolated from the working elevation grid) and stored in lon/lat. A lake or pan
+  is a polygon that sampling folds into each tile's land fraction or playa fraction; a river is a polyline added
+  to the real river reaches, always kept (never ranked out by `riverN`). So the classifier, the coast halo, the
+  estuary bridging and the features pass treat them as real data, re-framing the same area keeps them, and a
+  snapshot bakes them into its tiles and river edges. They live in the page's memory until a reload.
+- **Compose canvas.** The feature is computed on the collage's tiles, using the `_h` height every classified tile
+  now carries (a pseudo-height from relief and distance to water where it is missing, e.g. snapshots made
+  before this field existed; the block says so). It is stored in canvas tile coordinates like an erasure:
+  lakes and pans are repainted through the game's `paint(t, kind)` hook after every patch and erasure, rivers
+  are rasterised onto tile edges by the same corner-snap rasteriser as real rivers. Moving a patch leaves them
+  where they were drawn; `compose_new` (clear) drops them; a saved collage keeps them.
+
+The algorithms:
+
+- **Lake / salt pan: basin fill.** From the seed (`at` tile, or `lonlat` on a frame) the water walks downhill to
+  the local low point (`descend:false` keeps the seed), then floods the lowest ground first until it covers
+  `area` tiles, with a small distance penalty (`compact`, height units per tile, default 0.004 ≈ 26 m for a lake, 0.05 for a pan, which is a flat floor) that
+  keeps it from running down a valley. Water and a whole tile around it are never flooded, so a lake cannot
+  become a bay or touch the sea once sampled. The block reports the surface height, the natural basin (the
+  depression the seed drains into, from a priority flood; a lake larger than it would overflow in reality) and
+  the shore climate. Without a seed, a lake goes into the deepest closed depression, a salt pan into the lowest
+  basin in arid (Köppen B) country, kept clear of the map edge by max(3 tiles, 10% of the shorter side) plus the
+  feature's own radius and fringe. A seed that touches water is moved to the nearest dry cell (the block says so).
+  A generated salt pan is flat ground with no feature: on a frame its tiles are forced flat and the game's
+  features pass skips them (real playas are classified as before).
+- **Outlets.** `outlet:'auto'` (default) gives a lake an outflow river from its lowest rim when its shore is
+  humid and the water reaches the basin's spill point; an arid lake, or one standing below its spill point,
+  stays closed (the block gives the metres). `'river'` always (a carved channel when below the spill point),
+  `'none'` never. `saltFringe:n` adds a ring of salt pan n tiles wide around the water (an endorheic desert
+  lake). Both get their own ids (`lake-3-outlet`, `lake-3-salt`) and go with the lake on `features remove`.
+- **River: flow routing.** A priority flood (Barnes et al. 2014) from every water cell and the map edge gives
+  each land cell a receiver on a depression-free surface; the river follows the receivers from `from` until it
+  reaches water, leaves through the map edge (the world goes on past the frame), or meets an existing river
+  (`join:false` runs on through it), in which case it ends exactly on a corner of that river so the edges
+  connect. The path is smoothed (Chaikin), given a gentle seeded meander (`meander` 0..1) and split into four
+  reaches of rising discharge: by default from its real length and climate (Hack's law for the catchment, a
+  runoff of 0.010 m³/s per km² humid down to 0.002 arid: about 70 m³/s for a 300 km humid river), or
+  `discharge` m³/s at the mouth. Without `from`, the source is the high, humid ground, at least two tiles from
+  the edge and from any river, with the longest way to water (not out of the frame). Generated rivers never
+  take a real river's place in the `riverN` ranking, and `riverN:0` hides only the real ones.
+
+Limits: on a frame the heights come from the 10 km working grid, so on very fine frames (well under 0.1°/tile)
+lake shores follow a smoothed version of the terrain rather than the 1 km one. OpenFront has no salt terrain: a
+pan is marked `_` but its magnitudes are unchanged.
 
 ## Worked example
 

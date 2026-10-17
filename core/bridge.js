@@ -55,8 +55,9 @@
     const pv = (g && g.preview) || {};
     const relief = pv.relief || (t => (t.relief === 1 || t.relief === 2) ? t.relief : 0);
     const isWater = t => { try { const gg = (t._g && T.games[t._g]) || g; return !!gg.isWater(t); } catch (e) { return false; } };
-    const ascii = pv.ascii || (t => isWater(t) ? '~' : relief(t) === 2 ? '^' : relief(t) === 1 ? 'n' : '.');
-    return { ascii, legend: pv.asciiLegend ? pv.asciiLegend() : GENERIC_LEGEND, relief, labels: pv.reliefLabels || ['flat', 'hills', 'peaks'], isWater };
+    const base = pv.ascii || (t => isWater(t) ? '~' : relief(t) === 2 ? '^' : relief(t) === 1 ? 'n' : '.');
+    const ascii = t => t && t._salt && !isWater(t) ? '_' : base(t);   // salt pan (real playa or generated), whatever the game's alphabet
+    return { ascii, legend: Object.assign({}, pv.asciiLegend ? pv.asciiLegend() : GENERIC_LEGEND, { '_': 'salt pan' }), relief, labels: pv.reliefLabels || ['flat', 'hills', 'peaks'], isWater };
   }
   function legendClass(legend, ch) {   // -> {key,label}: exact key, then a range key such as a-z, then the lowercase letter (hills are uppercase in the Civ alphabet)
     if (legend[ch] != null) return { key: ch, label: legend[ch] };
@@ -307,7 +308,37 @@
   }
   function frameReport(opts) {
     const a = api(), ev = a.evaluate(), st = a.state(), deg = Math.abs(st.bounds.N - st.bounds.S) / ev.H;
-    return report(ev.tiles, ev.W, ev.H, ev.rivers, T.game, opts, { kind: 'frame', game: st.game, hex: st.hex, bounds: st.bounds, rot: st.view.rot, mode: st.mode, pending: st.pending, degPerTile: deg }, null, null, { degPerTile: deg, sourceDeadEnd: () => true });
+    return report(ev.tiles, ev.W, ev.H, ev.rivers, T.game, opts, { kind: 'frame', game: st.game, hex: st.hex, bounds: st.bounds, rot: st.view.rot, mode: st.mode, pending: st.pending, degPerTile: deg, features: genList('frame') }, null, null, { degPerTile: deg, sourceDeadEnd: () => true });
+  }
+  /* the river edges over a thumbnail: each edge is a tile side (nof = the north side of tile (gx,gr), wof = the west
+     side of tile (gx,gy)), stroked thicker for more discharge, so the PNG shows what the export writes; generated
+     rivers (core/generate.js, rid >= 2e9) are orange, real ones blue */
+  function drawRivers(url, rivers, W, H) {
+    return new Promise(res => {
+      const im = new Image();
+      im.onload = () => {
+        const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+        const sx = c.width / W, sy = c.height / H, ents = m => !m ? [] : (typeof m.forEach === 'function' && typeof m.set === 'function' ? Array.from(m) : m);
+        g.lineCap = 'round';
+        const seg = (x0, y0, x1, y1, d, rid) => { g.strokeStyle = rid >= 2e9 ? 'rgb(240,120,30)' : 'rgb(40,110,220)'; g.lineWidth = Math.max(1.2, Math.min(sx, sy) * (0.12 + 0.06 * Math.log10(1 + Math.max(0, d || 0)))); g.beginPath(); g.moveTo(x0 * sx, y0 * sy); g.lineTo(x1 * sx, y1 * sy); g.stroke(); };
+        for (const [k, v] of ents(rivers.nof)) { const p = String(k).split(','), gr = +p[0], gx = +p[1]; seg(gx, gr + 1, gx + 1, gr + 1, v && v.d, v && +v.rid); }   // north side of the tile below = the boundary between rows gr and gr+1
+        for (const [k, v] of ents(rivers.wof)) { const p = String(k).split(','), gy = +p[0], gx = +p[1]; seg(gx + 1, gy, gx + 1, gy + 1, v && v.d, v && +v.rid); }   // likewise the boundary between columns gx and gx+1
+        res(c.toDataURL('image/png'));
+      };
+      im.onerror = () => res(url); im.src = url;
+    });
+  }
+  /* generated lakes / salt pans / rivers (core/generate.js): the frame's are world-pinned, the canvas' tile-pinned */
+  function genList(target) { const G = api().gen; if (!G) return null; const L = target === 'frame' ? G.frame.list(api().state().bounds) : G[target].list(); return L.length ? L.map(f => ({ id: f.id, kind: f.kind, at: f.at || f.from, tiles: f.tiles, to: f.to, parent: f.parent })) : null; }
+  async function genCmd(kind, args) {
+    const a = api(); if (!a.gen) throw new Error('core/generate.js is not loaded (index.html)');
+    const target = args.target || (a.state().mode === 'compose' ? 'compose' : 'frame');
+    if (target !== 'frame' && target !== 'compose') throw new Error("target must be 'frame' or 'compose'");
+    await prepOverlay(args);
+    if (target === 'compose') { a.setMode('compose'); const g = a.gen.compose.add(kind, args); a.render(); return Object.assign(composeReport(args), { generated: g }); }
+    if (a.state().mode === 'compose' || a.state().mode === 'color') a.setMode('civ');
+    await settle(); const g = a.gen.frame.add(kind, args); await settle();
+    return Object.assign(frameReport(args), { generated: g });
   }
   function llToPx(ll) {   // lon/lat -> source px, on the world copy nearest the view centre (frames may straddle the antimeridian)
     const a = api(), cx = a.state().view.cx; let sx = (a.wrapLon(+ll[0]) + 180) / 360 * a.WSRC; sx += Math.round((cx - sx) / a.WSRC) * a.WSRC;
@@ -344,7 +375,7 @@
     const r = report(C.tiles, C.W, C.H, C.rivers, T.game, opts, { kind: 'compose', game: st.game, hex: st.hex, erased: c.erased.size, latitudes: c.latTop != null ? { top: c.latTop, bottom: c.latBot } : null, degPerTile: composeDeg(),
       patches: c.patches.map(p => ({ id: p.id, snapshot: p.snap.id, name: p.snap.name, x: p.x, y: p.y, W: p.snap.W, H: p.snap.H, landOnly: !!p.landOnly, foreign: p.snap.game !== st.game ? p.snap.game : null, skipped: p.skip ? p.skip.size : 0, riverSkip: p.riverSkip ? p.riverSkip.size : 0 })) },
       owner, composeLat(), { cutEdge: composeCutEdge(owner), sourceDeadEnd: sourceDeadEndFn(), patchBand: patchBands(cb), patchRect: patchRects(), degPerTile: composeDeg() });
-    r.collisions = collisions(); r.budget = budget(r.land, C.W, C.H);
+    r.collisions = collisions(); r.budget = budget(r.land, C.W, C.H); r.features = genList('compose');
     return r;
   }
   const flatten = t2 => { const out = []; for (const row of t2) for (const t of row) out.push(t); return out; };
@@ -509,11 +540,13 @@
     },
     /* thumbnail: the app's own tile renderer on the canvas / frame / a snapshot, as a PNG data URL */
     async thumbnail(args) {
-      const a = api(), tgt = args.target || (a.state().mode === 'compose' ? 'compose' : 'frame'); let fake;
-      if (tgt === 'compose') { const C = a.compose.composite(); fake = { W: C.W, H: C.H, hex: a.state().hex, tiles: flatten(C.tiles) }; }
-      else if (tgt === 'frame') { if (a.state().mode === 'compose') a.setMode('civ'); await settle(); const ev = a.evaluate(); fake = { W: ev.W, H: ev.H, hex: ev.hex, tiles: flatten(ev.tiles) }; }
-      else fake = findSnapshot(tgt);
-      return { target: tgt, W: fake.W, H: fake.H, dataUrl: a.thumb(fake, Math.max(32, Math.min(2048, args.maxPx | 0 || 480))) };
+      const a = api(), tgt = args.target || (a.state().mode === 'compose' ? 'compose' : 'frame'); let fake, rivers;
+      if (tgt === 'compose') { const C = a.compose.composite(); fake = { W: C.W, H: C.H, hex: a.state().hex, tiles: flatten(C.tiles) }; rivers = C.rivers; }
+      else if (tgt === 'frame') { if (a.state().mode === 'compose') a.setMode('civ'); await settle(); const ev = a.evaluate(); fake = { W: ev.W, H: ev.H, hex: ev.hex, tiles: flatten(ev.tiles) }; rivers = ev.rivers; }
+      else { fake = findSnapshot(tgt); rivers = fake.rivers; }
+      let url = a.thumb(fake, Math.max(32, Math.min(2048, args.maxPx | 0 || 480)));
+      if (args.rivers !== false && rivers) url = await drawRivers(url, rivers, fake.W, fake.H);
+      return { target: tgt, W: fake.W, H: fake.H, dataUrl: url };
     },
     /* attach: put B against A so that A's edgeA meets B's edgeB (opposite edges), centred along the seam. A is its
        existing patch, or is placed at the canvas centre first. overlap pulls B that many tiles into A; shift slides
@@ -685,6 +718,18 @@
       return Object.assign(composeReport(args), { erasedNow: n });
     },
     async unerase(args) { const a = api(); a.setMode('compose'); await prepOverlay(args); a.compose.unerase(); a.render(); return composeReport(args); },
+    async add_lake(args) { return genCmd('lake', args); },
+    async add_salt_pan(args) { return genCmd('salt_pan', args); },
+    async add_river(args) { return genCmd('river', args); },
+    async features(args) {
+      const a = api(); if (!a.gen) throw new Error('core/generate.js is not loaded (index.html)');
+      const target = args.target || (a.state().mode === 'compose' ? 'compose' : 'frame'), G = a.gen[target]; if (!G) throw new Error("target must be 'frame' or 'compose'");
+      const act = args.action || 'list'; let removed = 0;
+      if (act === 'remove') { if (!args.id) throw new Error('id required to remove'); removed = G.remove(args.id); }
+      else if (act === 'clear') removed = G.clear();
+      else if (act !== 'list') throw new Error("action must be 'list', 'remove' or 'clear'");
+      a.render(); return { target, action: act, removed, features: G.list() };
+    },
     async compose_view(args) { const a = api(); a.setMode('compose'); await prepOverlay(args); a.render(); return composeReport(args); },
     async compose_stats(args) { const a = api(); a.setMode('compose'); return Object.assign(composeReport(Object.assign({}, args, { grid: false })), a.compose.stats()); },
     async export(args) {

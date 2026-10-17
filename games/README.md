@@ -40,6 +40,9 @@ core it reads at call time through `TerraForm.util`, never at load time.
     finalize(tiles, W, H) { ... },                       // optional: re-derive adjacency-dependent fields after tiles were rearranged (compose, mask crop); Civ4's ocean-vs-coast ring
     isWater(t) { return ...; },                          // required: the core counts land, stamps "land only" patches and keeps rivers off water with this
     blankTile(kind) { ... },                             // required: 'water' | 'barrier' (the Mountain-fill toggle) for mask margins and the compose canvas
+    paint(t, kind) { return newTile | null; },           // optional: kind 'lake' | 'salt_pan', the compose canvas' generated features (core/generate.js). Fallback: blankTile('water') for a lake, the tile marked _salt for a pan
+                                                         // (on a frame, features need no hook: a lake lowers S.landFrac / S.land, a salt pan raises S.playa, and classify sees them as real)
+                                                         // core fields on every classified tile: _h (mean height, RG16 0..1, for the compose canvas' generators) and _salt (mostly playa); exporters ignore them
     validateTile(t) { return null | 'what is wrong'; },  // optional: pasted snapshots are checked tile by tile
     preview: { color(t) -> [r,g,b],                      // required
                glyph(g, t, px, py, w, h) { ... },        // optional: draw over the tile (hills, oasis...) on the 2D context g
