@@ -2014,17 +2014,29 @@ function composeCopyTile(t,foreignGame){const c=Object.assign({},t);if(t.rgb)c.r
 /* ---------- compositing ---------- */
 /* eraseGen, not erased.size: erasing one region and then another of equal size would leave the size
    unchanged and serve a stale composite. A monotonic counter can't collide. */
-function composeSig(){let s=comp.W+'x'+comp.H+':'+defaultTileKind+':e'+comp.eraseGen;for(const p of comp.patches)s+='|'+p.id+':'+p.x+','+p.y+':'+(p.landOnly?1:0)+':'+(p.snap&&p.snap.id);return s;}
+function composeSig(){let s=comp.W+'x'+comp.H+':'+defaultTileKind+':e'+comp.eraseGen+':r'+(comp.riverGen|0);for(const p of comp.patches)s+='|'+p.id+':'+p.x+','+p.y+':'+(p.landOnly?1:0)+':'+(p.snap&&p.snap.id)+':'+(p.editGen|0);return s;}   // editGen / riverGen: bumped by the per-patch and canvas river edits (TerraForm.api.compose), so the memo cannot serve a stale composite
 function composeInvalidate(){_compMemo=null;}
 /* Translating a river edge is a pure re-key: the map keys are grid coordinates and `dir` is an
    ABSOLUTE cardinal, so moving a patch east by 3 tiles cannot rotate its rivers. No direction
    math here, deliberately — see the nof/wof contract. */
-function composeMergeEdges(dst,ents,px,py,W,H){
+function composeMergeEdges(dst,ents,px,py,W,H,keep){
   for(let i=0;i<ents.length;i++){
-    const c=(''+ents[i][0]).split(','),gy=(+c[0])+py,gx=(+c[1])+px,v=ents[i][1];
+    const c=(''+ents[i][0]).split(','),ly=+c[0],lx=+c[1],gy=ly+py,gx=lx+px,v=ents[i][1];
     if(gx<0||gx>=W||gy<0||gy>=H)continue;                        // edge slid off the canvas
+    if(keep&&!keep(lx,ly))continue;                               // per-patch river edit (trim) or a flank the patch does not stamp (ragged seam)
     dst.set(gy+','+gx,{dir:v.dir,d:v.d,rid:v.rid,bridge:v.bridge});   // later patch wins a collision, matching tile z-order
   }
+}
+/* Per-patch edits the MCP bridge makes (core/bridge.js): p.skip is a Set of the patch's own flat tile indices
+   it must NOT stamp (a ragged seam cut through an overlap, or a feathered mask edge); p.riverSkip a Set of
+   'n:gy,gx' / 'w:gy,gx' local edge keys to drop (trim_rivers). comp.riverAdd holds canvas-space edges added
+   on top of every patch (extend_river): [kind, 'gy,gx', {dir,d,rid}]. All three are properties of the
+   collage, serialized with it, and never touch the snapshots. */
+function patchKeep(p,s){
+  const sk=p.skip,rs=p.riverSkip;if(!sk&&!rs)return null;
+  const skipped=(x,y)=>!!(sk&&x>=0&&y>=0&&x<s.W&&y<s.H&&sk.has(y*s.W+x));
+  return {n:(lx,ly)=>!(rs&&rs.has('n:'+ly+','+lx))&&!skipped(lx,ly)&&!skipped(lx,ly-1),   // north edge of (lx,ly): flanks (lx,ly-1) and (lx,ly)
+          w:(lx,ly)=>!(rs&&rs.has('w:'+ly+','+lx))&&!skipped(lx,ly)&&!skipped(lx-1,ly)};  // west edge of (lx,ly): flanks (lx-1,ly) and (lx,ly)
 }
 function compositeCompose(){
   const sig=composeSig();
@@ -2034,19 +2046,21 @@ function compositeCompose(){
   const nof=new Map(),wof=new Map();
   for(const p of comp.patches){
     const s=p.snap;if(!s||!s.tiles)continue;
-    const at=composeTileReader(s),foreign=snapshotGameId(s)!==activeGame().id?snapshotGameId(s):null;
+    const at=composeTileReader(s),foreign=snapshotGameId(s)!==activeGame().id?snapshotGameId(s):null,sk=p.skip,keep=patchKeep(p,s);
     for(let sy=0;sy<s.H;sy++){const dy=p.y+sy;if(dy<0||dy>=H)continue;
       for(let sx=0;sx<s.W;sx++){const dx=p.x+sx;if(dx<0||dx>=W)continue;
         const t=at(sx,sy);if(!t)continue;
+        if(sk&&sk.has(sy*s.W+sx))continue;                       // ragged seam / feathered cut edge: this tile is left to whatever lies below
         /* landOnly (the default) makes a patch a cut-out of its own coastline rather than a
            rectangle: the snapshot's sea is skipped so patches can be nudged together until
            their landmasses nearly touch without one's ocean punching a hole in the other's
            continent. Turn it off to stamp the rectangle verbatim (useful to carve a sea). */
         if(p.landOnly&&isWaterTile(t))continue;
         tiles[dy][dx]=composeCopyTile(t,foreign);}}
-    composeMergeEdges(nof,composeEdgeEntries(s.rivers&&s.rivers.nof),p.x,p.y,W,H);
-    composeMergeEdges(wof,composeEdgeEntries(s.rivers&&s.rivers.wof),p.x,p.y,W,H);
+    composeMergeEdges(nof,composeEdgeEntries(s.rivers&&s.rivers.nof),p.x,p.y,W,H,keep&&keep.n);
+    composeMergeEdges(wof,composeEdgeEntries(s.rivers&&s.rivers.wof),p.x,p.y,W,H,keep&&keep.w);
   }
+  if(comp.riverAdd&&comp.riverAdd.length)for(const [kind,k,v] of comp.riverAdd){const c=k.split(','),gy=+c[0],gx=+c[1];if(gx<0||gx>=W||gy<0||gy>=H)continue;(kind==='w'?wof:nof).set(gy+','+gx,{dir:v.dir,d:v.d,rid:v.rid,bridge:v.bridge});}   // extend_river: canvas-space edges over every patch
   /* Erasures are applied after every patch, so they read as holes punched in the finished collage
      rather than edits to any one snapshot — drag a patch out from under an erased area and the hole
      stays where it was drawn. River edges flanking an erased tile go with it, for the same reason
@@ -2153,7 +2167,7 @@ function composeRemovePatch(id){const i=comp.patches.findIndex(p=>p.id===id);if(
 function composeRaise(id){const i=comp.patches.findIndex(p=>p.id===id);if(i<0||i===comp.patches.length-1)return false;const p=comp.patches[i];comp.patches[i]=comp.patches[i+1];comp.patches[i+1]=p;composeDirty();return true;}
 function composeLower(id){const i=comp.patches.findIndex(p=>p.id===id);if(i<=0)return false;const p=comp.patches[i];comp.patches[i]=comp.patches[i-1];comp.patches[i-1]=p;composeDirty();return true;}
 function composeSetLandOnly(id,on){const p=composePatchById(id);if(!p)return false;p.landOnly=!!on;composeDirty();return true;}
-function composeClear(){comp.patches=[];comp.sel=null;_compPending=null;_compGhost=null;_compDrag=null;comp.erased.clear();comp.eraseGen++;composeDirty();}
+function composeClear(){comp.patches=[];comp.sel=null;_compPending=null;_compGhost=null;_compDrag=null;comp.erased.clear();comp.eraseGen++;comp.riverAdd=[];comp.riverGen=(comp.riverGen|0)+1;composeDirty();}
 /* Fill every tile whose CENTRE falls inside the compose mask with the default tile. Centres, not
    corners, so a shape drawn tight around a coastline takes the tiles it visibly covers. */
 function composeEraseSelection(){
@@ -2175,7 +2189,8 @@ function composeStats(){const C=compositeCompose();let land=0;for(let y=0;y<C.H;
    a collage reuses the same one many times — inlining them would blow up localStorage by megabytes
    and desync the copies. The shelf owns snapshot storage and resolves ids back on load. */
 function composeSerializeState(){return {v:1,kind:'terra-form-compose',W:comp.W,H:comp.H,
-  patches:comp.patches.map(p=>({snap:p.snap&&p.snap.id,x:p.x,y:p.y,landOnly:!!p.landOnly}))};}
+  patches:comp.patches.map(p=>Object.assign({snap:p.snap&&p.snap.id,x:p.x,y:p.y,landOnly:!!p.landOnly},p.skip&&p.skip.size?{skip:[...p.skip]}:{},p.riverSkip&&p.riverSkip.size?{riverSkip:[...p.riverSkip]}:{})),
+  riverAdd:(comp.riverAdd&&comp.riverAdd.length)?comp.riverAdd:undefined};}
 function composeLoadState(obj,resolve){
   if(!obj||!Array.isArray(obj.patches))return 0;
   comp.patches=[];comp.sel=null;comp.nextId=1;_compPending=null;_compGhost=null;_compDrag=null;
@@ -2185,8 +2200,12 @@ function composeLoadState(obj,resolve){
   for(const r of obj.patches){
     const s=resolve?resolve(r.snap):null;
     if(!s||!s.tiles){dropped++;continue;}                       // snapshot deleted since the save: drop the patch silently, the rest of the collage is still valid
-    comp.patches.push({id:comp.nextId++,snap:s,x:r.x|0,y:composeSnapY(r.y|0),landOnly:r.landOnly!==false});
+    const p={id:comp.nextId++,snap:s,x:r.x|0,y:composeSnapY(r.y|0),landOnly:r.landOnly!==false};
+    if(Array.isArray(r.skip)&&r.skip.length)p.skip=new Set(r.skip.map(i=>i|0));
+    if(Array.isArray(r.riverSkip)&&r.riverSkip.length)p.riverSkip=new Set(r.riverSkip.map(String));
+    comp.patches.push(p);
   }
+  comp.riverAdd=Array.isArray(obj.riverAdd)?obj.riverAdd:[];comp.riverGen=(comp.riverGen|0)+1;
   composeDirty();return dropped;
 }
 
@@ -2357,9 +2376,9 @@ function maskFrame(ev){
      the CROPPED bottom row at the same parity as the original bottom row preserves every tile's shift
      (see composeSnapY for the same rule applied to patches). Extend downward when we can. */
   if(hexMode&&(((y1-(H-1))&1)!==0))y1=Math.min(H-1,y1+1);
-  const nw=x1-x0+1, nh=y1-y0+1, tiles=[];
+  const nw=x1-x0+1, nh=y1-y0+1, tiles=[], cut=[];   // cut: flat indices (cropped grid) of the tiles the mask replaced with fill — artificial water/wall, not real coast (the bridge reports and lints them)
   for(let ty=y0;ty<=y1;ty++){const row=[];
-    for(let tx=x0;tx<=x1;tx++)row.push(inside[ty*W+tx]?ev.tiles[ty][tx]:defaultTile());
+    for(let tx=x0;tx<=x1;tx++){if(inside[ty*W+tx])row.push(ev.tiles[ty][tx]);else{row.push(defaultTile());cut.push((ty-y0)*nw+(tx-x0));}}
     tiles.push(row);}
   finalizeTiles(tiles,nw,nh);   // the default fill is new sea (or new land) against the kept region: the game re-derives its shore
   /* Rivers: shift into the cropped frame and drop any edge with a flank outside the mask — a river
@@ -2375,7 +2394,7 @@ function maskFrame(ev){
   cleanupRiverEdges(nof,wof,tiles,nw,nh);
   const latOfRow=r=>{const fy=R.y+(r/H)*R.h+nY;return latOf(rotA?frameToWorld(R.x+R.w/2,fy)[1]:fy);};   // row boundaries, so the cropped span matches the kept tiles; rotated, a row is not one latitude — take the frame's centre column
   return {tiles,W:nw,H:nh,rivers:{nof,wof},topLat:latOfRow(y0),botLat:latOfRow(y1+1),
-    hex:ev.hex,frame:ev.frame,land:ev.land,hills:ev.hills,peaks:ev.peaks,masked:true};
+    hex:ev.hex,frame:ev.frame,land:ev.land,hills:ev.hills,peaks:ev.peaks,masked:true,cut};
 }
 function captureSnapshot(name){
   const ev=maskFrame(evaluateFrame());
@@ -2392,6 +2411,7 @@ function captureSnapshot(name){
     createdAt:Date.now(),
     tiles,
     rivers:{nof:Array.from(ev.rivers.nof.entries()),wof:Array.from(ev.rivers.wof.entries())},
+    cut:(ev.cut&&ev.cut.length)?ev.cut:null,   // mask fill tiles (flat indices), so a cut edge is never mistaken for coastline downstream
     thumb:null
   };
   snap.thumb=renderSnapshotThumb(snap);
@@ -2814,10 +2834,20 @@ TF.api={
     select(id){comp.sel=id;composeDirty();},
     eraseRect(x0,y0,x1,y1){const prev=compSel;compSel={kind:'rect',pts:[[x0,y0],[x1+1,y1+1]]};let n=0;try{n=composeEraseSelection();}finally{compSel=prev;syncSelUI();}return n;},   // inclusive tile rect; the mask tests tile centres, so +1 on the far corner
     unerase:composeUnerase,
-    setLatitudes(top,bot){comp.latTop=top==null?null:+top;comp.latBot=bot==null?null:+bot;}   // declared virtual latitudes for the collage (export header + the bridge's latitude lint)
+    setLatitudes(top,bot){comp.latTop=top==null?null:+top;comp.latBot=bot==null?null:+bot;},   // declared virtual latitudes for the collage (export header + the bridge's latitude lint)
+    /* bridge-declared collage metadata (not persisted, like the latitudes): a land-share target for the budget line, the canvas' nominal tile size in degrees for the landform codebook */
+    setBudget(lo,hi){comp.targetLand=(lo==null&&hi==null)?null:[lo==null?0:+lo,hi==null?1:+hi];},
+    setScale(deg){comp.degPerTile=deg==null?null:+deg;},
+    /* per-patch edits (see patchKeep): skip = flat snapshot tile indices not to stamp; riverSkip = local edge keys to drop; null clears */
+    setSkip(id,idx){const p=composePatchById(id);if(!p)return false;p.skip=(idx&&idx.length)?new Set(Array.from(idx,i=>i|0)):null;p.editGen=(p.editGen|0)+1;composeDirty();return true;},
+    setRiverSkip(id,keys){const p=composePatchById(id);if(!p)return false;p.riverSkip=(keys&&keys.length)?new Set(Array.from(keys,String)):null;p.editGen=(p.editGen|0)+1;composeDirty();return true;},
+    addRivers(ents){comp.riverAdd=(comp.riverAdd||[]).concat(ents||[]);comp.riverGen=(comp.riverGen|0)+1;composeDirty();return comp.riverAdd.length;},   // [[kind 'n'|'w', 'gy,gx', {dir,d,rid}], ...] in canvas tiles
+    clearAddedRivers(){comp.riverAdd=[];comp.riverGen=(comp.riverGen|0)+1;composeDirty();}
   },
   thumb:renderSnapshotThumb,newId:nextSnapshotId,
   async export(name){if(name!=null)document.getElementById('saveName').value=name;return buildExport();},   // {g,region,ctx,built,rows,note}: the caller decides between writeFiles (the app's destination) and shipping built.files elsewhere
   writeFiles,destHint(){return document.getElementById('destHint').textContent||'';},
-  isWater:isWaterTile,gridRing,hexShiftX
+  isWater:isWaterTile,gridRing,hexShiftX,
+  /* frame geometry for the bridge's lasso suggestions: the frame rect in source px, the sampling nudge, and frame -> world px under rotation */
+  frameRect(){const R=srcRect();return {x:R.x,y:R.y,w:R.w,h:R.h,nudgeX,nudgeY};},frameToWorld
 };
