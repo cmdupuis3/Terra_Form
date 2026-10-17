@@ -93,8 +93,11 @@
      maskFrame records the tiles a lasso/rect replaced with fill (snapshot.cut, flat indices). From it: cutMask (1 on fill),
      cutEdgeMask (1 on land tiles that touch fill: the artificial shore), and the same on the canvas per patch. */
   function cutMask(s) { const m = new Uint8Array(s.W * s.H); if (s.cut) for (const i of s.cut) if (i >= 0 && i < m.length) m[i] = 1; return s.cut ? m : null; }
+  /* the artificial part of the cut: fill tiles that were land in the source (snapshot.cutLand). Fill that was sea leaves the real
+     coast beside it real. Snapshots captured before cutLand existed fall back to the whole cut. */
+  function artificialMask(s) { if (!s.cut) return null; if (!s.cutLand) return cutMask(s); const m = new Uint8Array(s.W * s.H); for (const i of s.cutLand) if (i >= 0 && i < m.length) m[i] = 1; return m; }
   function cutEdgeMaskSnap(s) {
-    const cm = cutMask(s); if (!cm) return null; const F = glyphFns(T.games[s.game] || T.game), at = snapTile(s), out = new Uint8Array(s.W * s.H);
+    const cm = artificialMask(s); if (!cm) return null; const F = glyphFns(T.games[s.game] || T.game), at = snapTile(s), out = new Uint8Array(s.W * s.H);
     for (let y = 0; y < s.H; y++) for (let x = 0; x < s.W; x++) { const i = y * s.W + x; if (cm[i]) continue; const t = at(x, y); if (!t || F.isWater(t)) continue;
       if ((x > 0 && cm[i - 1]) || (x < s.W - 1 && cm[i + 1]) || (y > 0 && cm[i - s.W]) || (y < s.H - 1 && cm[i + s.W])) out[i] = 1; }
     return out;
@@ -148,27 +151,37 @@
   /* feathered cut edge: land tiles within 3 of the mask boundary (or of the frame rectangle's own land border, except the
      seam side `exceptSide`) are dropped with a probability that falls off with distance, deterministic per tile, so the
      cut reads as a ragged shore instead of a ruler line */
-  function featherSkip(s, p, exceptSide) {
-    const F = glyphFns(T.games[s.game] || T.game), at = snapTile(s), W = s.W, H = s.H, cm = cutMask(s), land = new Uint8Array(W * H), dist = new Int8Array(W * H).fill(-1); let q = [];
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const t = at(x, y), i = y * W + x; if (!t || F.isWater(t) || (cm && cm[i])) continue; land[i] = 1; }
+  /* opts (the `ragged` object): preserveSides ['N',..] rectangle borders left alone; preserve [[x0,y0,x1,y1],..] snapshot-tile
+     rects never feathered; preserveCoast (default true) keeps every land tile that touches real water (not mask fill that was
+     land), so a distinctive shoreline survives even where the lasso ran right beside it. */
+  function featherSkip(s, p, exceptSide, opts) {
+    opts = opts || {};
+    const F = glyphFns(T.games[s.game] || T.game), at = snapTile(s), W = s.W, H = s.H, cm = artificialMask(s), land = new Uint8Array(W * H), dist = new Int8Array(W * H).fill(-1); let q = [];
+    const keepSide = new Set((opts.preserveSides || []).map(k => String(k).toUpperCase())), rects = (opts.preserve || []).map(r => r.map(v => v | 0));
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const t = at(x, y), i = y * W + x; if (!t || F.isWater(t)) continue; land[i] = 1; }
+    const realWater = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return false; const t = at(x, y); return !!t && F.isWater(t) && !(cm && cm[y * W + x]); };
+    const pinned = i => { const x = i % W, y = (i - x) / W; if (rects.some(r => x >= Math.min(r[0], r[2]) && x <= Math.max(r[0], r[2]) && y >= Math.min(r[1], r[3]) && y <= Math.max(r[1], r[3]))) return true;
+      if (opts.preserveCoast !== false) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && realWater(x + dx, y + dy)) return true; return false; };
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; if (!land[i]) continue;
-      const border = (x === 0 && exceptSide !== 'W') || (x === W - 1 && exceptSide !== 'E') || (y === 0 && exceptSide !== 'N') || (y === H - 1 && exceptSide !== 'S');
+      const border = (x === 0 && exceptSide !== 'W' && !keepSide.has('W')) || (x === W - 1 && exceptSide !== 'E' && !keepSide.has('E')) || (y === 0 && exceptSide !== 'N' && !keepSide.has('N')) || (y === H - 1 && exceptSide !== 'S' && !keepSide.has('S'));
       const nearCut = cm && ((x > 0 && cm[i - 1]) || (x < W - 1 && cm[i + 1]) || (y > 0 && cm[i - W]) || (y < H - 1 && cm[i + W]));
       if (border || nearCut) { dist[i] = 0; q.push(i); } }
     for (let d = 1; d <= 3 && q.length; d++) { const nq = []; for (const i of q) { const x = i % W, y = (i - x) / W; for (const [ox, oy] of RING4) { const nx = x + ox, ny = y + oy; if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue; const k = ny * W + nx; if (land[k] && dist[k] < 0) { dist[k] = d; nq.push(k); } } } q = nq; }
     const P = [0.7, 0.45, 0.2, 0.05], skip = new Set();
-    for (let i = 0; i < W * H; i++) { const d = dist[i]; if (d >= 0 && hash01(i % W, (i - i % W) / W, p.id) < P[d]) skip.add(i); }
-    /* no specks: a scrap of 1-3 tiles the feathering cut off from the rest of the land goes too */
+    for (let i = 0; i < W * H; i++) { const d = dist[i]; if (d >= 0 && !pinned(i) && hash01(i % W, (i - i % W) / W, p.id) < P[d]) skip.add(i); }
+    /* no specks: a scrap of 1-3 tiles the feathering cut off from the rest of the land goes too (unless pinned) */
     const rest = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) if (land[i] && !skip.has(i)) rest[i] = 1;
     const RC = T.landforms.components(rest, W, H, () => [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]], 1);
-    for (const c of RC.list) if (c.size <= 3 && c.tiles.every(i => dist[i] >= 0)) for (const i of c.tiles) skip.add(i);
+    for (const c of RC.list) if (c.size <= 3 && c.tiles.every(i => dist[i] >= 0 && !pinned(i))) for (const i of c.tiles) skip.add(i);
     return [...skip];
   }
+  const raggedOpts = r => (r && typeof r === 'object') ? r : {};
+  function unpin(skip, s, rects) { if (!rects || !rects.length) return skip; const W = s.W; return skip.filter(i => { const x = i % W, y = (i - x) / W; return !rects.some(r => x >= Math.min(r[0], r[2]) && x <= Math.max(r[0], r[2]) && y >= Math.min(r[1], r[3]) && y <= Math.max(r[1], r[3])); }); }
   /* min-cut seam (Zhou et al. 2007): over the strip where A (below) and B (above) overlap, the cheapest path from one end
      of the seam to the other through per-tile disagreement (water vs land 1; both land: 0.25 + climate 0.5 + relief 0.5;
      both water 0; mask fill counts as water). B's tiles on A's side of the path are skipped, so the join is ragged. */
   function minCutSkip(A, pa, B, pb, eA) {
-    const c = api().compose.state(), FA = glyphFns(T.games[A.game] || T.game), FB = glyphFns(T.games[B.game] || T.game), U = T.util, cA = cutMask(A), cB = cutMask(B), atA = snapTile(A), atB = snapTile(B);
+    const c = api().compose.state(), FA = glyphFns(T.games[A.game] || T.game), FB = glyphFns(T.games[B.game] || T.game), U = T.util, cA = cutMask(A), cB = cutMask(B), atA = snapTile(A), atB = snapTile(B);   // any fill counts as water here: the path should run through it
     const x0 = Math.max(pa.x, pb.x, 0), x1 = Math.min(pa.x + A.W, pb.x + B.W, c.W) - 1, y0 = Math.max(pa.y, pb.y, 0), y1 = Math.min(pa.y + A.H, pb.y + B.H, c.H) - 1;
     if (x1 < x0 || y1 < y0) return null;
     const w = x1 - x0 + 1, h = y1 - y0 + 1, cost = new Float32Array(w * h);
@@ -196,7 +209,7 @@
      they only touch), the share of tile pairs that disagree on water, climate group or relief. Pairs where either tile is
      mask fill (a cut edge) are artificial water and are left out of the count (`ignored`). */
   function seamCost(A, ax, ay, B, bx, by, edgeA) {
-    const FA = glyphFns(T.games[A.game] || T.game), FB = glyphFns(T.games[B.game] || T.game), U = T.util, cA = cutMask(A), cB = cutMask(B);
+    const FA = glyphFns(T.games[A.game] || T.game), FB = glyphFns(T.games[B.game] || T.game), U = T.util, cA = artificialMask(A), cB = artificialMask(B);
     let x0 = Math.max(ax, bx), x1 = Math.min(ax + A.W, bx + B.W) - 1, y0 = Math.max(ay, by), y1 = Math.min(ay + A.H, by + B.H) - 1;
     if (x1 < x0 || y1 < y0) { if (edgeA === 'E') bx--; else if (edgeA === 'W') bx++; else if (edgeA === 'S') by--; else by++; x0 = Math.max(ax, bx); x1 = Math.min(ax + A.W, bx + B.W) - 1; y0 = Math.max(ay, by); y1 = Math.min(ay + A.H, by + B.H) - 1; }
     let n = 0, water = 0, climate = 0, relief = 0, ignored = 0;
@@ -311,11 +324,11 @@
     'alpine', 'clim', 'fpAmt', 'forestDens', 'jungleDens', 'oasisDens', 'fpKoppen', 'feat', 'np', 'ofPlains', 'ofHighland', 'ofMountain', 'ofDesert', 'ofDesertMag'];
   let DEFAULT_PARAMS = null;   // relief thresholds as they were when the page connected (the HTML has no default for the multi-sliders)
   function snapReport(s, opts) {
-    const a = api(), g = T.games[s.game] || T.game, cut = cutMask(s);
+    const a = api(), g = T.games[s.game] || T.game, cut = artificialMask(s);
     return report(a.tiles2D(s), s.W, s.H, s.rivers, g, opts, { kind: 'snapshot', id: s.id, name: s.name, game: s.game, hex: !!s.hex, topLat: s.topLat, botLat: s.botLat, connectors: s.connectors || null, catalog: s.catalog || null,
-      cut: s.cut ? s.cut.length : 0, degPerTile: snapDeg(s) }, null, null, { cut, cutEdge: cutEdgeMaskSnap(s), degPerTile: snapDeg(s), sourceDeadEnd: () => true });
+      cut: s.cut ? s.cut.length : 0, cutLand: s.cutLand ? s.cutLand.length : (s.cut ? s.cut.length : 0), degPerTile: snapDeg(s) }, null, null, { cut: artificialMask(s), cutEdge: cutEdgeMaskSnap(s), degPerTile: snapDeg(s), sourceDeadEnd: () => true });
   }
-  function snapConnectors(s) { const a = api(), g = T.games[s.game] || T.game; try { return T.landforms ? T.landforms.connectors(a.tiles2D(s), s.W, s.H, lfCtx(g, s.rivers, null, s.H, null, { cut: cutMask(s) })) : null; } catch (e) { return null; } }
+  function snapConnectors(s) { const a = api(), g = T.games[s.game] || T.game; try { return T.landforms ? T.landforms.connectors(a.tiles2D(s), s.W, s.H, lfCtx(g, s.rivers, null, s.H, null, { cut: artificialMask(s) })) : null; } catch (e) { return null; } }
   async function prepOverlay(args) { if (args && args.overlay === 'codes' && T.landforms) await T.landforms.loadCodebook(); }   // the codebook is fetched on first use
   function snapSummary(s) {
     const a = api();
@@ -463,7 +476,7 @@
       const latOfRow = tgt === 'compose' ? composeLat() : null, cb = args.codes ? await T.landforms.loadCodebook() : null;
       if (tgt === 'compose') { const C = a.compose.composite(); tiles = C.tiles; W = C.W; H = C.H; rivers = C.rivers; g = T.game; owner = ownerMap(); head = { kind: 'compose' }; deg = composeDeg(); extra = { cutEdge: composeCutEdge(owner), sourceDeadEnd: sourceDeadEndFn(), patchBand: patchBands(cb || (T.landforms.codebook())), patchRect: patchRects() }; }
       else if (tgt === 'frame') { if (a.state().mode === 'compose') a.setMode('civ'); await settle(); const ev = a.evaluate(); tiles = ev.tiles; W = ev.W; H = ev.H; rivers = ev.rivers; g = T.game; const b = a.state().bounds; head = { kind: 'frame', bounds: b }; deg = Math.abs(b.N - b.S) / H; extra = { sourceDeadEnd: () => true }; }
-      else { const s = findSnapshot(tgt); tiles = a.tiles2D(s); W = s.W; H = s.H; rivers = s.rivers; g = T.games[s.game] || T.game; head = { kind: 'snapshot', id: s.id, name: s.name, connectors: s.connectors || null, cut: s.cut ? s.cut.length : 0 }; deg = snapDeg(s); extra = { cut: cutMask(s), cutEdge: cutEdgeMaskSnap(s), sourceDeadEnd: () => true }; }
+      else { const s = findSnapshot(tgt); tiles = a.tiles2D(s); W = s.W; H = s.H; rivers = s.rivers; g = T.games[s.game] || T.game; head = { kind: 'snapshot', id: s.id, name: s.name, connectors: s.connectors || null, cut: s.cut ? s.cut.length : 0, cutLand: s.cutLand ? s.cutLand.length : (s.cut ? s.cut.length : 0) }; deg = snapDeg(s); extra = { cut: artificialMask(s), cutEdge: cutEdgeMaskSnap(s), sourceDeadEnd: () => true }; }
       if (args.degPerTile) deg = +args.degPerTile;
       const ctx = lfCtx(g, rivers, owner, H, latOfRow, extra);
       const D = T.landforms.describe(tiles, W, H, ctx, { full: true, rows: !!args.rows, codes: cb && deg ? { cb, degPerTile: deg, tiles: !!args.codesRaw } : null });
@@ -488,8 +501,8 @@
       const nof = [], wof = [];
       for (const [k, v] of s.rivers.nof) { const p = k.split(','); let gy = +p[0], gx = +p[1], dir = v.dir; if (fx) { gx = W - 1 - gx; dir = dir === 1 ? 3 : dir === 3 ? 1 : dir; } if (fy) gy = H - gy; if (gy >= 0 && gy < H && gx >= 0 && gx < W) nof.push([gy + ',' + gx, Object.assign({}, v, { dir })]); }
       for (const [k, v] of s.rivers.wof) { const p = k.split(','); let gy = +p[0], gx = +p[1], dir = v.dir; if (fy) { gy = H - 1 - gy; dir = dir === 0 ? 2 : dir === 2 ? 0 : dir; } if (fx) gx = W - gx; if (gy >= 0 && gy < H && gx >= 0 && gx < W) wof.push([gy + ',' + gx, Object.assign({}, v, { dir })]); }
-      const cut = s.cut ? s.cut.map(i => { const x = i % W, y = (i - x) / W; return (fy ? H - 1 - y : y) * W + (fx ? W - 1 - x : x); }).sort((p, q) => p - q) : null;   // the mask-fill flags flip with the tiles
-      const snap = Object.assign({}, s, { id: a.newId(), name: args.name || (s.name + (ax === 'xy' ? ' (rotated 180)' : ax === 'x' ? ' (mirrored E-W)' : ' (mirrored N-S)')), tiles, rivers: { nof, wof }, cut, createdAt: Date.now(), flipped: ax, thumb: null });
+      const flipIdx = L => L ? L.map(i => { const x = i % W, y = (i - x) / W; return (fy ? H - 1 - y : y) * W + (fx ? W - 1 - x : x); }).sort((p, q) => p - q) : null;   // the mask-fill flags flip with the tiles
+      const snap = Object.assign({}, s, { id: a.newId(), name: args.name || (s.name + (ax === 'xy' ? ' (rotated 180)' : ax === 'x' ? ' (mirrored E-W)' : ' (mirrored N-S)')), tiles, rivers: { nof, wof }, cut: flipIdx(s.cut), cutLand: flipIdx(s.cutLand), createdAt: Date.now(), flipped: ax, thumb: null });
       snap.thumb = a.thumb(snap); snap.connectors = snapConnectors(snap);
       await a.shelf.save(snap);
       return Object.assign(snapReport(snap, args), { note: s.hex ? 'hex snapshot: mirroring N-S changes which rows lean east; check the coast after placing' : null });
@@ -511,7 +524,8 @@
       if (!OPP[eA] || OPP[eA] !== eB) throw new Error('edges must be opposite sides (A ' + eA + ' needs B ' + OPP[eA] + ')');
       const c = a.compose.state(); let pa = patchForSnapshot(A);
       if (!pa) pa = a.compose.add(A, Math.round((c.W - A.W) / 2), Math.round((c.H - A.H) / 2), args.landOnly !== false);
-      if (args.ragged && !pa.skip) a.compose.setSkip(pa.id, featherSkip(A, pa, eA));   // A's own cut edges and frame border, except the seam side (the min-cut below handles that)
+      const RO = raggedOpts(args.ragged);
+      if (args.ragged && !pa.skip && RO.feather !== false) a.compose.setSkip(pa.id, featherSkip(A, pa, eA, { preserve: RO.preserveA, preserveSides: RO.preserveSidesA, preserveCoast: RO.preserveCoast }));   // A's own cut edges and frame border, except the seam side (the min-cut below handles that)
       const ov = args.overlap | 0, along = (eA === 'E' || eA === 'W') ? 'y' : 'x', centre = along === 'y' ? Math.round((A.H - B.H) / 2) : Math.round((A.W - B.W) / 2);
       let sh = args.shift | 0, aligned = null;
       /* align: line the two edges' anchors up (centre of the relief run within 4 tiles of the edge, or of the longest land run
@@ -538,7 +552,7 @@
       let pb = patchForSnapshot(B); if (pb) a.compose.move(pb.id, x, y); else pb = a.compose.add(B, x, y, args.landOnly !== false);
       /* ragged: feather B's cut edges and frame border (not the seam side), and cut a min-cost path through the overlap strip */
       let ragged = null;
-      if (args.ragged) { const skip = new Set(featherSkip(B, pb, eB)); const mc = ov >= 2 ? minCutSkip(A, pa, B, pb, eA) : null; if (mc) for (const i of mc.skip) skip.add(i); a.compose.setSkip(pb.id, [...skip]); ragged = { skipped: skip.size, skippedA: pa.skip ? pa.skip.size : 0, seam: mc ? { length: mc.length, width: mc.width, costPerTile: mc.cost } : 'feathered only (overlap < 2: no strip for a min-cut path)' }; }
+      if (args.ragged) { const skip = new Set(RO.feather === false ? [] : featherSkip(B, pb, eB, { preserve: RO.preserve, preserveSides: RO.preserveSides, preserveCoast: RO.preserveCoast })); const mc = ov >= 2 && RO.minCut !== false ? minCutSkip(A, pa, B, pb, eA) : null; if (mc) for (const i of mc.skip) skip.add(i); a.compose.setSkip(pb.id, unpin([...skip], B, RO.preserve)); ragged = { skipped: pb.skip ? pb.skip.size : 0, skippedA: pa.skip ? pa.skip.size : 0, seam: mc ? { length: mc.length, width: mc.width, costPerTile: mc.cost } : RO.minCut === false ? 'feathered only' : 'feathered only (overlap < 2: no strip for a min-cut path)' }; }
       else if (pb.skip) a.compose.setSkip(pb.id, null);
       a.render();
       return Object.assign(composeReport(args), { attached: { a: pa.id, b: pb.id, x: pb.x, y: pb.y, seam: eA + '/' + eB, connectorA: A.connectors ? A.connectors[eA] : null, connectorB: B.connectors ? B.connectors[eB] : null, seamCost: (args.autoShift && best.shift !== sh) || clamped ? seamCost(A, pa.x, pa.y, B, pb.x, pb.y, eA) : cost, bestShift: best, aligned, clamped, clipped: clipped(pb, c.W, c.H), ragged } });
@@ -651,7 +665,7 @@
       let x = args.x | 0, y = args.y | 0, shifted = null;
       if (args.avoidLand) { const f = freeSpot(s, x, y, args.gap == null ? 1 : args.gap | 0); if (!f) throw new Error('avoidLand: no free spot on the canvas for "' + s.name + '"'); shifted = (f.dx || f.dy) ? { dx: f.dx, dy: f.dy } : null; x = f.x; y = f.y; }
       const p = a.compose.add(s, x, y, args.landOnly !== false);
-      if (args.ragged) a.compose.setSkip(p.id, featherSkip(s, p, null));
+      if (args.ragged) { const RO = raggedOpts(args.ragged); a.compose.setSkip(p.id, featherSkip(s, p, null, { preserve: RO.preserve, preserveSides: RO.preserveSides, preserveCoast: RO.preserveCoast })); }
       a.render();
       const r = Object.assign(composeReport(args), { placed: { patch: p.id, x: p.x, y: p.y, landOnly: !!p.landOnly, shifted, clipped: clipped(p, c.W, c.H), skipped: p.skip ? p.skip.size : 0, preview: !!args.preview } });
       if (args.preview) { a.compose.remove(p.id); a.render(); }

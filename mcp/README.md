@@ -281,12 +281,21 @@ which water body each river system reaches (a tributary that joins another river
 reaches, `via`), and, with `rows:true`, per-row land and Köppen-group counts for latitude-band checks (the
 table is about half the payload, so it is opt-in).
 
-**Cut edges are not coastline.** A lasso or rect capture replaces the tiles outside the shape with fill, and
-the snapshot remembers which (`cut`, from `maskFrame`'s cut list). Downstream: a connector that is mostly fill
-is labelled `cut edge` rather than `coast`; `attach`'s seam cost leaves pairs with cut fill out of the count
-(`N cut-edge pairs ignored`); the `straight-edge-coast` rule names a straight shore as a mask cut when the
-flag confirms it; and `ragged:true` on `place`/`attach` feathers the cut boundary (and the capture
-rectangle's own land border) so it no longer draws as a line. `flip_snapshot` carries the flags along.
+**Cut edges are not coastline, and real coastline is not a cut.** A lasso or rect capture replaces the tiles
+outside the shape with fill, and the snapshot remembers which (`cut`) and, among those, which were *land* in
+the source (`cutLand`): only there did the mask cut through land and make an artificial shore. Fill that was
+sea is just trimmed sea, and the coast beside it is the real one (Oman's lasso: `118 mask-fill tiles, 41
+through land`; its north and east edges, where the lasso ran through the Gulf, stay `open sea`, its west
+edge through the Rub al Khali is a `cut edge`). Downstream: a connector that is mostly cut-through-land is
+labelled `cut edge` rather than `coast`; `attach`'s seam cost leaves those pairs out of the count (`N
+cut-edge pairs ignored`); the `straight-edge-coast` rule names a straight shore as a mask cut when the flag
+confirms it; and `ragged:true` on `place`/`attach` feathers only the artificial shores (the cut-through-land
+boundary and the capture rectangle's own land border), never a land tile that touches real water, so a
+distinctive coastline survives even where the lasso ran right beside it. To pin more, `ragged` takes
+options: `{preserve:[[x0,y0,x1,y1],...]}` snapshot-tile rects never feathered or min-cut (a coastline you
+like), `preserveSides:['N',...]` rectangle borders left alone, `preserveCoast:false` to feather real coast
+too, `feather:false` / `minCut:false` to switch either half off; in `attach`, `preserveA` / `preserveSidesA`
+do the same for A. `flip_snapshot` carries the flags along.
 
 Not implemented yet: coast-type discontinuity where two shorelines meet. A warning is `{rule, at:[x,y], n,
 patches, msg}` (`level:'info'` for a note); the block prints up to 8 warnings and 6 notes.
@@ -350,8 +359,8 @@ landmasses), which `catalog_search {climate}` matches alongside the hand-written
   or placed. `overlap` pulls B into A (with land-only stamping the coastlines interleave), `shift` slides B
   along the seam. B is clamped along the seam so its land stays on the canvas when it fits (`clamp:false`
   to allow overhang); what still overhangs is reported as `clipped`. `ragged` feathers both pieces' cut
-  edges and cuts the min-cut seam through the overlap. The block names both edges' connectors, the seam
-  cost and best shift, and carries the seam lint for the join.
+  edges (real coast kept; `preserve` rects pin more) and cuts the min-cut seam through the overlap. The
+  block names both edges' connectors, the seam cost and best shift, and carries the seam lint for the join.
 - `place {avoidLand, gap, ragged, preview}` and `scatter {avoidLand, gap}`: `avoidLand` searches outward
   (by Chebyshev radius) for the nearest position whose land is on the canvas and at least `gap` water tiles
   from any existing land, and reports the shift; the compose block's `collisions:` line names the patches
@@ -444,53 +453,60 @@ captures across bands 2, 3 and 5: identical codes on all but one tile in 3800 (a
 
 The join the owner tested (Morocco from its rect crop, Oman from its lasso, attached E/W with overlap 6),
 re-run with `ragged:true` on an 80x44 canvas and followed by `trim_rivers`. What changed in the block: Oman's
-header says `cut: 118 mask-fill tiles (not coast)` and its west edge is `cut edge`, not `coast`; the seam
-cost leaves the 40 lasso-fill pairs out; the best shift (9) is inside the ±16 window; the Oman wadi and
-Morocco's Saharan river are `notes` (endorheic in their source), while the one river the overlap really
-cut is a warning until `trim_rivers` drops its dangling edge; the straight south edge of Morocco's crop
-and the straight west edge of Oman's lasso are feathered away (`ragged: 106 tiles of B and 119 of A
-skipped, min-cut seam 26 long`), and what is left straight is Morocco's real Mediterranean shore, which
-the lint names as such.
+header says `cut: 118 mask-fill tiles (41 through land, the rest trimmed sea)`, its west edge is `cut edge`
+while its north and east edges, where the lasso ran through the Gulf, stay `open sea`; the seam cost leaves
+the 19 cut-through-land pairs out; the best shift (1) is inside the ±16 window; the Oman wadi and Morocco's
+Saharan river are `notes` (endorheic in their source), while the one river the overlap really cut is a
+warning until `trim_rivers` drops its dangling edge; the straight south edge of Morocco's crop and the
+straight west edge of Oman's lasso are feathered away (`ragged: 98 tiles of B and 104 of A skipped, min-cut
+seam 26 long`) with every tile that touches real sea kept, so Morocco's Atlantic headlands and Oman's Hajar
+and Dhofar coasts are the real ones; what is left straight is Morocco's Mediterranean shore, which the lint
+names as such.
 
 ```
+>>> snapshot_from_catalog {"entry":"Oman","grid":false}
+snapshot snap_mvbv04i8_0_7kfxy2 "Oman" 23x28 civ4 | lat 16.5..26.5 | 0.357°/tile | cut: 118 mask-fill tiles (41 through land, the rest trimmed sea)
+...
+edges: N open sea [relief@11] | E open sea [relief@10, land@11 (11..11)] | S open sea [relief@5, land@2 (2..3)] | W cut edge [relief@19, land@9 (7..11)]
+warnings (2): [straight-edge-coast] ruler-straight coast: 11 land tiles of patch 1 along column 1 (y 12..22) face water to the W, a lasso/mask cut ; [straight-edge-coast] ruler-straight coast: 5 land tiles of patch 1 along column 2 (y 23..27) face water to the W, a lasso/mask cut
+
 >>> attach {"a":"Morocco and the Atlas","edgeA":"E","b":"Oman","edgeB":"W","overlap":6,"ragged":true,"grid":false}
 compose canvas 80x44 civ4 | 2 patches | 0 erased tiles
-land 730 (21%)  water 2790 | hills 227  peaks 153 | river edges 139
-landmasses 1: #1 730t x29-73 y9-34
+land 753 (21%)  water 2767 | hills 235  peaks 158 | river edges 141
+landmasses 1: #1 753t x22-75 y9-35
 patches (bottom to top): [1] "Morocco and the Atlas" 38x26 @21,9; [2] "Oman" 23x28 @53,8
-landforms: 1 landmass | 3 bays | 3 peninsulas | spines E-W 35L at 47,21, NW-SE 14L at 68,16 | rivers 11/12 reach water
-collisions: [1]x[2] 37 land tiles
-budget: land 20.7% of target 20-30% (within target)
-warnings (3): [truncated-wall] mountain run of 310 tiles from patch 1/2 stops against flat land of patch 2/1 along 24 tiles near 54,20 ; [river-dead-end] river 3159 has 1 edge ending on land with no continuation, first at 58,28 (not in its source: cut at a patch boundary, by an erase or by an overlapping stamp) ; [straight-edge-coast] ruler-straight coast: 7 land tiles of patch 1 along row 11 (x 47..53) face water to the N (no cut flag: a straight real coast)
+warnings (3): [truncated-wall] mountain run of 316 tiles from patch 1/2 stops against flat land of patch 2/1 along 24 tiles near 54,20 ; [river-dead-end] river 3159 has 1 edge ending on land with no continuation, first at 58,28 (not in its source: cut at a patch boundary, by an erase or by an overlapping stamp) ; [straight-edge-coast] ruler-straight coast: 7 land tiles of patch 1 along row 11 (x 47..53) face water to the N (no cut flag: a straight real coast)
 notes (2): [river-endorheic] river 2500 dead-ends on land at 33,25 as it did in its source (patch 1): endorheic, not a seam ; [river-endorheic] river 41972 dead-ends on land at 71,23 as it did in its source (patch 2): endorheic, not a seam
-attached patch 2 to patch 1 along E/W at 53,8 (A desert + river exit meets B cut edge) | seam cost 0.569 over 116 tiles (water 15, climate 0, relief 51, 40 cut-edge pairs ignored) | best shift 9 (cost 0.453, window ±16) | ragged: 106 tiles of B and 119 of A skipped, min-cut seam 26 long through a 6-wide strip (cost/tile 0.365)
+attached patch 2 to patch 1 along E/W at 53,8 (A desert + river exit meets B cut edge) | seam cost 0.526 over 137 tiles (water 21, climate 0, relief 51, 19 cut-edge pairs ignored) | best shift 1 (cost 0.518, window ±16) | ragged: 98 tiles of B and 104 of A skipped, min-cut seam 26 long through a 6-wide strip (cost/tile 0.365)
 
 >>> trim_rivers {"grid":false}
 ...
 trimmed 0 river systems and 1 edge(s) of cut side branches (1 edges): none | kept 1 endorheic (source) system(s): 41972
 
 >>> describe {"target":"compose","codes":true}
-1 landmass: #1 730t at 52,22 (arid 85%, temperate 14%). Bay of 33t on #1 at 50,32 opening S; Bay of 29t on #1 at 57,11 opening N; Bay of 10t on #1 at 68,13 opening NE. Peninsula of 14t on #1 at 33,31 pointing SW; Peninsula of 11t on #1 at 59,33 pointing SE; Peninsula of 10t on #1 at 64,11 pointing NE. Mountain spine E-W 35 long (310t, 112 peaks, chain 40, 10 ends, 0 knots) on #1 at 47,21; Mountain spine NW-SE 14 long (47t, 33 peaks, chain 14, 2 ends, 0 knots) on #1 at 68,16; Mountain spine NE-SW 11 long (16t, 8 peaks, chain 11, 2 ends, 0 knots) on #1 at 62,32. 12 river systems (138 edges): 11 reach water, 0 leave the map, 1 dead-end. Codebook band 3 (0.2605°/tile for 0.3571°/tile): #1 reads desert / plain / pen/cape 21%, desert / plain / depression 13%, range/mtn / desert / basin 11%.
-codes: band 3 (0.2605°/tile for 0.3571°/tile; 908 tiles coded, 127 codes captioned) | #1 desert / plain / pen/cape 21%, desert / plain / depression 13%, range/mtn / desert / basin 11%
+1 landmass: #1 753t at 52,22 (arid 85%, temperate 14%). Bay of 95t on #1 at 42,33 opening SW; Bay of 48t on #1 at 56,10 opening N; Bay of 36t on #1 at 29,28 opening W. Peninsula of 25t on #1 at 30,32 pointing SW; Peninsula of 15t on #1 at 73,20 pointing E; Peninsula of 14t on #1 at 58,33 pointing SE. Mountain spine E-W 37 long (316t, 112 peaks, chain 44, 10 ends, 0 knots) on #1 at 47,21; Mountain spine NW-SE 16 long (52t, 35 peaks, chain 16, 2 ends, 0 knots) on #1 at 68,16; Mountain spine NE-SW 13 long (19t, 11 peaks, chain 12, 2 ends, 0 knots) on #1 at 61,33. 13 river systems (140 edges): 12 reach water (2 different water bodies), 0 leave the map, 1 dead-end. Codebook band 3 (0.2605°/tile for 0.3571°/tile): #1 reads desert / plain / pen/cape 21%, desert / plain / depression 12%, range/mtn / desert / basin 11%.
 warnings (2): [truncated-wall] ... ; [straight-edge-coast] ruler-straight coast: 7 land tiles of patch 1 along row 11 (x 47..53) face water to the N (no cut flag: a straight real coast)
 
 >>> compose_view {"bbox":[18,4,78,38]}
-    (the join, rows 14-33; the seam ran down column 53-58)
+    (the join, rows 14-35; the seam ran down columns 53-58; Oman's Hajar coast at the right, Morocco's south-west headland bottom left)
  14|~~~~~~~~~~~~~~~~~~~~~~,,pppPPPP^PddP^PPpdddddd^^^,,,~~~~~~~~~
- 18|~~~~~~~~~~~~~~~,,pppppppPPP^^PPDdDPPDDdDDDDDDdddD^^^^^^^,~~~~
- 22|~~~~~~~~~~~~~,,PPppppP^^^^^^^dDDdddddddDDDDDDDdddddddddd,~~~~
+ 18|~~~~~~~~~~~~~~~,,pppppppPPP^^PPDdDPPDDdDDDDDDdddD^^^^^^^,,,~~
+ 19|~~~~~~~~~~~~~~~,pppppppppP^^^^^^^^PDDDDdDDDDDddddD^DDD,^^D,~~
+ 22|~~~~~~~~~~~~~,,PPppppP^^^^^^^dDDdddddddDDDDDDDdddddddddd,,~~~
  26|~~~~~~~~~~~~~,,ppP^^^^^D^^DDDdddddddddddDddddddddddD,~~~~~~~~
- 30|~~~~~~~~~~,,dDDD^DDdDdddddddddddDdddDdddddddddddD,,~~~~~~~~~~
- 31|~~~~~~~~~~,D,,,DD,D,ddddd,dd,,,,,dd,,d,ddddddDDD,,~~~~~~~~~~~
- 32|~~~~~~~~~~,,,~,d,ddd,,,,d,,,,~~~,,,,,,dddddD^,,,,~~~~~~~~~~~~
- 33|~~~~~~~~~~~~~~,,,,,,,~~,,,~~~~~~~~~~~,,D,^^^^,~~~~~~~~~~~~~~~
+ 30|~~~~~~~~~,,,dDDD^DDdDdddddddddddDdddDdddddddddddD,,~~~~~~~~~~
+ 31|~~~~~~~~,,dDD,,DD,D,ddddd,dd,,,,,dd,,d,ddddddDDD,,~~~~~~~~~~~
+ 32|~~~~~,,,,dd,,,,d,ddd,,,,d,,,,~~~,,,,,,dddddD^,,,,~~~~~~~~~~~~
+ 33|~~~,,,dddd,,~~,,,,,,,~~,,,~~~~~~~~~~~,,D,^^^^,~~~~~~~~~~~~~~~
+ 34|~~~,ddd,,,,~~~~~~~~~~~~~~~~~~~~~~~~~~,^^^^D^,,~~~~~~~~~~~~~~~
+ 35|~~~,,,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,^,,,,,,~~~~~~~~~~~~~~~~
 ```
 
 ![Oman + Morocco after the fixes](scenarios/oman_morocco.png)
 
 What still shows: the `truncated-wall` warning is real (the Atlas runs into Oman's desert interior at the
 seam: `align:'relief'` with Oman's `W` edge anchor would put the Hajar against it instead), and the
-feathered south edge keeps a few straight runs of 4-6 tiles, below the rule's threshold.
+feathered south edge of Morocco's crop keeps a few straight runs of 4-6 tiles, below the rule's threshold.
 
 ## How it fits the code
 

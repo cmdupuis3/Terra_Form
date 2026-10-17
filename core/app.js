@@ -2376,9 +2376,9 @@ function maskFrame(ev){
      the CROPPED bottom row at the same parity as the original bottom row preserves every tile's shift
      (see composeSnapY for the same rule applied to patches). Extend downward when we can. */
   if(hexMode&&(((y1-(H-1))&1)!==0))y1=Math.min(H-1,y1+1);
-  const nw=x1-x0+1, nh=y1-y0+1, tiles=[], cut=[];   // cut: flat indices (cropped grid) of the tiles the mask replaced with fill — artificial water/wall, not real coast (the bridge reports and lints them)
+  const nw=x1-x0+1, nh=y1-y0+1, tiles=[], cut=[], cutLand=[];   // cut: flat indices (cropped grid) of the tiles the mask replaced with fill; cutLand: those that were LAND in the source — the mask cut through land there, an artificial shore, while fill that was sea leaves the real coast beside it intact (the bridge reports and lints them)
   for(let ty=y0;ty<=y1;ty++){const row=[];
-    for(let tx=x0;tx<=x1;tx++){if(inside[ty*W+tx])row.push(ev.tiles[ty][tx]);else{row.push(defaultTile());cut.push((ty-y0)*nw+(tx-x0));}}
+    for(let tx=x0;tx<=x1;tx++){if(inside[ty*W+tx])row.push(ev.tiles[ty][tx]);else{row.push(defaultTile());const i=(ty-y0)*nw+(tx-x0);cut.push(i);if(!isWaterTile(ev.tiles[ty][tx]))cutLand.push(i);}}
     tiles.push(row);}
   finalizeTiles(tiles,nw,nh);   // the default fill is new sea (or new land) against the kept region: the game re-derives its shore
   /* Rivers: shift into the cropped frame and drop any edge with a flank outside the mask — a river
@@ -2394,7 +2394,7 @@ function maskFrame(ev){
   cleanupRiverEdges(nof,wof,tiles,nw,nh);
   const latOfRow=r=>{const fy=R.y+(r/H)*R.h+nY;return latOf(rotA?frameToWorld(R.x+R.w/2,fy)[1]:fy);};   // row boundaries, so the cropped span matches the kept tiles; rotated, a row is not one latitude — take the frame's centre column
   return {tiles,W:nw,H:nh,rivers:{nof,wof},topLat:latOfRow(y0),botLat:latOfRow(y1+1),
-    hex:ev.hex,frame:ev.frame,land:ev.land,hills:ev.hills,peaks:ev.peaks,masked:true,cut};
+    hex:ev.hex,frame:ev.frame,land:ev.land,hills:ev.hills,peaks:ev.peaks,masked:true,cut,cutLand};
 }
 function captureSnapshot(name){
   const ev=maskFrame(evaluateFrame());
@@ -2412,6 +2412,9 @@ function captureSnapshot(name){
     tiles,
     rivers:{nof:Array.from(ev.rivers.nof.entries()),wof:Array.from(ev.rivers.wof.entries())},
     cut:(ev.cut&&ev.cut.length)?ev.cut:null,   // mask fill tiles (flat indices), so a cut edge is never mistaken for coastline downstream
+    cutLand:(ev.cut&&ev.cut.length)?(ev.cutLand||[]):null,   // the fill tiles that were land: where the cut is an artificial shore (empty when the mask only trimmed sea)
+    cutLand:(ev.cut&&ev.cut.length)?(ev.cutLand||[]):null,   // the fill tiles that were land: where the cut is an artificial shore (empty when the mask only trimmed sea)
+    cutLand:(ev.cut&&ev.cut.length)?(ev.cutLand||[]):null,   // the fill tiles that were land: where the cut is an artificial shore (empty when the mask only trimmed sea)
     thumb:null
   };
   snap.thumb=renderSnapshotThumb(snap);

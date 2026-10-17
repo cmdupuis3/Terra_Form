@@ -112,7 +112,7 @@ Summary and findings below.
 | 1 Earthlike alien world | 4 / 8 | 8 / 8 | the budget line sized the pieces (28.7% land), `avoidLand` kept four continents apart, `ragged` feathered the frame cuts, `trim_rivers` dropped the rivers the seams and erasures cut (36/36 reach water), zero warnings |
 | 2 A desert | 7 / 7 | 7 / 7 | unchanged; the single-frame scenario |
 | 3 Tropical island chain | 5 / 7 (two vacuous) | 7 / 7 | restated assertions (gap >= 2 water tiles between 5+ tile islands, monotone size along the arc); single atolls at their default size with the island expander set per entry, `scatter {avoidLand, gap:2}` |
-| 4 Temperate with mountain chains | 4 / 7 | 4 / 7 | `align:'relief'` made the two ranges one relief component (366 tiles, chain 54) and `ragged` + `trim_rivers` cleared every warning (19/19 rivers reach water); climate share (66.2%), the knot and the grass/plains flip still fail |
+| 4 Temperate with mountain chains | 4 / 7 | 4 / 7 | `align:'relief'` made the two ranges one relief component (366 tiles, chain 54) and `ragged` + `trim_rivers` cleared every warning (22/22 rivers reach water); climate share (64.9%), the knot and the grass/plains flip still fail |
 
 26 / 29 in the final run (18 / 29 before this round), reproducible from default settings. Per-assertion
 results, describe paragraphs, warnings and the full feedback transcripts: [scenarios/RESULTS.md](scenarios/RESULTS.md).
@@ -153,14 +153,14 @@ Round 1's eleven findings, with what the second round did about each; new ones f
    Caucasus now form one relief component (362 tiles, chain 53, was two of 222 and 152) and the seam lint is
    clean. The skeleton still reports 0 knots on it: the ranges meet end to end, an L, not a T; a knot needs
    a third arm. Getting a T needs the N-S range to cross the E-W one, which `align` does not try.
-6. **Real pieces carry their own climate mix.** Scenario 4 is at 66.2% temperate + continental (was 54.7%):
+6. **Real pieces carry their own climate mix.** Scenario 4 is at 64.9% temperate + continental (was 54.7%):
    the Caucasus isthmus is 73% continental, 15% arid (the catalog now says so). Reaching 70% is a piece
    choice, not a tool gap.
 7. **River continuity across patches is the weakest seam.** Fixed: `trim_rivers` drops the systems the seams,
    erasures and overlaps cut (whole systems, and dangling side branches of systems that do reach the sea),
    keeps the ones that were endorheic in their source, and `extend_river` carries a dead end to the nearest
    water or into another river (a tributary now reaches what its trunk reaches). Scenarios 1 and 4 went
-   from 29/43 and 16/27 to 36/36 and 19/19 systems reaching water.
+   from 29/43 and 16/27 to 33/33 and 22/22 systems reaching water.
 8. **Describe gaps.** `rows` is opt-in (it was half the payload), `codes:true` adds the landform codebook
    summary, warnings and notes are separate. Still missing: a coast-type rule, geomorphons / TPI.
 9. **The desert grid is readable** once features are on (unchanged).
@@ -186,10 +186,14 @@ New in the second round (from the owner's Oman + Morocco test and the runs):
     reports what still overhangs (`clipped: 17 land tiles off the canvas (3 rows south)` on a 24-row canvas).
 14. **Best shift on the window edge.** The window is `searchShift` (default 16, was 8) and the block flags an
     optimum on the edge. The Oman seam's optimum is 9.
-15. **Feathering costs land and leaves specks.** `ragged` removes about 3% of a continent's land along its
-    cut edges (scenario 1 fell from 24.7% to 21.8% before the pieces were resized; the budget line shows
-    it) and at first left 1-3 tile scraps, now dropped. The owner's Morocco south edge keeps a few straight
-    runs of 4-6 tiles after feathering.
+15. **Feathering costs land, left specks, and at first ate real coastline.** `ragged` removes about 3% of a
+    continent's land along its cut edges (scenario 1 fell from 24.7% to 21.8% before the pieces were
+    resized; the budget line shows it), at first left 1-3 tile scraps (now dropped), and, because a lasso
+    that runs through the sea beside a coast still marks fill next to that coast, it feathered Oman's Hajar
+    and Dhofar shores and Morocco's Atlantic headlands (the owner noticed). Fixed: snapshots record which
+    fill tiles were land in the source (`cutLand`), only those count as an artificial shore, and no land
+    tile touching real water is ever feathered; `ragged:{preserve, preserveSides}` pins more. The owner's
+    Morocco south edge keeps a few straight runs of 4-6 tiles after feathering.
 16. **Scale mismatch is a seam.** The `scale-mismatch` rule fires when touching patches sit more than one
     codebook band apart (Tahiti at 0.075°/tile against Morocco at 0.325°/tile: bands 5 and 3). The compose
     canvas' own scale is the patches' median unless `compose_new {degPerTile}` declares it.
@@ -197,6 +201,6 @@ New in the second round (from the owner's Oman + Morocco test and the runs):
     as `desert / plain / pen/cape 23%, desert / plain / depression 11%, range/mtn / desert / basin 10%` at
     band 3; the JS codes equal the Python ones on all but one tile of 3800 across bands 2, 3 and 5.
 18. **Scenario 4's grass/plains flip flipped.** With the ranges aligned the Cascades sit 4 rows further
-    north, both sides of the main spine read plains-dominated (22% vs 4% grass) and the lee/windward
-    contrast shows in forest only (3.13x). The assertion should probably be stated on forest + grass
+    north, both sides of the main spine read plains-dominated (23% vs 4% grass) and the lee/windward
+    contrast shows in forest only (3.14x). The assertion should probably be stated on forest + grass
     together, or on the Köppen groups per side.
