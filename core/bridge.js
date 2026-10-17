@@ -156,9 +156,13 @@
       const nearCut = cm && ((x > 0 && cm[i - 1]) || (x < W - 1 && cm[i + 1]) || (y > 0 && cm[i - W]) || (y < H - 1 && cm[i + W]));
       if (border || nearCut) { dist[i] = 0; q.push(i); } }
     for (let d = 1; d <= 3 && q.length; d++) { const nq = []; for (const i of q) { const x = i % W, y = (i - x) / W; for (const [ox, oy] of RING4) { const nx = x + ox, ny = y + oy; if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue; const k = ny * W + nx; if (land[k] && dist[k] < 0) { dist[k] = d; nq.push(k); } } } q = nq; }
-    const P = [0.7, 0.45, 0.2, 0.05], skip = [];
-    for (let i = 0; i < W * H; i++) { const d = dist[i]; if (d >= 0 && hash01(i % W, (i - i % W) / W, p.id) < P[d]) skip.push(i); }
-    return skip;
+    const P = [0.7, 0.45, 0.2, 0.05], skip = new Set();
+    for (let i = 0; i < W * H; i++) { const d = dist[i]; if (d >= 0 && hash01(i % W, (i - i % W) / W, p.id) < P[d]) skip.add(i); }
+    /* no specks: a scrap of 1-3 tiles the feathering cut off from the rest of the land goes too */
+    const rest = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) if (land[i] && !skip.has(i)) rest[i] = 1;
+    const RC = T.landforms.components(rest, W, H, () => [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]], 1);
+    for (const c of RC.list) if (c.size <= 3 && c.tiles.every(i => dist[i] >= 0)) for (const i of c.tiles) skip.add(i);
+    return [...skip];
   }
   /* min-cut seam (Zhou et al. 2007): over the strip where A (below) and B (above) overlap, the cheapest path from one end
      of the seam to the other through per-tile disagreement (water vs land 1; both land: 0.25 + climate 0.5 + relief 0.5;
@@ -554,13 +558,27 @@
         const de = deadByRid.get(rid) || []; if (keepEndorheic && de.length && de.every(srcDead)) { kept.push(rid); continue; }
         drop.add(rid);
       }
-      const perPatch = new Map(); let n = 0;
-      const walk = (m, kind) => { for (const [k, v] of m) { if (!drop.has(String(v.rid))) continue; const p = k.split(','), o = edgeOwner(kind, +p[1], +p[0]); if (!o) continue; const S = perPatch.get(o.patch.id) || new Set(o.patch.riverSkip || []); S.add(kind + ':' + o.ly + ',' + o.lx); perPatch.set(o.patch.id, S); n++; } };
+      const perPatch = new Map(); let n = 0, branches = 0;
+      const dropEdge = (kind, gx, gy) => { const o = edgeOwner(kind, gx, gy); if (!o) return false; const S = perPatch.get(o.patch.id) || new Set(o.patch.riverSkip || []); S.add(kind + ':' + o.ly + ',' + o.lx); perPatch.set(o.patch.id, S); n++; return true; };
+      const walk = (m, kind) => { for (const [k, v] of m) { if (!drop.has(String(v.rid))) continue; const p = k.split(','); dropEdge(kind, +p[1], +p[0]); } };
       walk(C.rivers.nof, 'n'); walk(C.rivers.wof, 'w');
+      /* a system that does reach water but carries a cut dead end on a side branch: walk the branch upstream from the dead end
+         to the first junction (or to water) and drop just those edges */
+      if (!want.size) {
+        const E = []; const addE = (m, kind) => { for (const [k, v] of m) { const p = k.split(','), x = +p[1], y = +p[0]; const c1 = [x, y], c2 = kind === 'n' ? [x + 1, y] : [x, y + 1], down = kind === 'n' ? (v.dir === 1 ? c2 : c1) : (v.dir === 2 ? c2 : c1); E.push({ kind, x, y, rid: v.rid, c1, c2, down, up: down === c1 ? c2 : c1, gone: false }); } }; addE(C.rivers.nof, 'n'); addE(C.rivers.wof, 'w');
+        const near = (e, c) => E.filter(o => o !== e && !o.gone && o.rid === e.rid && [o.c1, o.c2].some(q => Math.abs(q[0] - c[0]) <= 1 && Math.abs(q[1] - c[1]) <= 1));
+        const Fw = glyphFns(T.game), wet = c => [[c[0] - 1, c[1] - 1], [c[0], c[1] - 1], [c[0] - 1, c[1]], [c[0], c[1]]].some(([x, y]) => x >= 0 && x < W && y >= 0 && y < H && Fw.isWater(C.tiles[y][x]));
+        const W = C.W, H = C.H;
+        for (const d of R.deadEndEdges) {
+          if (drop.has(String(d.rid)) || (keepEndorheic && srcDead(d))) continue;
+          let e = E.find(o => o.kind === d.kind && o.x === d.x && o.y === d.y && !o.gone); let steps = 0;
+          while (e && steps++ < 80) { e.gone = true; dropEdge(e.kind, e.x, e.y); branches++; if (wet(e.up)) break; const up = near(e, e.up); if (up.length !== 1) break; e = up[0]; }
+        }
+      }
       for (const [id, S] of perPatch) a.compose.setRiverSkip(id, [...S]);
       if (c.riverAdd && c.riverAdd.length) { const keep = c.riverAdd.filter(e => !drop.has(String(e[2].rid))); if (keep.length !== c.riverAdd.length) { a.compose.clearAddedRivers(); a.compose.addRivers(keep); } }
       a.render();
-      return Object.assign(composeReport(args), { trimmed: { systems: [...drop], edges: n, keptEndorheic: kept } });
+      return Object.assign(composeReport(args), { trimmed: { systems: [...drop], edges: n, branchEdges: branches, keptEndorheic: kept } });
     },
     /* extend_river: carry a river that dead-ends on land (rid, or the dead end nearest `at`, else every dead end) on to the
        nearest water, or into another river, by breadth-first search over tile corners along edges whose both flanks are
