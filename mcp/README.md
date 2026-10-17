@@ -43,7 +43,9 @@ npm install
    server appears, and tool calls made before that return a clear "No Terra Form page is connected" error.
 
 Ports: the WebSocket listens on 127.0.0.1:8765. To run a second instance (or if 8765 is taken) start the
-server with `TERRAFORM_WS_PORT=8766` and open the app as `http://localhost:8000/?mcp=8766`.
+server with `TERRAFORM_WS_PORT=8766` and open the app as `http://localhost:8000/?mcp=8766`. The
+`.claude/launch.json` entry `terra-form-alt` serves the app on port 8010 for exactly that case (two sessions,
+one page each: `http://localhost:8010/?mcp=8766`).
 
 Run the worked example below end to end with `node mcp/example.mjs --out mcp/out`.
 
@@ -69,6 +71,14 @@ character per tile, row 0 north, with a y label per row and an x ruler every 10 
 view accept `grid:false` (stats only), `bbox:[x0,y0,x1,y1]` (crop, inclusive tile coords) and `step`
 (subsample, one glyph per `step` tiles; the default keeps the grid within about 120x80).
 
+Lines that appear when they apply: a snapshot's header ends with its tile size (`0.357°/tile`) and
+`cut: 118 mask-fill tiles (not coast)` when a lasso/rect left fill inside the crop; `edges:` carries each
+side's connector label and anchors; a compose block carries `collisions:` (pairs of patches whose land
+overlaps, with the tile count, or `none`), `budget:` (land share against the `targetLand` given to
+`compose_new`, with the tiles to add or remove), `warnings:` (the seam lint) and `notes:` (informational
+lint, such as rivers that were already endorheic in their source); `placed` / `attached` lines end with
+`clipped: N land tiles off the canvas (2 rows south)` when a stamp overhangs.
+
 | tool | what it does |
 |---|---|
 | `status` | game, mode, frame size and bounds, compose canvas, shelf count, every tunable parameter, the glyph legend |
@@ -78,21 +88,24 @@ view accept `grid:false` (stats only), `bbox:[x0,y0,x1,y1]` (crop, inclusive til
 | `frame_view` | the feedback block for the current frame |
 | `snapshot {name, lasso:[[lon,lat],...] \| rect:[W,S,E,N]}` | capture the frame to the shelf, cropped to the lasso / box (outside it becomes the default fill); returns the snapshot id and its block |
 | `list_snapshots`, `snapshot_info {id}`, `delete_snapshot {id}` | the shelf; snapshots are addressed by id or exact name |
-| `compose_new {W, H, fill:'water'\|'barrier', clear}` | switch to Compose, clear, size the canvas; `barrier` makes empty canvas impassable mountain |
-| `place {snapshot, x, y, landOnly}` | stamp a snapshot with its top-left at x,y (may overhang); `landOnly` (default) stamps only its land |
+| `compose_new {W, H, fill:'water'\|'barrier', clear, latitudes, targetLand, degPerTile}` | switch to Compose, clear, size the canvas; `barrier` makes empty canvas impassable mountain; `targetLand` (a share, or `[lo,hi]`) adds a budget line to every compose block; `degPerTile` declares the canvas scale for the codebook |
+| `place {snapshot, x, y, landOnly, avoidLand, gap, ragged, preview}` | stamp a snapshot with its top-left at x,y (may overhang; the block says how much land was clipped); `landOnly` (default) stamps only its land; `avoidLand` shifts it to the nearest spot whose land touches no existing land (`gap` water tiles between, default 1); `ragged` feathers its cut edges; `preview` reports without keeping the patch |
 | `move_patch {patch, x, y \| dx, dy}`, `remove_patch`, `raise_patch`, `lower_patch`, `set_land_only {patch, landOnly}` | edit patches by id; later patches draw over earlier ones |
 | `erase {rect:[x0,y0,x1,y1]}`, `unerase` | punch holes (default fill) in the collage; holes stay put when patches move |
 | `compose_view`, `compose_stats` | the canvas as it will export (coast ring and river edges re-derived) |
 | `export {name, dir}` | build with the active game module and write: with `dir`, the files are written there by this server; without, the app writes where Generate would (its chosen folder, else a browser download) |
-| `describe {target}` | landform morphology of the canvas, frame or a snapshot (see Landform layer) |
-| `catalog_search {tags \| text \| climate}`, `snapshot_from_catalog {entry, W, H, rot, params, bounds, crop}` | the real-piece catalog (see Landform layer) |
-| `attach {a, edgeA, b, edgeB, overlap, shift}`, `scatter {snapshots, along, spacing, start}` | composite operators (see Landform layer) |
+| `describe {target, rows, codes, degPerTile}` | landform morphology of the canvas, frame or a snapshot: paragraph, warnings, notes and a compact JSON; `rows:true` adds the per-row table, `codes:true` the landform-codebook summary (see Landform layer) |
+| `suggest_lasso {mode:'land'\|'ridge', landmass, at, side, margin, tolerance, maxVertices}` | an irregular lasso built from the frame itself: a landmass outline with a sea margin, or one side of a mountain spine with the crest; `snapshot {lassoFrom:{...}}` captures with it in one call |
+| `catalog_search {tags \| text \| climate}`, `snapshot_from_catalog {entry, W, H, rot, params, bounds, crop}` | the real-piece catalog; several words in `text` match any of them, ranked (see Landform layer) |
+| `attach {a, edgeA, b, edgeB, overlap, shift, align, autoShift, searchShift, clamp, ragged}`, `scatter {snapshots, along, spacing, start, avoidLand, gap}` | composite operators (see Landform layer) |
+| `trim_rivers {rids, endorheic}`, `extend_river {rid \| at, maxLength}` | river repair on the collage: drop systems cut by the seams (or named ones), carry a dead end on to the nearest water (see Landform layer) |
 | `flip_snapshot {id, axis:'x'\|'y'\|'xy', name}` | a mirrored (or 180°-rotated) copy on the shelf: tiles, river edges and flow directions flipped together; disguises recognisable pieces |
-| `catalog_index {entries}`, `catalog_lint` | record each catalog entry's connector labels (slow, once), then check the catalog for connector types with no partner |
+| `catalog_index {entries}`, `catalog_lint` | record each catalog entry's connector labels and measured climate mix (slow, once), then check the catalog for connector types with no partner |
 | `thumbnail {target, path, maxPx}` | the app's tile renderer on the canvas / frame / a snapshot, written as a PNG |
 
-View options on every block: `grid:false`, `bbox`, `step`, and `overlay:'rivers'` (prints `=` on every tile a
-river edge touches, so river courses read through a uniform desert). `compose_new` takes
+View options on every block: `grid:false`, `bbox`, `step`, `overlay:'rivers'` (prints `=` on every tile a
+river edge touches, so river courses read through a uniform desert) and `overlay:'codes'` (one glyph per
+landform-codebook class on land and shore tiles; legend under Landform codebook below). `compose_new` takes
 `latitudes:{top,bottom}`: a declared virtual latitude span for row 0 and the bottom edge, written to the
 export header in place of the nominal ±45° and used by the `latitude-mismatch` lint (polar tile at a low
 latitude, tropical tile at a high one). A compose canvas never wraps east-west (the export writes
@@ -257,15 +270,35 @@ pure function in `RULES` in `core/landforms.js`; add a rule by appending one.
 |---|---|
 | `climate-jump` | two adjacent flat land tiles from different patches are in different Köppen groups (temperate next to continental, and ice cap next to tundra, are allowed; a hill, peak or water between them clears it) |
 | `truncated-wall` | a run of 3+ hill/peak tiles from one patch sits against flat land of another patch (a range that stops dead at the seam) |
-| `river-dead-end` | a river edge whose downstream corner has neither a continuing edge nor water (a river cut by the seam or by land-only stamping; sources are upstream ends and do not count) |
+| `river-dead-end` | a river edge whose downstream corner has neither a continuing edge nor water, and which the source snapshot did NOT have: cut at a patch boundary, by an erase or by an overlapping stamp (sources are upstream ends and do not count) |
+| `river-endorheic` (a note, not a warning) | the same dead end, but the source snapshot already had it: a real endorheic river (a Saharan wadi); on a frame or a snapshot every dead end is of this kind |
+| `straight-edge-coast` | a ruler-straight shoreline: 7+ collinear land tiles of one patch all facing water on the same side, or 4+ that carry the snapshot's cut flag. The message says which it is: `a lasso/mask cut`, `the capture rectangle edge (a rect or frame cut)`, or `no cut flag: a straight real coast` |
+| `scale-mismatch` | two touching patches whose tile sizes sit more than one codebook band apart (a factor of about 2.3 in °/tile): a 0.05°/tile delta against a 0.6°/tile peninsula |
 | `latitude-mismatch` | only with declared `latitudes`: an ice-cap/tundra tile below 35°, a tropical tile above 45°, a desert tile above 62° of virtual latitude |
 
 `describe` also lists water bodies (`seas`, with `inland` when none of their tiles touch the canvas edge),
-which water body each river system reaches, and (in the JSON) per-row land and Köppen-group counts for
-latitude-band checks.
+which water body each river system reaches (a tributary that joins another river reaches what that river
+reaches, `via`), and, with `rows:true`, per-row land and Köppen-group counts for latitude-band checks (the
+table is about half the payload, so it is opt-in).
+
+**Cut edges are not coastline, and real coastline is not a cut.** A lasso or rect capture replaces the tiles
+outside the shape with fill, and the snapshot remembers which (`cut`) and, among those, which were *land* in
+the source (`cutLand`): only there did the mask cut through land and make an artificial shore. Fill that was
+sea is just trimmed sea, and the coast beside it is the real one (Oman's lasso: `118 mask-fill tiles, 41
+through land`; its north and east edges, where the lasso ran through the Gulf, stay `open sea`, its west
+edge through the Rub al Khali is a `cut edge`). Downstream: a connector that is mostly cut-through-land is
+labelled `cut edge` rather than `coast`; `attach`'s seam cost leaves those pairs out of the count (`N
+cut-edge pairs ignored`); the `straight-edge-coast` rule names a straight shore as a mask cut when the flag
+confirms it; and `ragged:true` on `place`/`attach` feathers only the artificial shores (the cut-through-land
+boundary and the capture rectangle's own land border), never a land tile that touches real water, so a
+distinctive coastline survives even where the lasso ran right beside it. To pin more, `ragged` takes
+options: `{preserve:[[x0,y0,x1,y1],...]}` snapshot-tile rects never feathered or min-cut (a coastline you
+like), `preserveSides:['N',...]` rectangle borders left alone, `preserveCoast:false` to feather real coast
+too, `feather:false` / `minCut:false` to switch either half off; in `attach`, `preserveA` / `preserveSidesA`
+do the same for A. `flip_snapshot` carries the flags along.
 
 Not implemented yet: coast-type discontinuity where two shorelines meet. A warning is `{rule, at:[x,y], n,
-patches, msg}`; the block prints up to 8.
+patches, msg}` (`level:'info'` for a note); the block prints up to 8 warnings and 6 notes.
 
 The climate rule is evidence-based rather than hand-written (the Karth & Smith framing in
 `docs/landform-grammar-papers.md`): `mcp/mine_koppen_adjacency.py` counts which Köppen classes border each
@@ -280,9 +313,13 @@ share. Without the file the rule falls back to a small allow list.
   graph: `chain` (longest end-to-end path), `branches` (ends) and `knots` (junctions with three or more arms,
   with coordinates) sit next to the PCA orientation. "Two chains meeting at a knot" is now a checkable claim.
 - `attach` reports a **seam cost** over the overlap strip (or the two facing rows when the pieces only touch):
-  the share of tile pairs that disagree on water, climate group or relief (Zhou et al. 2007 in tile form), and
-  the **best shift** along the seam within ±8; `autoShift:true` applies it. A ragged min-cut seam is the next
-  step and is not implemented.
+  the share of tile pairs that disagree on water, climate group or relief (Zhou et al. 2007 in tile form; mask
+  fill is left out), and the **best shift** along the seam within ±`searchShift` (default 16; the block says
+  when the optimum sits on the window's edge); `autoShift:true` applies it. `ragged:true` runs the Zhou et al.
+  **min-cut seam**: the cheapest path through the overlap strip from one end of the seam to the other (water
+  against land 1, both land 0.25 + 0.5 per climate-group or relief disagreement, both water 0), and B's tiles
+  on A's side of the path are left unstamped, so the join is a ragged line through sea and matching terrain
+  rather than a rectangle edge.
 - Connectors are Wang-tile edge colours (Cohen et al. 2003), with corner labels too (the 3x3 around each corner,
   after Lagae). `catalog_index` captures catalog entries once and records their labels in `landforms.json`;
   `catalog_lint` tallies supply per label and side and flags labels with no partner on the opposite side.
@@ -304,19 +341,54 @@ steppe, forest, boreal, polar.
 Every capture computes a **connector** per edge (N/E/S/W) from the tiles along that edge: land fraction,
 relief fraction, dominant climate group, mean height where the game's tile carries metres, and whether a
 river reaches the edge. They are stored on the snapshot and printed by `snapshot`, `snapshot_info` and
-`describe` as `edges: N open sea | E desert + river exit | S desert | W open sea`. Labels: `open sea` (land
-under 10%), `coast` (under 50%), `mountain wall` (half or more of the land is hills/peaks), `desert`,
-`tropical land`, `ice`, `temperate land`, `continental land`, `land`; `+ river exit` when a river leaves there.
+`describe` as `edges: N open sea | E desert + river exit [relief@11, land@13 (2..25)] | S desert | W cut edge`.
+Labels: `cut edge` (half or more of the edge is mask fill), `open sea` (land under 10%), `coast` (under 50%),
+`mountain wall` (half or more of the land is hills/peaks), `desert`, `tropical land`, `ice`, `temperate land`,
+`continental land`, `land`; `+ river exit` when a river leaves there. The bracket holds the **anchors**
+(Mawhorter & Mateas: where along the edge the feature sits): `relief@` the centre of the longest run of edge
+positions with hills/peaks within 4 tiles of the edge, `land@` the centre of the longest land run along the
+edge, with the land runs themselves. `attach {align:'relief'|'coast'}` lines two edges' anchors up.
+`catalog_index` also records each entry's measured climate mix (`climateMeasured`, from the captured
+landmasses), which `catalog_search {climate}` matches alongside the hand-written field.
 
 ### Composite operators
 
-- `attach {a, edgeA, b, edgeB, overlap, shift}`: puts B against A so A's edge meets B's opposite edge,
-  centred along the seam. A keeps its patch (or is placed at the canvas centre); B is moved or placed.
-  `overlap` pulls B into A (with land-only stamping the coastlines interleave), `shift` slides B along the
-  seam. The block names both edges' connectors and carries the seam lint for the join.
+- `attach {a, edgeA, b, edgeB, overlap, shift, align, clamp, ragged}`: puts B against A so A's edge meets B's
+  opposite edge, centred along the seam (or with `align:'relief'` / `'coast'`, with the two edges' anchors on
+  one line, so a range runs into a range). A keeps its patch (or is placed at the canvas centre); B is moved
+  or placed. `overlap` pulls B into A (with land-only stamping the coastlines interleave), `shift` slides B
+  along the seam. B is clamped along the seam so its land stays on the canvas when it fits (`clamp:false`
+  to allow overhang); what still overhangs is reported as `clipped`. `ragged` feathers both pieces' cut
+  edges (real coast kept; `preserve` rects pin more) and cuts the min-cut seam through the overlap. The
+  block names both edges' connectors, the seam cost and best shift, and carries the seam lint for the join.
+- `place {avoidLand, gap, ragged, preview}` and `scatter {avoidLand, gap}`: `avoidLand` searches outward
+  (by Chebyshev radius) for the nearest position whose land is on the canvas and at least `gap` water tiles
+  from any existing land, and reports the shift; the compose block's `collisions:` line names the patches
+  whose land still overlaps. `place {preview:true}` is a dry run: the block as if placed (budget line
+  included), nothing kept.
 - `scatter {snapshots, along, spacing, start}`: stamps the snapshots, cycling, centred on their land every
   `spacing` tiles along the polyline. Built for atoll chains on an ocean canvas; read the `landforms:` line
-  (landmass count, straits) to see that none touch.
+  (landmass count, straits) to see that none touch. Single atolls (Tarawa, Funafuti, Majuro, Addu) capture
+  at their default 8x8 as 5-14 tile islets, at 16x16 / 24x24 as 50-110 tile blobs (the island expander fills
+  the lagoon); the chain entries (Maldives, Tuvalu, Marshalls) give several islets each.
+- `trim_rivers {rids, endorheic}` and `extend_river {rid | at, maxLength}` turn the river warnings into
+  actions. `trim_rivers` drops the collage's river systems that end on land without reaching water or the
+  map edge: by default only those the source snapshots did not already have (cut by a seam, an erase or an
+  overlapping stamp), `endorheic:'trim'` also the real endorheic ones, `rids` named systems. `extend_river`
+  carries a dead end on to the nearest water (or into another river) by breadth-first search over tile
+  corners along edges with land on both sides, adding the edges to the collage with the flow pointing
+  downstream. Both are edits of the collage (per-patch edge drops, canvas-level added edges), serialized
+  with it; the snapshots are untouched.
+- `suggest_lasso {mode, landmass, at, side, margin, tolerance, maxVertices}`: a hand-typed lasso is a few
+  straight segments, so its cut edges are ruler lines. This builds the polygon from the evaluated frame:
+  `mode:'land'` traces a landmass (the largest, `#landmass` from describe, or the one at tile `at`) dilated
+  by `margin` tiles of sea (default 1; 0 trims every empty tile, larger keeps more sea around the real
+  coast); `mode:'ridge'` keeps one `side` (N/E/S/W) of a mountain spine with the crest included, so the cut
+  runs along the far foot of the ridge and the cut edge is a mountain wall, the best connector there is. The
+  outer boundary of the tile mask is simplified (Douglas-Peucker, `tolerance` tiles, default 0.75, raised
+  until at most `maxVertices`, default 40) and mapped from tile corners to lon/lat through the frame
+  (rotation included). It returns the polygon for `snapshot {lasso}`; `snapshot {lassoFrom:{...}}` does
+  both in one call and prints the polygon it used.
 
 Worked example, continued (the same Oman and Morocco captured from the catalog, then joined):
 
@@ -353,6 +425,89 @@ warnings: none
 scattered 5: [3] Society Islands @-12,24; [4] Tuvalu and the Gilberts @2,2; ...
 ```
 
+### Landform codebook (`codes:`)
+
+`docs/landform-codebook.md` describes a learned vocabulary of 7x7-tile landforms, one codebook per scale band
+(8 bands over 0.01-3 °/tile, up to 128 codes each, captioned from Natural Earth labels). The page ports its
+`assign`: `core/landforms.js` fetches `data/landform/codebook.json` on first use, picks the band from the
+tile size (a snapshot's or frame's latitude span over its rows; for a collage the `degPerTile` declared to
+`compose_new`, else the patches' median), and scores every land and shore tile's window against the band's
+centroids over the 8 dihedral orientations with the dot-product formula of the doc (centroids premultiplied
+by the squared channel weights, laid out per orientation). Checked against the Python `assign` on five
+captures across bands 2, 3 and 5: identical codes on all but one tile in 3800 (a float tie).
+
+- `describe {codes:true}` adds a `codes:` line and a sentence to the paragraph: the band, how many tiles were
+  coded, and the top three captions per landmass with their share (`#1 reads desert / plain / pen/cape 23%,
+  ...`), plus the JSON `codes` object. `degPerTile` overrides the tile size.
+- `overlay:'codes'` on any view prints one glyph per code class: the leading caption label, else the code's
+  kind. `b` basin, `B` bay, `c` channel, `,` coast, `D` delta, `v` depression, `d` desert, `F` fjord, `h`
+  foothills, `G` gorge, `U` gulf, `i` inlet, `I` island, `A` island group, `T` isthmus, `L` lagoon, `l`
+  lowland, `C` pen/cape, `P` peninsula, `p` plain, `t` plateau, `M` range/mtn, `r` reef, `s` sound, `S`
+  strait, `u` tundra, `V` valley, `w` wetlands; uncaptioned codes by kind: `~` open water / islands, `,`
+  coast, `^` inland peaks, `n` inland hills, `.` inland flat. Open sea away from land is left `~` (it is where
+  the time goes and reads as one code).
+- The `scale-mismatch` lint rule (above) uses the same bands: two touching patches more than one band apart
+  carry landforms from different vocabularies.
+
+## The owner's Oman + Morocco attach, after the fixes
+
+The join the owner tested (Morocco from its rect crop, Oman from its lasso, attached E/W with overlap 6),
+re-run with `ragged:true` on an 80x44 canvas and followed by `trim_rivers`. What changed in the block: Oman's
+header says `cut: 118 mask-fill tiles (41 through land, the rest trimmed sea)`, its west edge is `cut edge`
+while its north and east edges, where the lasso ran through the Gulf, stay `open sea`; the seam cost leaves
+the 19 cut-through-land pairs out; the best shift (1) is inside the ±16 window; the Oman wadi and Morocco's
+Saharan river are `notes` (endorheic in their source), while the one river the overlap really cut is a
+warning until `trim_rivers` drops its dangling edge; the straight south edge of Morocco's crop and the
+straight west edge of Oman's lasso are feathered away (`ragged: 98 tiles of B and 104 of A skipped, min-cut
+seam 26 long`) with every tile that touches real sea kept, so Morocco's Atlantic headlands and Oman's Hajar
+and Dhofar coasts are the real ones; what is left straight is Morocco's Mediterranean shore, which the lint
+names as such.
+
+```
+>>> snapshot_from_catalog {"entry":"Oman","grid":false}
+snapshot snap_mvbv04i8_0_7kfxy2 "Oman" 23x28 civ4 | lat 16.5..26.5 | 0.357°/tile | cut: 118 mask-fill tiles (41 through land, the rest trimmed sea)
+...
+edges: N open sea [relief@11] | E open sea [relief@10, land@11 (11..11)] | S open sea [relief@5, land@2 (2..3)] | W cut edge [relief@19, land@9 (7..11)]
+warnings (2): [straight-edge-coast] ruler-straight coast: 11 land tiles of patch 1 along column 1 (y 12..22) face water to the W, a lasso/mask cut ; [straight-edge-coast] ruler-straight coast: 5 land tiles of patch 1 along column 2 (y 23..27) face water to the W, a lasso/mask cut
+
+>>> attach {"a":"Morocco and the Atlas","edgeA":"E","b":"Oman","edgeB":"W","overlap":6,"ragged":true,"grid":false}
+compose canvas 80x44 civ4 | 2 patches | 0 erased tiles
+land 753 (21%)  water 2767 | hills 235  peaks 158 | river edges 141
+landmasses 1: #1 753t x22-75 y9-35
+patches (bottom to top): [1] "Morocco and the Atlas" 38x26 @21,9; [2] "Oman" 23x28 @53,8
+warnings (3): [truncated-wall] mountain run of 316 tiles from patch 1/2 stops against flat land of patch 2/1 along 24 tiles near 54,20 ; [river-dead-end] river 3159 has 1 edge ending on land with no continuation, first at 58,28 (not in its source: cut at a patch boundary, by an erase or by an overlapping stamp) ; [straight-edge-coast] ruler-straight coast: 7 land tiles of patch 1 along row 11 (x 47..53) face water to the N (no cut flag: a straight real coast)
+notes (2): [river-endorheic] river 2500 dead-ends on land at 33,25 as it did in its source (patch 1): endorheic, not a seam ; [river-endorheic] river 41972 dead-ends on land at 71,23 as it did in its source (patch 2): endorheic, not a seam
+attached patch 2 to patch 1 along E/W at 53,8 (A desert + river exit meets B cut edge) | seam cost 0.526 over 137 tiles (water 21, climate 0, relief 51, 19 cut-edge pairs ignored) | best shift 1 (cost 0.518, window ±16) | ragged: 98 tiles of B and 104 of A skipped, min-cut seam 26 long through a 6-wide strip (cost/tile 0.365)
+
+>>> trim_rivers {"grid":false}
+...
+trimmed 0 river systems and 1 edge(s) of cut side branches (1 edges): none | kept 1 endorheic (source) system(s): 41972
+
+>>> describe {"target":"compose","codes":true}
+1 landmass: #1 753t at 52,22 (arid 85%, temperate 14%). Bay of 95t on #1 at 42,33 opening SW; Bay of 48t on #1 at 56,10 opening N; Bay of 36t on #1 at 29,28 opening W. Peninsula of 25t on #1 at 30,32 pointing SW; Peninsula of 15t on #1 at 73,20 pointing E; Peninsula of 14t on #1 at 58,33 pointing SE. Mountain spine E-W 37 long (316t, 112 peaks, chain 44, 10 ends, 0 knots) on #1 at 47,21; Mountain spine NW-SE 16 long (52t, 35 peaks, chain 16, 2 ends, 0 knots) on #1 at 68,16; Mountain spine NE-SW 13 long (19t, 11 peaks, chain 12, 2 ends, 0 knots) on #1 at 61,33. 13 river systems (140 edges): 12 reach water (2 different water bodies), 0 leave the map, 1 dead-end. Codebook band 3 (0.2605°/tile for 0.3571°/tile): #1 reads desert / plain / pen/cape 21%, desert / plain / depression 12%, range/mtn / desert / basin 11%.
+warnings (2): [truncated-wall] ... ; [straight-edge-coast] ruler-straight coast: 7 land tiles of patch 1 along row 11 (x 47..53) face water to the N (no cut flag: a straight real coast)
+
+>>> compose_view {"bbox":[18,4,78,38]}
+    (the join, rows 14-35; the seam ran down columns 53-58; Oman's Hajar coast at the right, Morocco's south-west headland bottom left)
+ 14|~~~~~~~~~~~~~~~~~~~~~~,,pppPPPP^PddP^PPpdddddd^^^,,,~~~~~~~~~
+ 18|~~~~~~~~~~~~~~~,,pppppppPPP^^PPDdDPPDDdDDDDDDdddD^^^^^^^,,,~~
+ 19|~~~~~~~~~~~~~~~,pppppppppP^^^^^^^^PDDDDdDDDDDddddD^DDD,^^D,~~
+ 22|~~~~~~~~~~~~~,,PPppppP^^^^^^^dDDdddddddDDDDDDDdddddddddd,,~~~
+ 26|~~~~~~~~~~~~~,,ppP^^^^^D^^DDDdddddddddddDddddddddddD,~~~~~~~~
+ 30|~~~~~~~~~,,,dDDD^DDdDdddddddddddDdddDdddddddddddD,,~~~~~~~~~~
+ 31|~~~~~~~~,,dDD,,DD,D,ddddd,dd,,,,,dd,,d,ddddddDDD,,~~~~~~~~~~~
+ 32|~~~~~,,,,dd,,,,d,ddd,,,,d,,,,~~~,,,,,,dddddD^,,,,~~~~~~~~~~~~
+ 33|~~~,,,dddd,,~~,,,,,,,~~,,,~~~~~~~~~~~,,D,^^^^,~~~~~~~~~~~~~~~
+ 34|~~~,ddd,,,,~~~~~~~~~~~~~~~~~~~~~~~~~~,^^^^D^,,~~~~~~~~~~~~~~~
+ 35|~~~,,,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,^,,,,,,~~~~~~~~~~~~~~~~
+```
+
+![Oman + Morocco after the fixes](scenarios/oman_morocco.png)
+
+What still shows: the `truncated-wall` warning is real (the Atlas runs into Oman's desert interior at the
+seam: `align:'relief'` with Oman's `W` edge anchor would put the Hajar against it instead), and the
+feathered south edge of Morocco's crop keeps a few straight runs of 4-6 tiles, below the rule's threshold.
+
 ## How it fits the code
 
 - `core/app.js` gained `TerraForm.api` (at the end of the file): thin wrappers over the existing functions
@@ -361,8 +516,13 @@ scattered 5: [3] Society Islands @-12,24; [4] Tuvalu and the Gilberts @2,2; ...
   so the export build is reachable without the Save As step. Nothing in the classifier or the writers changed.
 - `core/bridge.js` is the WebSocket client and command dispatcher; it also builds the feedback block
   (counts, landmass flood fill on the active lattice, the glyph grid) and the composite operators.
-- `core/landforms.js` holds the landform vocabulary: `describe`, the lint `RULES`, `connectors`, and the grid
-  primitives they share (components, distance transform, thinning skeleton, convex hull).
+- `core/landforms.js` holds the landform vocabulary: `describe`, the lint `RULES`, `connectors` (with anchors
+  and cut edges), the codebook port (`loadCodebook`, `assignCodes`, `codeSummary`), and the grid primitives
+  they share (components, distance transform, thinning skeleton, convex hull).
+- Compose patches carry three bridge-made edits, all properties of the collage and serialized with it:
+  `skip` (snapshot tile indices not stamped: the ragged seam and feathered cuts), `riverSkip` (edge keys
+  dropped by `trim_rivers`) and the canvas-level `riverAdd` list (`extend_river`). `compositeCompose` honours
+  them; the snapshots are never modified. Snapshots carry `cut` (the mask-fill tile indices) from `maskFrame`.
 - `mcp/landforms.json` is the catalog; `mcp/koppen_adjacency.json` the mined climate adjacency table
   (regenerate with `python -P mcp/mine_koppen_adjacency.py`); `mcp/scenarios.mjs` plays the acceptance
   scenarios of `SCENARIOS.md`.

@@ -4,8 +4,23 @@
     {
       "name": "terra-form",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8000"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8000"
+      ],
       "port": 8000
+    },
+    {
+      "name": "terra-form-alt",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8010"
+      ],
+      "port": 8010,
+      "url": "http://localhost:8010"
     }
   ]
 }

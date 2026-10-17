@@ -75,7 +75,7 @@ function fmtReport(r) {
   const L = [];
   if (r.kind === 'frame') L.push(`frame ${r.W}x${r.H} ${r.game}${r.hex ? ' (hex)' : ''} | bounds W ${f1(r.bounds.W)} S ${f1(r.bounds.S)} E ${f1(r.bounds.E)} N ${f1(r.bounds.N)}${r.rot ? ` | rot ${f1(r.rot)}°` : ''}${r.pending ? ` | ${r.pending} tile loads still pending` : ''}`);
   else if (r.kind === 'compose') L.push(`compose canvas ${r.W}x${r.H} ${r.game}${r.hex ? ' (hex)' : ''} | ${r.patches.length} patch${r.patches.length === 1 ? '' : 'es'} | ${r.erased} erased tile${r.erased === 1 ? '' : 's'}${r.latitudes ? ` | latitudes ${f1(r.latitudes.top)}..${f1(r.latitudes.bottom)}` : ''}`);
-  else if (r.kind === 'snapshot') L.push(`snapshot ${r.id} "${r.name}" ${r.W}x${r.H} ${r.game}${r.hex ? ' (hex)' : ''} | lat ${f1(r.botLat)}..${f1(r.topLat)}`);
+  else if (r.kind === 'snapshot') L.push(`snapshot ${r.id} "${r.name}" ${r.W}x${r.H} ${r.game}${r.hex ? ' (hex)' : ''} | lat ${f1(r.botLat)}..${f1(r.topLat)}${r.degPerTile ? ` | ${(+r.degPerTile).toFixed(3)}°/tile` : ''}${r.cut ? ` | cut: ${r.cut} mask-fill tiles${r.cutLand != null ? ` (${r.cutLand} through land, the rest trimmed sea)` : ''}` : ''}`);
   const tot = r.W * r.H, rl = r.relief.labels, rc = r.relief.counts;
   L.push(`land ${r.land} (${pct(r.land, tot)}%)  water ${r.water} | ${rl[1]} ${rc[1]}  ${rl[2]} ${rc[2]} | river edges ${r.riverEdges}`);
   L.push('terrain: ' + r.classes.map(c => `${c.ch}=${c.label} ${c.n}`).join('  '));
@@ -85,17 +85,30 @@ function fmtReport(r) {
   }
   if (r.patches) L.push(r.patches.length ? 'patches (bottom to top): ' + r.patches.map(p => `[${p.id}] "${p.name}" ${p.W}x${p.H} @${p.x},${p.y}${p.landOnly ? '' : ' full-rect'}${p.foreign ? ' ⚠' + p.foreign : ''}`).join('; ') : 'patches: none');
   if (r.landforms) L.push('landforms: ' + r.landforms);
-  if (r.connectors) L.push('edges: ' + ['N', 'E', 'S', 'W'].map(k => `${k} ${r.connectors[k] ? r.connectors[k].label : '?'}`).join(' | '));
+  if (r.connectors) L.push('edges: ' + ['N', 'E', 'S', 'W'].map(k => { const c = r.connectors[k]; if (!c) return `${k} ?`; const an = []; if (c.reliefAt != null) an.push('relief@' + c.reliefAt); if (c.coastAt != null) an.push('land@' + c.coastAt + (c.landRuns && c.landRuns.length ? ' (' + c.landRuns.slice(0, 2).map(q => q[0] + '..' + q[1]).join(', ') + ')' : '')); return `${k} ${c.label}${an.length ? ' [' + an.join(', ') + ']' : ''}`; }).join(' | '));
+  if (r.codes) L.push('codes: ' + fmtCodes(r.codes));
+  if (r.collisions) L.push(r.collisions.length ? 'collisions: ' + r.collisions.slice(0, 6).map(c => `[${c.a}]x[${c.b}] ${c.tiles} land tiles`).join('; ') + (r.collisions.length > 6 ? ` ; +${r.collisions.length - 6} more` : '') : 'collisions: none');
+  if (r.budget) { const b = r.budget; L.push(`budget: land ${(b.share * 100).toFixed(1)}% of target ${Math.round(b.target[0] * 100)}-${Math.round(b.target[1] * 100)}%` + (b.within ? ' (within target)' : b.needMax < 0 ? ` (remove ${-b.needMax}..${-b.needMin} land tiles)` : ` (add ${b.needMin}..${b.needMax} land tiles)`)); }
   if (r.warnings) L.push(r.warnings.length ? `warnings (${r.warnings.length}): ` + r.warnings.slice(0, 8).map(w => `[${w.rule}] ${w.msg}`).join(' ; ') + (r.warnings.length > 8 ? ` ; +${r.warnings.length - 8} more` : '') : 'warnings: none');
-  if (r.placed) L.push(`placed patch ${r.placed.patch} at ${r.placed.x},${r.placed.y}${r.placed.landOnly ? ' (land only)' : ' (full rectangle)'}`);
-  if (r.attached) { const t = r.attached; L.push(`attached patch ${t.b} to patch ${t.a} along ${t.seam} at ${t.x},${t.y}` + (t.connectorA ? ` (A ${t.connectorA.label} meets B ${t.connectorB ? t.connectorB.label : '?'})` : '') + (t.seamCost ? ` | seam cost ${t.seamCost.cost} over ${t.seamCost.tiles} tiles (water ${t.seamCost.water}, climate ${t.seamCost.climate}, relief ${t.seamCost.relief})` : '') + (t.bestShift ? ` | best shift ${t.bestShift.shift} (cost ${t.bestShift.cost})` : '')); }
+  if (r.notes && r.notes.length) L.push(`notes (${r.notes.length}): ` + r.notes.slice(0, 6).map(w => `[${w.rule}] ${w.msg}`).join(' ; ') + (r.notes.length > 6 ? ` ; +${r.notes.length - 6} more` : ''));
+  const clip = c => c ? ` | clipped: ${c.landTiles} land tiles off the canvas (${['north', 'south', 'east', 'west'].filter(k => c[k]).map(k => c[k] + ' ' + (k === 'north' || k === 'south' ? 'rows' : 'cols') + ' ' + k).join(', ')})` : '';
+  if (r.lassoFrom) L.push(`lasso from frame (${r.lassoFrom.mode}): ${r.lassoFrom.what}, ${r.lassoFrom.vertices} vertices: ${JSON.stringify(r.lassoFrom.polygon)}`);
+  if (r.placed) { const p = r.placed; L.push(`${p.preview ? 'PREVIEW (not kept): would place' : 'placed'} patch ${p.patch} at ${p.x},${p.y}${p.landOnly ? ' (land only)' : ' (full rectangle)'}` + (p.shifted ? ` | avoidLand shifted it by ${p.shifted.dx},${p.shifted.dy}` : '') + (p.skipped ? ` | ragged: ${p.skipped} edge tiles feathered` : '') + clip(p.clipped)); }
+  if (r.attached) { const t = r.attached, b = t.bestShift; L.push(`attached patch ${t.b} to patch ${t.a} along ${t.seam} at ${t.x},${t.y}` + (t.connectorA ? ` (A ${t.connectorA.label} meets B ${t.connectorB ? t.connectorB.label : '?'})` : '') + (t.aligned ? (t.aligned.error ? ` | align: ${t.aligned.error}` : ` | aligned ${t.aligned.kind}: A@${t.aligned.anchorA} to B@${t.aligned.anchorB} (shift ${t.aligned.shift})`) : '') + (t.seamCost ? ` | seam cost ${t.seamCost.cost} over ${t.seamCost.tiles} tiles (water ${t.seamCost.water}, climate ${t.seamCost.climate}, relief ${t.seamCost.relief}${t.seamCost.ignored ? `, ${t.seamCost.ignored} cut-edge pairs ignored` : ''})` : '') + (b ? ` | best shift ${b.shift} (cost ${b.cost}, window ±${b.window}${b.atWindowEdge ? ', ON THE WINDOW EDGE: widen searchShift' : ''})` : '') + (t.clamped ? ` | clamped ${t.clamped > 0 ? '+' : ''}${t.clamped} along the seam to stay on the canvas` : '') + clip(t.clipped) + (t.ragged ? ` | ragged: ${t.ragged.skipped} tiles of B${t.ragged.skippedA ? ' and ' + t.ragged.skippedA + ' of A' : ''} skipped` + (typeof t.ragged.seam === 'object' ? `, min-cut seam ${t.ragged.seam.length} long through a ${t.ragged.seam.width}-wide strip (cost/tile ${t.ragged.seam.costPerTile})` : `, ${t.ragged.seam}`) : '')); }
   if (r.connectors && r.connectors.corners) L.push('corners: ' + ['NW', 'NE', 'SE', 'SW'].map(k => `${k} ${r.connectors.corners[k]}`).join(' | '));
-  if (r.scattered) L.push(`scattered ${r.scattered.length}: ` + r.scattered.map(p => `[${p.patch}] ${p.snapshot} @${p.x},${p.y}`).join('; '));
+  if (r.scattered) L.push(`scattered ${r.scattered.length}: ` + r.scattered.map(p => `[${p.patch}] ${p.snapshot} @${p.x},${p.y}${p.shifted ? (p.shifted.error ? ' (' + p.shifted.error + ')' : ` (shifted ${p.shifted.dx},${p.shifted.dy})`) : ''}`).join('; '));
+  if (r.trimmed) L.push(`trimmed ${r.trimmed.systems.length} river system${r.trimmed.systems.length === 1 ? '' : 's'}${r.trimmed.branchEdges ? ` and ${r.trimmed.branchEdges} edge(s) of cut side branches` : ''} (${r.trimmed.edges} edges): ${r.trimmed.systems.join(', ') || 'none'}` + (r.trimmed.keptEndorheic.length ? ` | kept ${r.trimmed.keptEndorheic.length} endorheic (source) system(s): ${r.trimmed.keptEndorheic.join(', ')}` : ''));
+  if (r.extended) L.push('extended: ' + r.extended.map(e => e.error ? `river ${e.rid} from corner ${e.from.join(',')}: ${e.error}` : `river ${e.rid} from corner ${e.from.join(',')} to ${e.to} at ${e.at.join(',')} (+${e.edges} edges)`).join('; '));
   if (r.erasedNow != null) L.push(`erased now: ${r.erasedNow} tiles`);
   if (r.params) L.push('params: ' + Object.entries(r.params).map(([k, v]) => `${k}=${typeof v === 'number' ? f1(v) : v}`).join(' '));
   if (r.gameParams) L.push('game params: ' + Object.entries(r.gameParams).filter(([, v]) => typeof v !== 'object').map(([k, v]) => `${k}=${typeof v === 'number' ? f1(v) : v}`).join(' '));
   if (r.grid) L.push(...fmtGrid(r.grid));
   return L.join('\n');
+}
+function fmtCodes(c) {
+  if (!c) return ''; if (c.error) return c.error;
+  const f = t => (t || []).map(e => `${e.caption} ${e.share}%`).join(', ');
+  return `band ${c.band} (${c.bandDegPerTile}°/tile for ${c.degPerTile}°/tile; ${c.coded} tiles coded, ${c.captioned} codes captioned)` + (c.landmasses && c.landmasses.length ? ' | ' + c.landmasses.map(l => `#${l.id} ${f(l.top) || 'uncoded'}`).join(' | ') : ' | ' + f(c.top));
 }
 function fmtStatus(s) {
   const kv = o => Object.entries(o || {}).filter(([, v]) => typeof v !== 'object').map(([k, v]) => `${k}=${typeof v === 'number' ? f1(v) : v}`).join(' ');
@@ -118,11 +131,12 @@ const report = (cmd, extra) => run(async args => text(fmtReport(await call(cmd, 
 const server = new McpServer({ name: 'terra-form', version: '0.1.0' }, { instructions:
 `Drives the Terra Form app (real-world terrain -> game maps) that is open in a browser. Typical loop: set_game, set_frame (a lon/lat box on the Earth), read the stats + glyph grid, tune, snapshot (optionally cropped by a lasso), repeat for other regions, then compose_new / place / move_patch to splice the snapshots onto one canvas, compose_view to check it, export to write the map file. Tile coordinates are x east, y south, row 0 = north. The app must be open (python serve.py -> http://localhost:8000/, or TerraForm.exe).` });
 
+const raggedOpt = z.union([z.boolean(), z.object({ feather: z.boolean().optional(), minCut: z.boolean().optional(), preserveCoast: z.boolean().optional().describe('default true: land tiles touching real water (not mask fill) are never feathered, so the real coastline survives'), preserve: z.array(z.array(z.number()).length(4)).optional().describe('snapshot-tile rects [x0,y0,x1,y1] never feathered or min-cut: pin a coastline you like'), preserveSides: z.array(z.enum(['N', 'E', 'S', 'W'])).optional().describe('rectangle borders left unfeathered'), preserveA: z.array(z.array(z.number()).length(4)).optional(), preserveSidesA: z.array(z.enum(['N', 'E', 'S', 'W'])).optional() })]).optional().describe("true, or options: feather / minCut on-off, preserveCoast (default true), preserve rects and preserveSides (B, or the placed snapshot), preserveA / preserveSidesA (A in attach)");
 const viewOpts = {
   grid: z.boolean().optional().describe('include the glyph grid (default true)'),
   bbox: z.array(z.number()).length(4).optional().describe('crop the grid to tile rect [x0,y0,x1,y1], inclusive'),
   step: z.number().int().min(1).optional().describe('subsample: one glyph per step tiles (default: auto, keeps the grid within ~120x80)'),
-  overlay: z.enum(['rivers']).optional().describe("'rivers': print '=' on every tile a river edge touches, over the terrain glyph")
+  overlay: z.enum(['rivers', 'codes']).optional().describe("'rivers': print '=' on every tile a river edge touches, over the terrain glyph; 'codes': one glyph per landform-codebook class on land and shore tiles (legend in the README; needs a known tile size)")
 };
 const LEGEND = `Glyph legend (one char per tile, row 0 = north). Civ4/Civ5: ~ ocean  , coast  g grass  p plains  d desert  t tundra  s snow  f forest  j jungle  r flood plains  o oasis  ^ peak; an UPPERCASE letter is that terrain on hills. OpenFront: ~ water, digits 0-9 plains magnitude, a-j highland 10-19, A-K mountain 20-30. Other games: ~ water . flat n hills ^ peak.`;
 
@@ -142,9 +156,14 @@ server.registerTool('tune', { title: 'Tune parameters', description: `Set slider
 
 server.registerTool('frame_view', { title: 'View frame', description: `The feedback block for the current frame without changing anything (re-evaluates it). ${LEGEND}`, inputSchema: viewOpts }, report('frame_view'));
 
-server.registerTool('snapshot', { title: 'Capture snapshot', description: 'Capture the current frame as a snapshot on the shelf and return its id plus its feedback block. lasso: a lon/lat polygon [[lon,lat],...] — the capture is cropped to its tile bounding box and tiles outside the shape become the default fill (water, or mountain when fill=barrier); rect: a lon/lat box [W,S,E,N] doing the same. Without either, a mask drawn in the app applies if there is one, else the whole frame. The lasso is applied for this capture only.',
-  inputSchema: { name: z.string().optional(), lasso: z.array(z.array(z.number()).length(2)).optional(), rect: z.array(z.number()).length(4).optional(), ...viewOpts } },
+server.registerTool('snapshot', { title: 'Capture snapshot', description: 'Capture the current frame as a snapshot on the shelf and return its id plus its feedback block. lasso: a lon/lat polygon [[lon,lat],...] — the capture is cropped to its tile bounding box and tiles outside the shape become the default fill (water, or mountain when fill=barrier); rect: a lon/lat box [W,S,E,N] doing the same. lassoFrom: build the lasso from the frame itself (a landmass outline with a sea margin, or one side of a mountain ridge with the crest; see suggest_lasso) so the cut is not a ruler line. Without any, a mask drawn in the app applies if there is one, else the whole frame. The lasso is applied for this capture only.',
+  inputSchema: { name: z.string().optional(), lasso: z.array(z.array(z.number()).length(2)).optional(), rect: z.array(z.number()).length(4).optional(),
+    lassoFrom: z.union([z.enum(['land', 'coast', 'ridge']), z.object({ mode: z.enum(['land', 'coast', 'ridge']).optional(), landmass: z.number().int().optional(), at: z.array(z.number()).length(2).optional(), side: z.enum(['N', 'E', 'S', 'W']).optional(), margin: z.number().int().optional(), tolerance: z.number().optional(), maxVertices: z.number().int().optional() })]).optional().describe('build the lasso from the frame (see suggest_lasso) and capture with it in one call'), ...viewOpts } },
   report('snapshot'));
+
+server.registerTool('suggest_lasso', { title: 'Suggest a lasso', description: "Build an irregular lasso from the current frame's own geography instead of typing a few straight segments (whose cut edges read as ruler lines). mode 'land' (default): the outline of a landmass (the largest, #landmass from describe, or the one at tile at:[x,y]) with `margin` tiles of sea kept around the real coast (default 1; 0 trims every empty tile, larger keeps more sea); mode 'ridge': one side of a mountain spine (the largest, or the one at `at`) with the crest included, so the cut runs along the far foot of the ridge and the cut edge is a mountain wall (side N/E/S/W picks which side of the spine to keep). The outline is simplified to `tolerance` tiles (default 0.75) and at most maxVertices (default 40). Returns the lon/lat polygon to pass to snapshot {lasso}, or pass the same options as snapshot {lassoFrom:{...}} to capture in one call.",
+  inputSchema: { mode: z.enum(['land', 'coast', 'ridge']).optional(), landmass: z.number().int().optional(), at: z.array(z.number()).length(2).optional(), side: z.enum(['N', 'E', 'S', 'W']).optional(), margin: z.number().int().optional(), tolerance: z.number().optional(), maxVertices: z.number().int().optional() } },
+  run(async a => { const r = await call('suggest_lasso', a); return text(`lasso (${r.mode}, margin ${r.margin}): ${r.what} | ${r.vertices} vertices (tolerance ${r.tolerance} tiles) | ${r.tilesInside} tiles inside, land ${r.landInside} of ${r.landInFrame} in the frame | tile bbox x${r.bbox[0]}-${r.bbox[2]} y${r.bbox[1]}-${r.bbox[3]}\nlasso: ${JSON.stringify(r.polygon)}`); }));
 
 server.registerTool('list_snapshots', { title: 'List snapshots', description: 'The shelf: id, name, size, game, centre lon/lat of every captured snapshot.' },
   run(async () => { const r = await call('list_snapshots'); return text(r.snapshots.length ? r.snapshots.map(s => `${s.id}  "${s.name}"  ${s.W}x${s.H} ${s.game}${s.hex ? ' hex' : ''}  centre ${s.center[0]},${s.center[1]}`).join('\n') : 'shelf is empty'); }));
@@ -156,7 +175,9 @@ server.registerTool('delete_snapshot', { title: 'Delete snapshot', description: 
 
 server.registerTool('compose_new', { title: 'New compose canvas', description: 'Switch to Compose, clear the canvas (unless clear=false) and size it W x H tiles (snapped to the game grid limits). fill: what empty canvas and erased tiles are — water (default) or barrier (impassable mountain). Returns the feedback block for the (empty) canvas.',
   inputSchema: { W: z.number().int().optional(), H: z.number().int().optional(), fill: z.enum(['water', 'barrier']).optional(), clear: z.boolean().optional(),
-    latitudes: z.object({ top: z.number(), bottom: z.number() }).nullable().optional().describe('declared virtual latitudes of row 0 and the bottom edge (e.g. {top:80,bottom:-80}); written to the export header and used by the latitude-mismatch lint; null clears'), ...viewOpts } },
+    latitudes: z.object({ top: z.number(), bottom: z.number() }).nullable().optional().describe('declared virtual latitudes of row 0 and the bottom edge (e.g. {top:80,bottom:-80}); written to the export header and used by the latitude-mismatch lint; null clears'),
+    targetLand: z.union([z.number(), z.array(z.number()).length(2)]).nullable().optional().describe('land-share target for the budget line in every compose block: a fraction or percent (±5 points), or [lo, hi]; null clears'),
+    degPerTile: z.number().nullable().optional().describe('the canvas\' nominal tile size in degrees, for the landform codebook band (default: the median of the placed patches)'), ...viewOpts } },
   report('compose_new'));
 
 server.registerTool('flip_snapshot', { title: 'Flip snapshot', description: "Make a mirrored copy of a snapshot on the shelf: axis 'x' mirrors east-west, 'y' north-south, 'xy' rotates 180°. Tiles, river edges and their flow directions are flipped together. Use it to disguise recognisable real pieces (Italy, Florida). Returns the new snapshot's block. (A rotated capture is set_frame/snapshot_from_catalog with rot.)",
@@ -167,8 +188,8 @@ server.registerTool('thumbnail', { title: 'Thumbnail', description: 'Render the 
   inputSchema: { target: z.string().optional(), path: z.string(), maxPx: z.number().int().optional() } },
   run(async a => { const r = await call('thumbnail', a); const b64 = String(r.dataUrl).split(',')[1]; await fs.mkdir(path.dirname(path.resolve(a.path)), { recursive: true }); await fs.writeFile(path.resolve(a.path), Buffer.from(b64, 'base64')); return text(`wrote ${path.resolve(a.path)} (${r.target} ${r.W}x${r.H})`); }));
 
-server.registerTool('place', { title: 'Place snapshot', description: 'Stamp a snapshot (by id or exact name) on the compose canvas with its top-left tile at x,y (may be negative or run off the canvas; the overhang is clipped). landOnly (default true) stamps only its land tiles, so coastlines can be nudged together; false stamps the whole rectangle including its sea. Later patches draw over earlier ones. Returns the new patch id and the canvas feedback block.',
-  inputSchema: { snapshot: z.string(), x: z.number().int(), y: z.number().int(), landOnly: z.boolean().optional(), ...viewOpts } },
+server.registerTool('place', { title: 'Place snapshot', description: 'Stamp a snapshot (by id or exact name) on the compose canvas with its top-left tile at x,y (may be negative or run off the canvas; the overhang is clipped and the block says how much land was lost). landOnly (default true) stamps only its land tiles, so coastlines can be nudged together; false stamps the whole rectangle including its sea. avoidLand:true shifts the stamp to the nearest spot where its land touches no existing land (gap water tiles between, default 1) and reports the shift; ragged:true feathers its cut edges (where the lasso/rect mask or the frame border cut through LAND; real coastline is kept, and ragged:{preserve:[rects], preserveSides:[...]} pins more) so they do not read as ruler lines; preview:true returns the block as if placed but keeps nothing. Later patches draw over earlier ones. The block carries a collisions line (patches whose land overlaps) and, when compose_new had targetLand, a budget line.',
+  inputSchema: { snapshot: z.string(), x: z.number().int(), y: z.number().int(), landOnly: z.boolean().optional(), avoidLand: z.boolean().optional(), gap: z.number().int().optional(), ragged: raggedOpt, preview: z.boolean().optional(), ...viewOpts } },
   report('place'));
 
 server.registerTool('move_patch', { title: 'Move patch', description: 'Move a patch to absolute x,y, or by dx,dy. Hex games snap y to even rows.', inputSchema: { patch: z.number().int(), x: z.number().int().optional(), y: z.number().int().optional(), dx: z.number().int().optional(), dy: z.number().int().optional(), ...viewOpts } }, report('move_patch'));
@@ -203,29 +224,38 @@ let CATALOG = { entries: [] };
 try { CATALOG = JSON.parse(await fs.readFile(CATALOG_PATH, 'utf8')); } catch (e) { log('catalog not loaded:', e.message); }
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 function catalogFind(name) { const n = norm(name); return CATALOG.entries.find(e => norm(e.name) === n) || CATALOG.entries.find(e => norm(e.name).includes(n) || n.includes(norm(e.name))) || null; }
-const fmtEntry = e => `${e.name} — bounds [${e.bounds.join(', ')}] size ${e.size[0]}x${e.size[1]} | ${e.tags.join(', ')} | ${e.climate}${e.lasso ? ' | lasso' : e.rect ? ' | rect crop' : ''}${e.params ? ' | params ' + JSON.stringify(e.params) : ''}\n    ${e.notes}`;
+const fmtEntry = e => `${e.name} — bounds [${e.bounds.join(', ')}] size ${e.size[0]}x${e.size[1]} | ${e.tags.join(', ')} | ${e.climate}${e.climateMeasured ? ' (measured: ' + e.climateMeasured.map(g => g.group + ' ' + g.pct + '%').join(', ') + ')' : ''}${e.lasso ? ' | lasso' : e.rect ? ' | rect crop' : ''}${e.params ? ' | params ' + JSON.stringify(e.params) : ''}${e.connectors ? ' | edges N ' + e.connectors.N + ' / E ' + e.connectors.E + ' / S ' + e.connectors.S + ' / W ' + e.connectors.W : ''}\n    ${e.notes}`;
 
 function fmtDescribe(D) {
   const L = [];
   L.push(D.kind === 'snapshot' ? `describe snapshot ${D.id} "${D.name}" ${D.W}x${D.H}` : D.kind === 'frame' ? `describe frame ${D.W}x${D.H} | bounds W ${f1(D.bounds.W)} S ${f1(D.bounds.S)} E ${f1(D.bounds.E)} N ${f1(D.bounds.N)}` : `describe compose canvas ${D.W}x${D.H}`);
   L.push(D.summary);
   if (D.connectors) L.push('edges: ' + ['N', 'E', 'S', 'W'].map(k => `${k} ${D.connectors[k] ? D.connectors[k].label : '?'}`).join(' | '));
+  if (D.cut) L.push(`cut: ${D.cut} mask-fill tiles${D.cutLand != null ? ` (${D.cutLand} through land: artificial shore; the rest trimmed sea, the coast beside it is real)` : ''}`);
+  if (D.codes) L.push('codes: ' + fmtCodes(D.codes));
   if (D.warnings) L.push(D.warnings.length ? `warnings (${D.warnings.length}): ` + D.warnings.map(w => `[${w.rule}] ${w.msg}`).join(' ; ') : 'warnings: none');
-  const J = Object.assign({}, D); delete J.summary; delete J.kind;
+  if (D.notes && D.notes.length) L.push(`notes (${D.notes.length}): ` + D.notes.map(w => `[${w.rule}] ${w.msg}`).join(' ; '));
+  const J = Object.assign({}, D); delete J.summary; delete J.kind; delete J.connectors; delete J.warnings; delete J.notes;
   L.push(JSON.stringify(J));
   return L.join('\n');
 }
 
-server.registerTool('describe', { title: 'Describe landforms', description: 'Morphology of the compose canvas, the current frame, or a snapshot (by id or name), in landform vocabulary: landmasses (size, position, climate mix, hills/peaks), isthmuses (necks found by erosion, with width), straits (thin water between two landmasses, width in tiles), bays (convex-hull deficit) and peninsulas (morphological opening) with the direction they open or point, mountain spines (ridge components with orientation and length), river systems that reach water / leave the map / dead-end. Returns a paragraph, the seam warnings for a collage, and the full JSON. Coordinates are tile x,y (row 0 north).',
-  inputSchema: { target: z.string().optional().describe("'compose' | 'frame' | a snapshot id or name (default: whatever the page shows)") } },
+server.registerTool('describe', { title: 'Describe landforms', description: 'Morphology of the compose canvas, the current frame, or a snapshot (by id or name), in landform vocabulary: landmasses (size, position, climate mix, hills/peaks), isthmuses (necks found by erosion, with width), straits (thin water between two landmasses, width in tiles), bays (convex-hull deficit) and peninsulas (morphological opening) with the direction they open or point, mountain spines (ridge components with orientation and length, chain/knots), seas (inland or not), river systems that reach water / leave the map / dead-end. Returns a paragraph, the seam warnings (and notes) for a collage, and a compact JSON. rows:true adds the per-row land / Köppen-group table (doubles the payload); codes:true adds the landform-codebook summary (top Earth captions per landmass at the map\'s scale band). Coordinates are tile x,y (row 0 north).',
+  inputSchema: { target: z.string().optional().describe("'compose' | 'frame' | a snapshot id or name (default: whatever the page shows)"), rows: z.boolean().optional().describe('include the per-row table (land, Köppen groups, relief per row)'), codes: z.boolean().optional().describe('include the landform-codebook summary'), degPerTile: z.number().optional().describe('tile size in degrees for the codebook band (default: from the frame / snapshot latitudes, or the canvas declaration)'), codesRaw: z.boolean().optional().describe('with codes: also return the per-tile grids and codes (large; for checking the port)') } },
   run(async a => text(fmtDescribe(await call('describe', a)))));
 
-server.registerTool('catalog_search', { title: 'Search the landform catalog', description: `Find real pieces to splice: entries of mcp/landforms.json matched by tag (peninsula, isthmus, strait, archipelago, atoll, delta, rift, mountain-spine, mountain-wall, rain-shadow, desert, fjords, volcanic, basin, inland-sea, ...) or free text over name/notes/climate. No arguments lists everything (${CATALOG.entries.length} entries).`,
+server.registerTool('catalog_search', { title: 'Search the landform catalog', description: `Find real pieces to splice: entries of mcp/landforms.json matched by tag (peninsula, isthmus, strait, archipelago, atoll, delta, rift, mountain-spine, mountain-wall, rain-shadow, desert, fjords, volcanic, basin, inland-sea, ...) or free text over name/notes/climate (several words match ANY of them, ranked by how many match), or climate (the hand-written field plus the mix measured by catalog_index). No arguments lists everything (${CATALOG.entries.length} entries).`,
   inputSchema: { tags: z.array(z.string()).optional(), text: z.string().optional(), climate: z.string().optional() } },
   run(async a => {
-    const tags = (a.tags || []).map(norm), txt = norm(a.text), cl = norm(a.climate);
-    const hits = CATALOG.entries.filter(e => (!tags.length || tags.some(t => e.tags.some(x => norm(x).includes(t)))) && (!txt || norm(e.name + ' ' + e.notes + ' ' + e.tags.join(' ') + ' ' + e.climate).includes(txt)) && (!cl || norm(e.climate).includes(cl)));
-    return text(hits.length ? hits.map(fmtEntry).join('\n') : 'no catalog entry matches');
+    const tags = (a.tags || []).map(norm), words = norm(a.text).split(' ').filter(Boolean), cl = norm(a.climate);
+    const climOf = e => norm(e.climate + ' ' + (e.climateMeasured || []).filter(g => g.pct >= 20).map(g => g.group).join(' '));   // the hand-written field plus what catalog_index measured
+    const scored = CATALOG.entries.map(e => {
+      const hay = norm(e.name + ' ' + e.notes + ' ' + e.tags.join(' ') + ' ' + e.climate), nameN = norm(e.name);
+      const tagHits = tags.filter(t => e.tags.some(x => norm(x).includes(t))).length, wordHits = words.filter(w => hay.includes(w)).length, nameHits = words.filter(w => nameN.includes(w)).length;
+      const ok = (!tags.length || tagHits > 0) && (!words.length || wordHits > 0) && (!cl || climOf(e).includes(cl));
+      return { e, ok, score: tagHits * 2 + wordHits + nameHits };
+    }).filter(s => s.ok).sort((p, q) => q.score - p.score || p.e.name.localeCompare(q.e.name));
+    return text(scored.length ? (words.length > 1 ? `${scored.length} entries match any of: ${words.join(', ')} (best matches first)\n` : '') + scored.map(s => fmtEntry(s.e)).join('\n') : 'no catalog entry matches');
   }));
 
 server.registerTool('snapshot_from_catalog', { title: 'Snapshot from catalog', description: 'Frame a catalog entry (its bounds, at its default size unless W/H are given), apply its lasso or rect crop, apply its suggested params (unless params:false) plus any params you pass, capture it to the shelf under its name (or `name`) and return the snapshot feedback block with its edge connectors. rot rotates the frame first (degrees); game switches game first.',
@@ -240,12 +270,13 @@ server.registerTool('snapshot_from_catalog', { title: 'Snapshot from catalog', d
     return text(fmtReport(r));
   }));
 
-server.registerTool('attach', { title: 'Attach two snapshots', description: 'Composite operator: place snapshot B against snapshot A so that A\'s edge (N/E/S/W) meets B\'s opposite edge, centred along the seam. A keeps its patch if already placed, else it is placed at the canvas centre; B is moved if already placed, else placed. overlap pulls B that many tiles into A (land-only stamping lets coastlines interleave); shift slides B along the seam (+ = south or east). The block reports the seam lint and both edges\' connectors (snapshot_info shows connectors so you can pick matching edges: coast to coast, mountain wall to mountain wall).',
+server.registerTool('attach', { title: 'Attach two snapshots', description: 'Composite operator: place snapshot B against snapshot A so that A\'s edge (N/E/S/W) meets B\'s opposite edge, centred along the seam (or anchor-aligned with align). A keeps its patch if already placed, else it is placed at the canvas centre; B is moved if already placed, else placed. overlap pulls B that many tiles into A (land-only stamping lets coastlines interleave); shift slides B along the seam (+ = south or east). align:\'relief\' lines up the two edges\' mountain anchors (the relief run nearest each edge) so two ranges meet; align:\'coast\' lines up their longest land runs. B is clamped along the seam to keep its land on the canvas (clamp:false to allow overhang); any land still off-canvas is reported. ragged:true cuts a min-cost seam through the overlap strip (Zhou et al.) and feathers B\'s cut edges, so the join is not a straight line. The block reports the seam cost (mask-cut water ignored), the best shift within ±searchShift (flagged when it sits on the window edge), the seam lint and both edges\' connectors with anchors.',
   inputSchema: { a: z.string(), edgeA: z.enum(['N', 'E', 'S', 'W']), b: z.string(), edgeB: z.enum(['N', 'E', 'S', 'W']).optional(), overlap: z.number().int().optional(), shift: z.number().int().optional(), landOnly: z.boolean().optional(),
-    autoShift: z.boolean().optional().describe('slide B along the seam (within ±8) to the position with the lowest seam cost; the block reports the cost either way'), ...viewOpts } },
+    autoShift: z.boolean().optional().describe('slide B along the seam (within ±searchShift) to the position with the lowest seam cost; the block reports the cost either way'), searchShift: z.number().int().optional().describe('half-width of the best-shift search along the seam (default 16)'),
+    align: z.enum(['relief', 'coast']).optional(), clamp: z.boolean().optional(), ragged: raggedOpt, ...viewOpts } },
   report('attach'));
 
-server.registerTool('catalog_index', { title: 'Index catalog connectors', description: 'Capture catalog entries (all, or the named ones) once to record their edge and corner connector labels in mcp/landforms.json, so catalog_lint and catalog_search can reason about which pieces fit together. Slow: a few seconds per entry.',
+server.registerTool('catalog_index', { title: 'Index catalog connectors', description: 'Capture catalog entries (all, or the named ones) once to record their edge and corner connector labels and their measured climate mix in mcp/landforms.json, so catalog_lint and catalog_search {climate} can reason about which pieces fit together. Slow: a few seconds per entry (call it with 3-4 entries at a time under a 60 s client timeout).',
   inputSchema: { entries: z.array(z.string()).optional(), game: z.string().optional() } },
   run(async a => {
     const list = a.entries && a.entries.length ? a.entries.map(catalogFind).filter(Boolean) : CATALOG.entries; const done = [];
@@ -253,7 +284,14 @@ server.registerTool('catalog_index', { title: 'Index catalog connectors', descri
     for (const e of list) {
       if (e.params) await call('tune', { params: e.params, report: false });
       const r = await call('capture_region', { bounds: e.bounds, W: e.size[0], H: e.size[1], lasso: e.lasso, rect: e.lasso ? undefined : e.rect, name: e.name, catalog: e.name, grid: false, landforms: false });
-      if (r.connectors) { e.connectors = { N: r.connectors.N.label, E: r.connectors.E.label, S: r.connectors.S.label, W: r.connectors.W.label, corners: r.connectors.corners || null }; done.push(`${e.name}: N ${e.connectors.N} | E ${e.connectors.E} | S ${e.connectors.S} | W ${e.connectors.W}`); }
+      if (r.connectors) e.connectors = { N: r.connectors.N.label, E: r.connectors.E.label, S: r.connectors.S.label, W: r.connectors.W.label, corners: r.connectors.corners || null };
+      try {   // the climate mix of the piece's land, so catalog_search {climate} can be trusted (finding 4)
+        const D = await call('describe', { target: r.id }), acc = [0, 0, 0, 0, 0, 0], names = ['ice cap', 'tundra', 'arid', 'tropical', 'temperate', 'continental']; let tot = 0;
+        for (const lm of D.landmasses || []) for (const g of lm.climate || []) { const i = names.indexOf(g.group); if (i >= 0) { acc[i] += g.pct * lm.size / 100; tot += g.pct * lm.size / 100; } }
+        e.climateMeasured = tot ? acc.map((v, i) => ({ group: names[i], pct: Math.round(v / tot * 100) })).filter(g => g.pct > 0).sort((p, q) => q.pct - p.pct).slice(0, 3) : null;
+        e.cutTiles = D.cut || 0;
+      } catch (err) { log('catalog_index: describe failed for', e.name, err.message); }
+      done.push(`${e.name}: N ${e.connectors ? e.connectors.N : '?'} | E ${e.connectors ? e.connectors.E : '?'} | S ${e.connectors ? e.connectors.S : '?'} | W ${e.connectors ? e.connectors.W : '?'}` + (e.climateMeasured ? ' | ' + e.climateMeasured.map(g => g.group + ' ' + g.pct + '%').join(', ') : ''));
       await call('delete_snapshot', { id: r.id }).catch(() => {});
     }
     await fs.writeFile(CATALOG_PATH, JSON.stringify(CATALOG, null, 1) + '\n');
@@ -275,8 +313,13 @@ server.registerTool('catalog_lint', { title: 'Lint the catalog', description: 'W
   }));
 
 server.registerTool('scatter', { title: 'Scatter snapshots along a line', description: 'Composite operator for island chains: stamp the listed snapshots (cycling through them, from index `start`) centred on points every `spacing` tiles along the polyline `along` ([[x,y],...] in canvas tiles, the first point included). Land-only stamping by default, so islets drop onto the ocean without their sea rectangles. The block reports landmass count and adjacency via the lint and landform lines.',
-  inputSchema: { snapshots: z.array(z.string()), along: z.array(z.array(z.number()).length(2)), spacing: z.number().optional(), start: z.number().int().optional(), landOnly: z.boolean().optional(), ...viewOpts } },
+  inputSchema: { snapshots: z.array(z.string()), along: z.array(z.array(z.number()).length(2)), spacing: z.number().optional(), start: z.number().int().optional(), landOnly: z.boolean().optional(), avoidLand: z.boolean().optional().describe('shift each stamp to the nearest spot whose land touches no existing land (gap water tiles between, default 1)'), gap: z.number().int().optional(), ...viewOpts } },
   report('scatter'));
+
+server.registerTool('trim_rivers', { title: 'Trim rivers', description: 'River repair: drop the collage\'s river systems that end on land. By default only the ones the source snapshots did not already have (cut by a patch boundary, an erase or an overlapping stamp); endorheic:\'trim\' also drops the real endorheic ones; rids names systems explicitly (the warnings and describe.rivers.systemsTop give the ids). Snapshots are untouched: the drops are per-patch edits of the collage.',
+  inputSchema: { rids: z.array(z.union([z.number(), z.string()])).optional(), endorheic: z.enum(['keep', 'trim']).optional(), ...viewOpts } }, report('trim_rivers'));
+server.registerTool('extend_river', { title: 'Extend river', description: 'River repair: carry a river that dead-ends on land on to the nearest water (or into another river) along tile edges with land on both sides, adding the edges to the collage with the flow pointing downstream. rid picks the system; at:[x,y] picks the dead end nearest a tile; neither extends every dead end. maxLength caps the search (default 60 edges).',
+  inputSchema: { rid: z.union([z.number(), z.string()]).optional(), at: z.array(z.number()).length(2).optional(), maxLength: z.number().int().optional(), ...viewOpts } }, report('extend_river'));
 
 /* ---------- go ---------- */
 const transport = new StdioServerTransport();
