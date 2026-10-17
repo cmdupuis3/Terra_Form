@@ -64,9 +64,13 @@
     }
     const Ta = new Float32Array(N), warm = new Float32Array(N), cold = new Float32Array(N), P = new Float32Array(N), kc = new Uint8Array(N), seas = new Uint8Array(N);
     for (let y = 0; y < H; y++) {
-      const lat = grid.lat(y), a = Math.abs(lat), band = lerpTable(P_BAND, a), t0 = lerpTable(T_LAT, a);
+      const lat = grid.lat(y), a = Math.abs(lat);
       for (let x = 0; x < W; x++) {
         const i = y * W + x; if (!land[i]) continue;
+        /* the zonal tables are read at a meandering latitude (+-3.5 deg, waves ~10 deg long, measured in degrees so every map
+           scale meanders alike), as storm tracks and the subtropical highs wander: climate borders are not lines of latitude */
+        const dpt = km / 111.32, sd = grid.seed || 1, aE = Math.max(0, a + 7 * (vnoise(x * dpt / 10 + sd * 2.1, lat / 10 - sd) - 0.5));
+        const band = lerpTable(P_BAND, aE), t0 = lerpTable(T_LAT, aE);
         const dkm = dist[i] * km, cont = clamp(dkm / 1500, 0, 1), e = Math.max(0, elev[i]);
         // mid-latitude windward coasts are mild, lee coasts and interiors cold (the ocean's heat carried on the westerlies)
         const wband = fromWest[y] ? clamp((a - 32) / 10, 0, 1) * clamp((70 - a) / 8, 0, 1) : 0;
@@ -74,7 +78,7 @@
         Ta[i] = t; warm[i] = t + amp / 2; cold[i] = t - amp / 2;
         const mIso = 0.55 * Math.exp(-dkm / 700), m = Math.max(mDir[i], mIso);
         // weather is patchy: a low-frequency +-25% field (and a little finer grain) keeps the zonal bands from drawing ruler-straight climate borders
-        const sd = grid.seed || 1, patch = 1 + 0.5 * (vnoise(x / 7 + sd * 1.3, y / 7 - sd * 0.7) - 0.5) + 0.2 * (vnoise(x / 2.5 - sd, y / 2.5 + sd) - 0.5);
+        const patch = 1 + 0.5 * (vnoise(x / 7 + sd * 1.3, y / 7 - sd * 0.7) - 0.5) + 0.2 * (vnoise(x / 2.5 - sd, y / 2.5 + sd) - 0.5);
         P[i] = band * (150 + 1900 * m + 2200 * oro[i]) * (opts.wetness || 1) * patch;
         // seasonality: Mediterranean west coasts, monsoon windward coasts
         const westCoast = fromWest[y] && a >= 30 && a <= 44 && cont < 0.45;

@@ -103,11 +103,19 @@
       const pts = []; let total = 0; for (let i = 1; i < path.length; i++) total += Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]);
       const at = s => { let acc = 0; for (let i = 1; i < path.length; i++) { const L = Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]); if (acc + L >= s || i === path.length - 1) { const u = L ? clamp((s - acc) / L, 0, 1) : 0; const dx = path[i][0] - path[i - 1][0], dy = path[i][1] - path[i - 1][1], n = Math.hypot(dx, dy) || 1; return [path[i - 1][0] + u * dx, path[i - 1][1] + u * dy, -dy / n, dx / n]; } acc += L; } };
       for (let j = 0; j < cnt; j++) { const f = j / (cnt - 1), p = at(f * total), off = (vnoise(j * 1.7 + seed, 3.1) - 0.5) * 2 * jit * lerp(r0, r1, f) * 1.5; pts.push({ x: p[0] + p[2] * off, y: p[1] + p[3] * off, h: lerp(h0, h1, f) * (0.75 + 0.5 * vnoise(j * 2.3, seed)), r: lerp(r0, r1, f) * (0.8 + 0.4 * vnoise(seed, j * 1.9)), atoll: j >= cnt - nAt, s: seed + j * 101 }); }
+      const spacing = total / Math.max(1, cnt - 1), [a0, a1] = o.atollRadius || [1.2, 3.4], nVol = cnt - nAt, nBar = o.barrier === false ? 0 : Math.ceil(nVol * 0.35);
+      pts.forEach((v, j) => {   // an atoll's ring is as big as a drowned volcano's reef grew, not as small as the volcano was
+        const u = vnoise(v.s * 0.37, 5.3), R = Math.max(0.6, Math.min(lerp(a0, a1, u * u * 1.15), spacing * 0.33));
+        const land = o.atollLand != null ? clamp(+o.atollLand, 0, 1) : 0.2 + 0.65 * vnoise(2.9, v.s * 0.53);   // some atolls are nearly all reef, some a near-closed ring of islets
+        if (v.atoll) { SC.post.push({ kind: 'atoll', x: v.x, y: v.y, r: R, land, s: v.s }); return; }
+        if (j >= nVol - nBar) SC.post.push({ kind: 'atoll', x: v.x, y: v.y, r: v.r + 1.1 + 0.6 * u, land: 0.12 + 0.2 * u, s: v.s + 7 });   // the oldest high islands sink inside a barrier reef (Bora Bora)
+      });
       for (const v of pts) {
-        if (v.atoll) { SC.post.push({ kind: 'atoll', x: v.x, y: v.y, r: Math.max(0.6, v.r), s: v.s }); continue; }
+        if (v.atoll) continue;
+        const e = 1 + 0.7 * vnoise(v.s * 0.71, 1.7), th = vnoise(4.4, v.s * 0.29) * Math.PI * 2, ce = Math.cos(th), se = Math.sin(th);   // islands are elongated along their rift zones
         /* r is the island's radius AT SEA LEVEL: above it a shield rising to v.h, below it the submarine flank falling to
            the floor over another 1.5 r, with lobed outlines so no two islands share a shape */
-        forCells((i, x, y) => { const dx = x - v.x, dy = y - v.y, ang = Math.atan2(dy, dx), lobe = 1 + 0.28 * (vnoise(Math.cos(ang) * 1.8 + v.s, Math.sin(ang) * 1.8 - v.s) - 0.5) * 2, d = Math.hypot(dx, dy) / (v.r * lobe); if (d > 2.6) return;
+        forCells((i, x, y) => { const dx = x - v.x, dy = y - v.y, ang = Math.atan2(dy, dx), lobe = 1 + 0.28 * (vnoise(Math.cos(ang) * 1.8 + v.s, Math.sin(ang) * 1.8 - v.s) - 0.5) * 2, ua = dx * ce + dy * se, va = -dx * se + dy * ce, d = Math.hypot(ua / Math.sqrt(e), va * Math.sqrt(e)) / (v.r * lobe); if (d > 2.6) return;
           const val = d < 1 ? v.h * (1 - Math.pow(d, 1.4)) * (0.85 + 0.3 * vnoise(x * 1.3 + v.s, y * 1.3)) + 3 : -Math.min(1, (d - 1) / 1.5) * (-SC.base); SC.h[i] = Math.max(SC.h[i], val); });
       }
       note = `${cnt - nAt} volcanoes + ${nAt} atolls`;
@@ -142,9 +150,24 @@
     for (let i = 0; i < h.length; i++) { const v = SC.h[i]; h[i] = L >= 0 ? v - L : v >= 0 ? v + LOW : v > L ? (v - L) / (-L) * LOW : v - L; }
     for (const p of SC.post) {
       if (p.kind === 'atoll') {
-        const R = Math.ceil((p.r * 1.5 + 1) * k), cx0 = Math.floor(p.x * k), cy0 = Math.floor(p.y * k);
-        for (let cy = cy0 - R; cy <= cy0 + R; cy++) for (let cx = cx0 - R; cx <= cx0 + R; cx++) { if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) continue; const x = (cx + 0.5) / k, y = (cy + 0.5) / k, dx = x - p.x, dy = y - p.y, ang = Math.atan2(dy, dx), rr = p.r * (1 + 0.25 * (vnoise(Math.cos(ang) * 1.5 + p.s, Math.sin(ang) * 1.5) - 0.5) * 2), d = Math.hypot(dx, dy), i = cy * GW + cx;
-          const ring = Math.exp(-Math.pow((d - rr) / Math.max(0.55, rr * 0.4), 2)); if (d < rr) h[i] = Math.max(h[i], -25 + 20 * ring); if (ring > 0.35) h[i] = Math.max(h[i], 4 + 6 * ring); else if (d > rr) h[i] = Math.max(h[i], -60 * (1 - ring) - 5); }   // a reef ring wide enough to hold land at tile scale, a shallow lagoon inside
+        /* written per tile (all k*k cells alike) so the rim is exactly one tile thick: an elliptical ring of reef with islets
+           (motus) on it, more of them on the windward (east) side, passes between them, a shallow lagoon inside and the reef
+           front falling to the deep outside. Everything is max()ed in, so a barrier reef never drowns its high island. */
+        const e = 1 + 0.6 * vnoise(p.s * 0.41, 8.2), th = vnoise(6.6, p.s * 0.17) * Math.PI * 2, ce = Math.cos(th), se = Math.sin(th);
+        const A = p.r * Math.sqrt(e), B = p.r / Math.sqrt(e), R = Math.ceil(A + 3), tx0 = Math.floor(p.x), ty0 = Math.floor(p.y), rim = [];
+        const put = (tx, ty, v) => { for (let dy = 0; dy < k; dy++) for (let dx = 0; dx < k; dx++) { const cx = tx * k + dx, cy = ty * k + dy; if (cx < GW && cy < GH) { const i = cy * GW + cx; h[i] = Math.max(h[i], v); } } };
+        for (let ty = ty0 - R; ty <= ty0 + R; ty++) for (let tx = tx0 - R; tx <= tx0 + R; tx++) {
+          if (tx < 0 || ty < 0 || tx * k >= GW || ty * k >= GH) continue;
+          const dx = tx + 0.5 - p.x, dy = ty + 0.5 - p.y, u = dx * ce + dy * se, v = -dx * se + dy * ce, ang = Math.atan2(v, u), dist = Math.hypot(dx, dy);
+          const reff = 1 / Math.sqrt(Math.pow(Math.cos(ang) / A, 2) + Math.pow(Math.sin(ang) / B, 2)) + 0.3 * (vnoise(Math.cos(ang) * 1.6 + p.s, Math.sin(ang) * 1.6 - p.s) - 0.5) * 2;
+          const sd = dist - reff;
+          if (Math.abs(sd) <= 0.5) { const n = vnoise(Math.cos(Math.atan2(dy, dx)) * 2.2 + p.s * 0.3, Math.sin(Math.atan2(dy, dx)) * 2.2 - p.s * 0.3) + 0.15 * dx / Math.max(0.5, dist); rim.push([tx, ty, n]); }
+          else if (sd < -0.5) put(tx, ty, -10 - 12 * clamp(-sd / Math.max(1, B), 0, 1));   // lagoon
+          else if (sd < 3) put(tx, ty, -18 - 45 * (sd - 0.5) / 2.5);                          // reef front
+        }
+        if (!rim.length) continue;
+        rim.sort((a, b) => b[2] - a[2]); const nLand = Math.max(1, Math.round(rim.length * p.land));
+        rim.forEach(([tx, ty], j) => put(tx, ty, j < nLand ? 3 + 2 * (j % 2) : -3));        // islets on the highest-scoring rim tiles, reef elsewhere
       } else if (p.kind === 'fjords') {
         let total = 0; for (let i = 1; i < p.path.length; i++) total += Math.hypot(p.path[i][0] - p.path[i - 1][0], p.path[i][1] - p.path[i - 1][1]);
         for (let j = 0; j < p.count; j++) {

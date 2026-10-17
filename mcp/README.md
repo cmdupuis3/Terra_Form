@@ -192,7 +192,9 @@ Earth's (core/sculpt.js), then derives everything else from it:
 2. Build it with `sculpt_shape` primitives — `blob` (land masses: several of them make a continent and fill the
    space between pieces), `ridge`, `rift` (a trough with raised shoulders; below sea level a narrow sea),
    `plateau`, `basin`, `chain` (a hotspot track from tall young volcanoes to atolls at the old end, every island
-   generated individually), `fjords` (glacial troughs cut into a mountainous coast after the sea level is set),
+   generated individually: elongated volcanoes, the oldest inside barrier reefs, then atolls as one-tile rings of
+   islets and reef around a shallow lagoon, up to ~7 tiles across, sized by `atollRadius` and capped by the
+   spacing; `atollLand` sets how much of the rim is land), `fjords` (glacial troughs cut into a mountainous coast after the sea level is set),
    `noise`, `smooth` — and `sculpt_stamp`, which drops a small fragment of real elevation anywhere at any size,
    rotation and mirror, feathered in. Each real source box is stamped once (no piece of the world is pasted
    twice); rotate and mix many small fragments for real-feeling relief in an original arrangement.
@@ -202,7 +204,8 @@ Earth's (core/sculpt.js), then derives everything else from it:
 5. `sculpt_realize` makes the game map: land and relief from absolute heights (900 m / 2600 m plus local range
    by default, so pieces agree), climate from a physical model (core/climate.js: temperature by latitude and
    lapse rate, maritime warmth on windward mid-latitude coasts and cold lee coasts and interiors, seasonality
-   from continentality, patchy rainfall (no ruler-straight climate borders), moisture carried by each latitude
+   from continentality, zonal tables read at a meandering latitude and patchy rainfall (climate borders wander
+   like storm tracks instead of following lines of latitude), moisture carried by each latitude
    band's prevailing wind —
    trades, westerlies, polar easterlies — and wrung out on windward slopes, leaving rain shadows; Mediterranean
    west coasts and monsoon coasts; then the Köppen decision tree), satellite-like colour from the real mean
