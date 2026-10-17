@@ -9,7 +9,7 @@ document.querySelectorAll('.panel[data-section]').forEach(panel=>{
   });
 });
 /* ============================================================
-   TERRA·WBS — interface prototype (procedural stand-in world)
+   TERRA·FORM — interface prototype (procedural stand-in world)
    ============================================================ */
 
 /* Köppen colours — Beck et al. 2023 (Sci. Data 5:180214) legend RGB. Full 30-class table for when a real raster is wired in. */
@@ -304,7 +304,7 @@ const RIVER_OFF=new Set();// deselected channels (click a river to cycle): drawn
 const RIVER_ON=new Set(); // selected channels (click a river to cycle): drawn green, kept at any zoom regardless of the top-N cutoff
 /* coastline level-of-detail: crisp windowed vector when the view is narrower than coastThr degrees */
 let coastThr=30;
-let nudgeX=0, nudgeY=0;   // sub-tile sampling offset (in Civ-tile units) for the high-res -> Civ-tile downsample
+let nudgeX=0, nudgeY=0;   // sub-tile sampling offset (in game-tile units) for the high-res -> game-tile downsample
 const bufCanvas=document.createElement('canvas'),bctx=bufCanvas.getContext('2d');
 const lgCanvas=document.createElement('canvas'),lgctx=lgCanvas.getContext('2d');
 function windowWidthDeg(){return view.spanX/WSRC*360;}
@@ -1638,13 +1638,13 @@ function drawRivers(R){
    is missing (plain serve.py in Firefox) we fall back to showSaveFilePicker, then to an <a download>. */
 const FS_DIR='showDirectoryPicker' in window, FS_SAVE='showSaveFilePicker' in window;
 let saveDir=null,saveDirName='';
-function idbKV(mode,fn){return new Promise((res,rej)=>{const o=indexedDB.open('terra-wbs',1);o.onupgradeneeded=()=>o.result.createObjectStore('kv');o.onerror=()=>rej(o.error);o.onsuccess=()=>{const db=o.result,tx=db.transaction('kv',mode);const r=fn(tx.objectStore('kv'));tx.oncomplete=()=>{db.close();res(r&&r.result);};tx.onerror=()=>{db.close();rej(tx.error);};};});}
+function idbKV(mode,fn){return new Promise((res,rej)=>{const o=indexedDB.open('terra-form',1);o.onupgradeneeded=()=>o.result.createObjectStore('kv');o.onerror=()=>rej(o.error);o.onsuccess=()=>{const db=o.result,tx=db.transaction('kv',mode);const r=fn(tx.objectStore('kv'));tx.oncomplete=()=>{db.close();res(r&&r.result);};tx.onerror=()=>{db.close();rej(tx.error);};};});}
 const idbSet=(k,v)=>idbKV('readwrite',s=>s.put(v,k)),idbGet=k=>idbKV('readonly',s=>s.get(k));
 async function ensureRW(h){if(!h)return false;const o={mode:'readwrite'};if(await h.queryPermission(o)==='granted')return true;return await h.requestPermission(o)==='granted';}
 function saveBaseName(){let n=(document.getElementById('saveName').value||'').trim();const ext=activeGame().export.ext||'';if(ext&&n.toLowerCase().endsWith(ext.toLowerCase()))n=n.slice(0,n.length-ext.length);n=n.replace(/[\\/:*?"<>|]+/g,'_');return n||'terra_generated';}
 function setDestHint(m){document.getElementById('destHint').textContent=m||'';}
 function updateDestUI(){const f=document.getElementById('destFolder');if(saveDir){f.textContent=saveDirName+'\\';f.title=saveDirName;}else{f.textContent=FS_DIR?'Ask each time':(FS_SAVE?'Save As…':'Downloads');f.title='';}}
-async function pickFolder(){if(!FS_DIR)return;try{const dir=await window.showDirectoryPicker({id:'terra-wbs-out',mode:'readwrite'});if(!await ensureRW(dir)){setDestHint('Write permission for that folder was declined.');return;}saveDir=dir;saveDirName=dir.name;try{await idbSet('saveDir',dir);}catch(_){}updateDestUI();setDestHint('Saving into "'+saveDirName+'". (Browsers expose only the folder name, not its full path.)');}catch(e){if(e&&e.name!=='AbortError')setDestHint('Could not open the folder picker: '+e.message);}}
+async function pickFolder(){if(!FS_DIR)return;try{const dir=await window.showDirectoryPicker({id:'terra-form-out',mode:'readwrite'});if(!await ensureRW(dir)){setDestHint('Write permission for that folder was declined.');return;}saveDir=dir;saveDirName=dir.name;try{await idbSet('saveDir',dir);}catch(_){}updateDestUI();setDestHint('Saving into "'+saveDirName+'". (Browsers expose only the folder name, not its full path.)');}catch(e){if(e&&e.name!=='AbortError')setDestHint('Could not open the folder picker: '+e.message);}}
 function downloadBlob(f,prefix){const blob=f.data instanceof Blob?f.data:new Blob([f.data],{type:f.mime||'application/octet-stream'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(prefix||'')+f.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
 /* built = {files:[{name,data:string|Blob,mime}], dir?}: a game's export. One file goes through the Save As dialog when no
    folder is set; several (OpenFront's image.png + info.json) go into built.dir under the chosen folder, or download
@@ -1663,7 +1663,7 @@ async function writeFiles(built){
   }
   if(FS_SAVE&&files.length===1){                                 // (2) no folder set -> native Save As dialog
     const f=files[0],pt=activeGame().export.pickerType;
-    try{const fh=await window.showSaveFilePicker(Object.assign({id:'terra-wbs-out',suggestedName:f.name},pt?{types:[pt]}:{}));const w=await fh.createWritable();await w.write(f.data);await w.close();setDestHint('Saved '+fh.name+'.');return;}
+    try{const fh=await window.showSaveFilePicker(Object.assign({id:'terra-form-out',suggestedName:f.name},pt?{types:[pt]}:{}));const w=await fh.createWritable();await w.write(f.data);await w.close();setDestHint('Saved '+fh.name+'.');return;}
     catch(e){if(e&&e.name==='AbortError'){setDestHint('Save cancelled.');return;}}
   }
   for(const f of files)downloadBlob(f,prefix);setDestHint('Downloaded '+names+' to your browser Downloads folder.');   // (3) fallback
@@ -2168,7 +2168,7 @@ function composeStats(){const C=compositeCompose();let land=0;for(let y=0;y<C.H;
 /* Persist patch->snapshot by REFERENCE only: a snapshot is a full tile grid plus a thumbnail, and
    a collage reuses the same one many times — inlining them would blow up localStorage by megabytes
    and desync the copies. The shelf owns snapshot storage and resolves ids back on load. */
-function composeSerializeState(){return {v:1,kind:'terra-wbs-compose',W:comp.W,H:comp.H,
+function composeSerializeState(){return {v:1,kind:'terra-form-compose',W:comp.W,H:comp.H,
   patches:comp.patches.map(p=>({snap:p.snap&&p.snap.id,x:p.x,y:p.y,landOnly:!!p.landOnly}))};}
 function composeLoadState(obj,resolve){
   if(!obj||!Array.isArray(obj.patches))return 0;
@@ -2377,7 +2377,7 @@ function captureSnapshot(name){
   const tiles=new Array(ev.W*ev.H);
   for(let y=0;y<ev.H;y++)for(let x=0;x<ev.W;x++)tiles[y*ev.W+x]=ev.tiles[y][x];
   const snap={
-    v:1,kind:'terra-wbs-snapshot',
+    v:1,kind:'terra-form-snapshot',
     id:nextSnapshotId(),
     name:(name&&name.trim())||autoSnapshotName(ev),
     W:ev.W,H:ev.H,hex:!!ev.hex,game:activeGame().id,
@@ -2408,7 +2408,7 @@ function snapshotToJSON(snap){return JSON.stringify(snap,null,1);}
    the paste UI shows message text directly to the user. */
 function assertSnapshotShape(s){
   if(!s||typeof s!=='object')throw new Error('Snapshot is not a JSON object.');
-  if(s.kind!=='terra-wbs-snapshot')throw new Error('Not a Terra-WBS snapshot (kind is "'+s.kind+'", expected "terra-wbs-snapshot").');
+  if(s.kind!=='terra-form-snapshot'&&s.kind!=='terra-wbs-snapshot')throw new Error('Not a Terra Form snapshot (kind is "'+s.kind+'", expected "terra-form-snapshot").');   // terra-wbs-: the app's old name, still in snapshots copied before the rename
   if(s.v!==1)throw new Error('Unsupported snapshot version '+s.v+' (this build only reads v1).');
   const sg=snapshotGame(s);if(!sg)throw new Error('Unknown game "'+s.game+'" — its module (games/'+s.game+'/module.js) is not loaded.');
   const G=sg.grid;
@@ -2463,7 +2463,7 @@ function renderSnapshotThumb(snap,maxPx){
 
 /* ---------- persistence ----------
    Lives inside the existing 'kv' object store (idbKV/idbSet/idbGet, defined elsewhere in this file)
-   instead of a new store: idbKV hardcodes indexedDB.open('terra-wbs',1) and only creates 'kv' in
+   instead of a new store: idbKV hardcodes indexedDB.open('terra-form',1) and only creates 'kv' in
    onupgradeneeded, so adding a second store means bumping the DB version — which re-runs
    onupgradeneeded and risks the folder handle already saved under 'saveDir'. Not worth the risk for
    a feature that fits fine as extra keys in the store that's already there.
@@ -2540,7 +2540,7 @@ async function shelfClearAll(){
    reload (Ctrl+F5, which must NOT cost you the shelf you just filled) but not the process, so its
    absence is precisely "this is a fresh run". The within-session IndexedDB writes stay, and are what
    make the shelf survive an accidental reload or a crash mid-run. */
-const SHELF_SESSION_KEY='terra-wbs:shelf-session';
+const SHELF_SESSION_KEY='terra-form:shelf-session';
 async function shelfStartSession(){
   let fresh=true;
   try{fresh=!sessionStorage.getItem(SHELF_SESSION_KEY);sessionStorage.setItem(SHELF_SESSION_KEY,'1');}
@@ -2746,7 +2746,7 @@ function checkDataHealth(){
   b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px 16px;font:12px/1.4 var(--mono),ui-monospace,monospace;color:#111;background:#ffd24a;border-bottom:1px solid #c9982a;box-shadow:0 2px 8px rgba(0,0,0,.35)';
   b.innerHTML='Raster layer(s) empty after load: <b>'+bad.join(', ')+'</b> — the coastline still draws but land interiors are blank. '
     +(imgReadBlocked?'A pixel read was blocked (canvas taint). ':'')+(baseDataMissing?'A base file returned 404. ':'')
-    +'If this is the Terra-WBS.exe, press <b>Ctrl+F5</b> to reload past any cached page. If it persists, open <b>F12</b> and send the red console errors.'
+    +'If this is TerraForm.exe, press <b>Ctrl+F5</b> to reload past any cached page. If it persists, open <b>F12</b> and send the red console errors.'
     +'<span style="float:right;cursor:pointer;font-weight:700;padding-left:12px" onclick="this.parentNode.remove()">✕</span>';
   document.body.appendChild(b);
 }

@@ -1,7 +1,7 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
-namespace TerraWBS;
+namespace TerraForm;
 
 static class Program
 {
@@ -16,9 +16,9 @@ static class Program
         if (root is null)
         {
             MessageBox.Show(
-                "index.html was not found next to Terra-WBS.exe (or in a parent folder).\n\n" +
-                "Keep the exe in the terra-wbs folder alongside index.html and data\\.",
-                "Terra-WBS", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                "index.html was not found next to TerraForm.exe (or in a parent folder).\n\n" +
+                "Keep the exe in the Terra Form folder alongside index.html and data\\.",
+                "Terra Form", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
 
@@ -39,14 +39,14 @@ static class Program
 
 class MainForm : Form
 {
-    const string Host = "terra-wbs.app";
+    const string Host = "terra-form.app";
     readonly string _root;
     readonly WebView2 _web = new() { Dock = DockStyle.Fill, DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x0c, 0x18, 0x20) };
 
     public MainForm(string root)
     {
         _root = root;
-        Text = "Terra-WBS";
+        Text = "Terra Form";
         BackColor = System.Drawing.Color.FromArgb(0x0c, 0x18, 0x20);
         StartPosition = FormStartPosition.CenterScreen;
         WindowState = FormWindowState.Maximized;
@@ -61,7 +61,7 @@ class MainForm : Form
         try
         {
             string userData = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Terra-WBS");
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TerraForm");
             var env = await CoreWebView2Environment.CreateAsync(null, userData);
             await _web.EnsureCoreWebView2Async(env);
 
@@ -70,12 +70,12 @@ class MainForm : Form
             core.Settings.AreBrowserAcceleratorKeysEnabled = true;   // F12, Ctrl+F5 for debugging
             core.Settings.IsZoomControlEnabled = false;              // app owns scroll-to-zoom
 
-            // Serve the app folder as https://terra-wbs.app/ so relative fetch('data/...')
+            // Serve the app folder as https://terra-form.app/ so relative fetch('data/...')
             // works without any local HTTP server.
             core.SetVirtualHostNameToFolderMapping(Host, _root, CoreWebView2HostResourceAccessKind.Allow);
 
             core.DocumentTitleChanged += (_, _) =>
-                Text = string.IsNullOrWhiteSpace(core.DocumentTitle) ? "Terra-WBS" : core.DocumentTitle;
+                Text = string.IsNullOrWhiteSpace(core.DocumentTitle) ? "Terra Form" : core.DocumentTitle;
 
             // Open any external links (fonts CDN pages etc.) in the system browser.
             core.NewWindowRequested += (_, e) =>
@@ -91,7 +91,7 @@ class MainForm : Form
         {
             MessageBox.Show(
                 "Could not start the embedded browser (WebView2).\n\n" + ex.Message,
-                "Terra-WBS", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                "Terra Form", MessageBoxButtons.OK, MessageBoxIcon.Error);
             Close();
         }
     }

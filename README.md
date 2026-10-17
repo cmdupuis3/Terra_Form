@@ -1,4 +1,4 @@
-# Terra-WBS
+# Terra Form
 
 Convert real-world geographic data into a game map. Frame a region in the viewer, tune the
 classification, preview the tiles and export. The core is game-agnostic: it measures the
@@ -25,7 +25,7 @@ streaming path), not an embedded global raster. This build raises the ceiling
 
 ## Run it
 
-**Windows:** double-click `Terra-WBS.exe`. It opens the app in its own native
+**Windows:** double-click `TerraForm.exe`. It opens the app in its own native
 window (WebView2, the browser engine built into Windows 11) — no server, no
 browser tab. The exe must stay in this folder next to `index.html` and `data\`.
 Exports still arrive via the normal download flow (default: your Downloads
@@ -33,9 +33,9 @@ folder).
 
 Two builds, identical behaviour:
 
-- `Terra-WBS.exe` (~1 MB) — needs the .NET 7 Desktop Runtime (present on a
+- `TerraForm.exe` (~1 MB) — needs the .NET 7 Desktop Runtime (present on a
   machine with the .NET SDK).
-- `Terra-WBS-standalone.exe` (~68 MB) — no .NET needed; use this one when
+- `TerraForm-standalone.exe` (~68 MB) — no .NET needed; use this one when
   sharing the folder. Only requirement is the WebView2 runtime, which ships
   with Windows 11 (and Windows 10 via Edge).
 
@@ -48,12 +48,12 @@ To rebuild the exe after changing the wrapper (`app/Program.cs`):
 
 ```powershell
 # runtime-dependent (~1 MB)
-dotnet publish app\TerraWBS.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=none -o app\publish
-copy app\publish\Terra-WBS.exe .
+dotnet publish app\TerraForm.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=none -o app\publish
+copy app\publish\TerraForm.exe .
 
 # self-contained (~68 MB, no .NET required)
-dotnet publish app\TerraWBS.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:EnableCompressionInSingleFile=true /p:DebugType=none /p:AssemblyName=Terra-WBS-standalone -o app\publish-sc
-copy app\publish-sc\Terra-WBS-standalone.exe .
+dotnet publish app\TerraForm.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:EnableCompressionInSingleFile=true /p:DebugType=none /p:AssemblyName=TerraForm-standalone -o app\publish-sc
+copy app\publish-sc\TerraForm-standalone.exe .
 ```
 
 Changes to `index.html` need no rebuild — the exe just loads whatever is in
@@ -168,8 +168,8 @@ water automatically.
 ## Layout
 
 ```
-Terra-WBS.exe                  Windows launcher (native window, no server)
-Terra-WBS-standalone.exe       same, bundled .NET — for sharing the folder
+TerraForm.exe                  Windows launcher (native window, no server)
+TerraForm-standalone.exe       same, bundled .NET — for sharing the folder
 app/                           source for the launcher (C# + WebView2)
 index.html                     the app's HTML/CSS shell: the TerraForm registry stub, then games/*/module.js, then core/app.js
 core/                          the game-agnostic core (JavaScript)

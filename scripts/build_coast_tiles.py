@@ -486,7 +486,7 @@ These tiles are a Derivative Database of OpenStreetMap data and are licensed und
 Open Database License (ODbL) 1.0 -- see LICENSE.txt / https://opendatacommons.org/licenses/odbl/1-0/
 Attribution: (c) OpenStreetMap contributors.
 
-This licence applies to the files in this directory only. The Terra-WBS application code and the
+This licence applies to the files in this directory only. The Terra Form application code and the
 other datasets under data/ carry their own licences. Maps, images and world files produced by the
 app from these tiles are "Produced Works" under the ODbL: they need the attribution line, nothing
 more. The process to recreate the tiles is this directory's build script; the upstream source is

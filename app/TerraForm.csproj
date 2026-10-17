@@ -6,13 +6,13 @@
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>Terra-WBS</AssemblyName>
-    <RootNamespace>TerraWBS</RootNamespace>
+    <AssemblyName>TerraForm</AssemblyName>
+    <RootNamespace>TerraForm</RootNamespace>
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <Version>1.0.0</Version>
-    <Product>Terra-WBS</Product>
-    <Description>Real-world geographic data to Civilization IV WorldBuilder saves</Description>
+    <Product>Terra Form</Product>
+    <Description>Real-world geographic data to game maps</Description>
   </PropertyGroup>
 
   <ItemGroup>

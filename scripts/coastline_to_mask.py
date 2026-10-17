@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-coastline_to_mask.py  —  step 1 of the Terra-WBS data pipeline.
+coastline_to_mask.py  —  step 1 of the Terra Form data pipeline.
 
 Rasterize a land-polygon vector (Natural Earth / GSHHG / OSM land polygons,
 all in WGS84 lon/lat) into an equirectangular land/water mask that drops

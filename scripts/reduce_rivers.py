@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 reduce_rivers.py -- HydroRIVERS_v10.gdb -> terminal-tiled, channel-decomposed river tiles
-for Terra-WBS, with a Koppen-weighted keep threshold that preserves small rivers in dry regions.
+for Terra Form, with a Koppen-weighted keep threshold that preserves small rivers in dry regions.
 
 Pipeline:
   1. read reaches ORD_FLOW <= --read-ord (default 6, i.e. >= ~1 m3/s) from the .gdb
