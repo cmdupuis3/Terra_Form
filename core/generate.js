@@ -448,10 +448,40 @@
   window.genApplyCompose = function (tiles, nof, wof, W, H) {
     const items = comp.genItems; if (!items || !items.length) return;
     const g = activeGame();
+    let nearestLand = null;   // for 'lowland' fill: the nearest original land tile of every canvas tile (BFS over the composite as stamped)
+    if (items.some(it => it.kind === 'lowland')) {
+      nearestLand = new Int32Array(W * H).fill(-1); const q = [];
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!isWaterTile(tiles[y][x])) { nearestLand[y * W + x] = y * W + x; q.push(y * W + x); }
+      for (let qi = 0; qi < q.length; qi++) { const c = q[qi], x = c % W, y = (c - x) / W; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const n = ny * W + nx; if (nearestLand[n] < 0) { nearestLand[n] = nearestLand[c]; q.push(n); } } }
+    }
     const paint = (t, kind) => { if (g.paint) { const r = g.paint(t, kind); if (r) return r; } if (kind === 'lake') { const w = g.blankTile('water'); if (t && t._h != null) w._h = t._h; return w; } return Object.assign({}, t, { _salt: 1 }); };
+    let estuary = null;   // lowland fill must not bury a river mouth: keep a channel of sea from each buried mouth to the open water
+    if (nearestLand) {
+      const F = new Uint8Array(W * H);
+      for (const it of items) if (it.kind === 'lowland') for (const c of it.cells) { const x = c % it.W, y = (c - x) / it.W; if (x < W && y < H && isWaterTile(tiles[y][x])) F[y * W + x] = 1; }
+      const deg = new Map(), flow = (a, b) => { const ka = a[1] * (W + 1) + a[0], kb = b[1] * (W + 1) + b[0]; deg.set(ka, (deg.get(ka) || 0) | 2); deg.set(kb, (deg.get(kb) || 0) | 1); };   // bit 1 inflow, bit 2 outflow
+      for (const [key, v] of nof) { const c = key.split(','), gy = +c[0], gx = +c[1], w = [gx, gy + 1], e = [gx + 1, gy + 1]; if (v.dir === 3) flow(e, w); else flow(w, e); }
+      for (const [key, v] of wof) { const c = key.split(','), gy = +c[0], gx = +c[1], n = [gx + 1, gy], s = [gx + 1, gy + 1]; if (v.dir === 0) flow(s, n); else flow(n, s); }
+      const touch = (cx, cy) => [[cx - 1, cy - 1], [cx, cy - 1], [cx - 1, cy], [cx, cy]].filter(([x, y]) => x >= 0 && y >= 0 && x < W && y < H);
+      const openWater = i => { const x = i % W, y = (i - x) / W; return isWaterTile(tiles[y][x]) && !F[i]; };
+      estuary = new Uint8Array(W * H);
+      for (const [k, d] of deg) {
+        if (d !== 1) continue; const cx = k % (W + 1), cy = (k - cx) / (W + 1), ts = touch(cx, cy).map(([x, y]) => y * W + x);
+        if (!ts.some(i => F[i] || estuary[i]) || ts.some(i => openWater(i) || estuary[i])) continue;   // not a mouth the fill buries
+        const prev = new Int32Array(W * H).fill(-2), q = []; for (const i of ts) if (F[i]) { prev[i] = -1; q.push(i); }
+        let hit = -1;
+        for (let qi = 0; qi < q.length && hit < 0; qi++) { const c = q[qi], x = c % W, y = (c - x) / W;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const n = ny * W + nx;
+            if (openWater(n) || estuary[n]) { hit = c; break; } if (F[n] && prev[n] === -2) { prev[n] = c; q.push(n); } } }
+        if (hit < 0) { for (const i of ts) if (F[i]) estuary[i] = 1; continue; }   // no way out through the fill: the mouth keeps its water as a lake
+        for (let c = hit; c >= 0; c = prev[c]) estuary[c] = 1;
+      }
+    }
     for (const it of items) if (it.cells) for (const c of it.cells) {
       const x = c % it.W, y = (c - x) / it.W; if (x >= W || y >= H) continue;
-      const t = tiles[y][x]; if (it.kind === 'salt_pan' && isWaterTile(t)) continue; tiles[y][x] = paint(t, it.kind);
+      const t = tiles[y][x]; if (it.kind === 'salt_pan' && isWaterTile(t)) continue;
+      if (it.kind === 'lowland') { if (!isWaterTile(t) || !nearestLand || nearestLand[y * W + x] < 0 || estuary[y * W + x]) continue; const n = nearestLand[y * W + x], src = tiles[(n / W) | 0][n % W]; const r = g.paint && g.paint(src, 'lowland'); tiles[y][x] = r || Object.assign({}, src, { _h: 0.09 }); continue; }
+      tiles[y][x] = paint(t, it.kind);
     }
     for (const it of items) if (it.edges) for (const [kind, list] of [['n', it.edges.n], ['w', it.edges.w]]) for (const [key, v] of list) {
       const c = key.split(','), gy = +c[0], gx = +c[1]; if (gx < 0 || gx >= W || gy < 0 || gy >= H) continue;
@@ -476,6 +506,27 @@
       },
       compose: {
         add: composeAdd,
+        /* close the canvas' land mask by `width` tiles: sea narrower than that between land becomes lowland */
+        fill(o) {
+          o = o || {}; const C = compositeCompose(), W = C.W, H = C.H, r = Math.max(1, o.width | 0 || 3), land = new Uint8Array(W * H);
+          for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) land[y * W + x] = isWaterTile(C.tiles[y][x]) ? 0 : 1;
+          const dil = new Uint8Array(W * H), ero = new Uint8Array(W * H);
+          for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let v = 0; for (let dy = -r; dy <= r && !v; dy++) for (let dx = -r; dx <= r; dx++) { if (dx * dx + dy * dy > r * r) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < W && ny < H && land[ny * W + nx]) { v = 1; break; } } dil[y * W + x] = v; }
+          for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let v = 1; for (let dy = -r; dy <= r && v; dy++) for (let dx = -r; dx <= r; dx++) { if (dx * dx + dy * dy > r * r) continue; const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H || !dil[ny * W + nx]) { v = 0; break; } } ero[y * W + x] = v; }
+          const rc = o.rect, inR = i => { if (!rc) return true; const x = i % W, y = (i - x) / W; return x >= Math.min(rc[0], rc[2]) && x <= Math.max(rc[0], rc[2]) && y >= Math.min(rc[1], rc[3]) && y <= Math.max(rc[1], rc[3]); };
+          // only the sea closes: water bodies that reach the canvas edge or are bigger than a lake (the snapshots' lakes stay)
+          const comp4 = new Int32Array(W * H).fill(-1), sea = []; let nc = 0;
+          for (let s0 = 0; s0 < W * H; s0++) { if (land[s0] || comp4[s0] >= 0) continue; const q = [s0]; comp4[s0] = nc; let edge = false;
+            for (let qi = 0; qi < q.length; qi++) { const c = q[qi], x = c % W, y = (c - x) / W; if (!x || !y || x === W - 1 || y === H - 1) edge = true;
+              for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const n = ny * W + nx; if (!land[n] && comp4[n] < 0) { comp4[n] = nc; q.push(n); } } }
+            sea[nc++] = edge || q.length > 60; }
+          const cells = []; for (let i = 0; i < W * H; i++) if (ero[i] && !land[i] && sea[comp4[i]] && inR(i)) cells.push(i);   // rect: fill only there (keep fjords and wanted straits elsewhere)
+          if (!cells.length) throw new Error('nothing to fill at width ' + r + ': no sea gap that narrow between land');
+          if (!comp.genItems) comp.genItems = []; if (!comp.genNext) comp.genNext = 1;
+          const id = 'fill-' + (comp.genNext++), info = { kind: 'lowland', tiles: cells.length, width: r, notes: ['sea gaps up to ' + (2 * r) + ' tiles wide closed into lowland; run reclimate to give it its climate'] };
+          comp.genItems.push({ id, kind: 'lowland', info, cells, W, H }); comp.genGen = (comp.genGen | 0) + 1; composeDirty();
+          return Object.assign({ id, target: 'compose' }, info);
+        },
         list: () => (comp.genItems || []).map(summary),
         remove(id) { const L = comp.genItems || [], before = L.length; comp.genItems = L.filter(i => i.id !== id && i.parent !== id); if (comp.genItems.length === before) throw new Error('no generated feature ' + id + ' on the canvas'); comp.genGen = (comp.genGen | 0) + 1; composeDirty(); return before - comp.genItems.length; },
         clear() { const n = (comp.genItems || []).length; comp.genItems = []; comp.genGen = (comp.genGen | 0) + 1; composeDirty(); return n; }

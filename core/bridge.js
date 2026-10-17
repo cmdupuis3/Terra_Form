@@ -181,15 +181,62 @@
   /* min-cut seam (Zhou et al. 2007): over the strip where A (below) and B (above) overlap, the cheapest path from one end
      of the seam to the other through per-tile disagreement (water vs land 1; both land: 0.25 + climate 0.5 + relief 0.5;
      both water 0; mask fill counts as water). B's tiles on A's side of the path are skipped, so the join is ragged. */
+  /* ---------- interest: how much each tile matters, 0..9 ----------
+     High where a seam would destroy something: peaks and ridge edges, rivers (by discharge), real coastline (more
+     at capes and bay heads), climate boundaries, oases / flood plains / salt, lake shores. Low in uniform interior.
+     Mask fill (lasso cuts) and open water are 0. The min-cut seam in attach routes through low interest, so two
+     pieces can overlap deeply over land and fuse where neither has anything worth keeping. */
+  const INTEREST = new WeakMap();
+  function interestGrid(tiles2, W, H, rivers, g, cut) {
+    const F = glyphFns(g || T.game), U = T.util, raw = new Float32Array(W * H), water = new Uint8Array(W * H);
+    const at = (x, y) => tiles2[y] && tiles2[y][x];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const t = at(x, y); water[y * W + x] = !t || F.isWater(t) || (cut && cut[y * W + x]) ? 1 : 0; }
+    const rivD = new Float32Array(W * H), ents = m => !m ? [] : (typeof m.forEach === 'function' && typeof m.set === 'function' ? Array.from(m) : m);
+    const addR = (x, y, d) => { if (x >= 0 && y >= 0 && x < W && y < H) rivD[y * W + x] = Math.max(rivD[y * W + x], d || 10); };
+    for (const [k, v] of ents(rivers && rivers.nof)) { const q = String(k).split(','), gy = +q[0], gx = +q[1]; addR(gx, gy, v && v.d); addR(gx, gy + 1, v && v.d); }
+    for (const [k, v] of ents(rivers && rivers.wof)) { const q = String(k).split(','), gy = +q[0], gx = +q[1]; addR(gx, gy, v && v.d); addR(gx + 1, gy, v && v.d); }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x; if (water[i]) continue; const t = at(x, y), r = F.relief(t) | 0; let v = r * 2;
+      let wn = 0, realW = 0, relDiff = 0, kDiff = 0, lakeN = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const j = ny * W + nx, tn = at(nx, ny);
+        if (water[j]) { wn++; if (!(cut && cut[j])) realW++; continue; }
+        if ((F.relief(tn) | 0) !== r) relDiff++;
+        if (t.kc && tn && tn.kc && U.classGroup(t.kc) !== U.classGroup(tn.kc)) kDiff++; }
+      if (realW) v += 2 + (realW >= 4 && realW <= 6 ? 1.5 : 0);   // coast; capes and bay heads more
+      if (relDiff >= 2) v += 1; if (kDiff >= 2) v += 2;
+      if (rivD[i]) v += 2 + Math.min(2.5, Math.log10(1 + rivD[i]) * 0.8);
+      const f = t.feature; if (f === 'FEATURE_OASIS') v += 4; else if (f === 'FEATURE_FLOOD_PLAINS') v += 2;
+      if (t._salt) v += 1;
+      raw[i] = v;
+    }
+    const out = new Uint8Array(W * H);   // a little spread, so a feature protects its immediate surroundings
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; if (water[i]) continue; let m = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; m = Math.max(m, raw[ny * W + nx] * (dx || dy ? 0.6 : 1)); } out[i] = Math.min(9, Math.round(m * 0.9)); }
+    return out;
+  }
+  function interestOf(s) { let m = INTEREST.get(s); if (!m) { m = interestGrid(api().tiles2D(s), s.W, s.H, s.rivers, T.games[s.game] || T.game, artificialMask(s)); INTEREST.set(s, m); } return m; }
+  function edgeInterest(s) {   // per edge: mean interest of the land within 3 tiles of it, and the quietest stretch along it (a good seam anchor)
+    const m = interestOf(s), F = glyphFns(T.games[s.game] || T.game), at = snapTile(s), out = {};
+    for (const e of ['N', 'E', 'S', 'W']) {
+      const len = e === 'N' || e === 'S' ? s.W : s.H, col = []; let sum = 0, n = 0;
+      for (let a = 0; a < len; a++) { let cs = 0, cn = 0; for (let d = 0; d < 3; d++) { const x = e === 'E' ? s.W - 1 - d : e === 'W' ? d : a, y = e === 'S' ? s.H - 1 - d : e === 'N' ? d : a; if (x < 0 || y < 0 || x >= s.W || y >= s.H) continue; const t = at(x, y); if (!t || F.isWater(t)) continue; cs += m[y * s.W + x]; cn++; } col.push(cn ? cs / cn : null); if (cn) { sum += cs / cn; n++; } }
+      let best = null, bv = Infinity; for (let a = 0; a + 4 < len; a++) { const win = col.slice(a, a + 5).filter(v => v != null); if (win.length < 4) continue; const v = win.reduce((p, q) => p + q, 0) / win.length; if (v < bv) { bv = v; best = a + 2; } }
+      out[e] = n ? { mean: +(sum / n).toFixed(1), quietAt: best, quiet: best != null ? +bv.toFixed(1) : null, landTiles: n } : null;
+    }
+    return out;
+  }
+  function uniquePaste(s, allow) {   // every snapshot (lasso chunk) goes on the canvas once: repeats read as copy-paste
+    if (allow) return; const p = patchForSnapshot(s); if (p) throw new Error('"' + s.name + '" is already on the canvas as patch ' + p.id + ': each snapshot is pasted once (move_patch to reposition it, or allowRepeat:true to override)');
+  }
   function minCutSkip(A, pa, B, pb, eA) {
-    const c = api().compose.state(), FA = glyphFns(T.games[A.game] || T.game), FB = glyphFns(T.games[B.game] || T.game), U = T.util, cA = cutMask(A), cB = cutMask(B), atA = snapTile(A), atB = snapTile(B);   // any fill counts as water here: the path should run through it
+    const c = api().compose.state(), FA = glyphFns(T.games[A.game] || T.game), FB = glyphFns(T.games[B.game] || T.game), U = T.util, cA = cutMask(A), cB = cutMask(B), atA = snapTile(A), atB = snapTile(B), IA = interestOf(A), IB = interestOf(B);   // any fill counts as water here: the path should run through it
     const x0 = Math.max(pa.x, pb.x, 0), x1 = Math.min(pa.x + A.W, pb.x + B.W, c.W) - 1, y0 = Math.max(pa.y, pb.y, 0), y1 = Math.min(pa.y + A.H, pb.y + B.H, c.H) - 1;
     if (x1 < x0 || y1 < y0) return null;
-    const w = x1 - x0 + 1, h = y1 - y0 + 1, cost = new Float32Array(w * h);
+    const w = x1 - x0 + 1, h = y1 - y0 + 1, cost = new Float32Array(w * h); let landBoth = 0;
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const ax = x - pa.x, ay = y - pa.y, bx = x - pb.x, by = y - pb.y, ta = atA(ax, ay), tb = atB(bx, by); let v = 0.5;
       if (ta && tb) { const wa = FA.isWater(ta) || !!(cA && cA[ay * A.W + ax]), wb = FB.isWater(tb) || !!(cB && cB[by * B.W + bx]);
-        if (wa && wb) v = 0; else if (wa !== wb) v = 1; else { const ka = ta.kc | 0, kb = tb.kc | 0; v = 0.25 + (ka && kb && U.classGroup(ka) !== U.classGroup(kb) ? 0.5 : 0) + ((FA.relief(ta) | 0) !== (FB.relief(tb) | 0) ? 0.5 : 0); } }
+        if (wa && wb) v = 0; else if (wa !== wb) v = 1; else { const ka = ta.kc | 0, kb = tb.kc | 0; v = 0.25 + (ka && kb && U.classGroup(ka) !== U.classGroup(kb) ? 0.5 : 0) + ((FA.relief(ta) | 0) !== (FB.relief(tb) | 0) ? 0.5 : 0); }
+        v += 0.18 * ((wa ? 0 : IA[ay * A.W + ax]) + (wb ? 0 : IB[by * B.W + bx])); if (!wa && !wb) landBoth++; }   // interest: a seam through a peak, a river or a coast costs what it destroys
       cost[(y - y0) * w + (x - x0)] = v;
     }
     const vertical = eA === 'E' || eA === 'W', L = vertical ? h : w, M = vertical ? w : h, Cst = (i, j) => vertical ? cost[i * w + j] : cost[j * w + i];   // i along the seam, j across it
@@ -200,7 +247,7 @@
     const path = new Int16Array(L); for (let i = L - 1; i >= 0; i--) { path[i] = j; j = P[i * M + j]; }
     const skip = [], aSideLow = eA === 'E' || eA === 'S';   // A west of B (E) or north of B (S): A's side is the low index across the strip
     for (let i = 0; i < L; i++) for (let jj = 0; jj < M; jj++) { if (!(aSideLow ? jj < path[i] : jj > path[i])) continue; const x = vertical ? x0 + jj : x0 + i, y = vertical ? y0 + i : y0 + jj; skip.push((y - pb.y) * B.W + (x - pb.x)); }
-    return { skip, length: L, width: M, cost: +(D[(L - 1) * M + path[L - 1]] / L).toFixed(3) };
+    return { skip, length: L, width: M, landBoth, cost: +(D[(L - 1) * M + path[L - 1]] / L).toFixed(3) };
   }
   function landBounds(s) { const F = glyphFns(T.games[s.game] || T.game), at = snapTile(s); let x0 = s.W, y0 = s.H, x1 = -1, y1 = -1; for (let y = 0; y < s.H; y++) for (let x = 0; x < s.W; x++) { const t = at(x, y); if (t && !F.isWater(t)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } } return x1 < 0 ? null : { x0, y0, x1, y1 }; }
   const EDGEKEYS = new Map();
@@ -286,13 +333,14 @@
       x0 = Math.max(0, x0 | 0); y0 = Math.max(0, y0 | 0); x1 = Math.min(W - 1, x1 | 0); y1 = Math.min(H - 1, y1 | 0);
       const step = Math.max(1, (opts.step | 0) || Math.max(Math.ceil((x1 - x0 + 1) / 120), Math.ceil((y1 - y0 + 1) / 80)));
       const hex = !!(g && g.grid && g.grid.kind === 'hex'), rows = [], rv = opts.overlay === 'rivers' ? riverTileSet(rivers) : null;   // overlay 'rivers': '=' on every tile a river edge touches (its north or west side)
+      const IM = opts.overlay === 'interest' ? interestGrid(tiles, W, H, rivers, g, extra && extra.cut) : null;   // overlay 'interest': 0..9 per land tile
       const CB = codeTiles ? T.landforms.codebook().bands[codeTiles.band].codes : null;   // overlay 'codes': one glyph per code class (landforms.CODE_GLYPHS), water left as '~'
       for (let y = y0; y <= y1; y += step) {
         let s = (hex && step === 1 && api().hexShiftX(y, H)) ? ' ' : '';   // hex: the half-tile-east rows lean right, as on screen
-        for (let x = x0; x <= x1; x += step) { const t = tiles[y][x]; if (CB) { const c = codeTiles.codes[y * W + x]; s += c >= 0 ? T.landforms.codeGlyph(CB[c]) : (t && F.isWater(t) ? '~' : ' '); } else s += rv && rv.has(x + ',' + y) ? '=' : t ? String(F.ascii(t) || '?')[0] : ' '; }
+        for (let x = x0; x <= x1; x += step) { const t = tiles[y][x]; if (IM) { s += t && !F.isWater(t) ? String(IM[y * W + x]) : '~'; continue; } if (CB) { const c = codeTiles.codes[y * W + x]; s += c >= 0 ? T.landforms.codeGlyph(CB[c]) : (t && F.isWater(t) ? '~' : ' '); } else s += rv && rv.has(x + ',' + y) ? '=' : t ? String(F.ascii(t) || '?')[0] : ' '; }
         rows.push({ y, s });
       }
-      res.grid = { x0, y0, x1, y1, step, rows, overlay: CB ? 'codes' : rv ? 'rivers' : null };
+      res.grid = { x0, y0, x1, y1, step, rows, overlay: IM ? 'interest' : CB ? 'codes' : rv ? 'rivers' : null };
     }
     return res;
   }
@@ -357,7 +405,7 @@
   function snapReport(s, opts) {
     const a = api(), g = T.games[s.game] || T.game, cut = artificialMask(s);
     return report(a.tiles2D(s), s.W, s.H, s.rivers, g, opts, { kind: 'snapshot', id: s.id, name: s.name, game: s.game, hex: !!s.hex, topLat: s.topLat, botLat: s.botLat, connectors: s.connectors || null, catalog: s.catalog || null,
-      cut: s.cut ? s.cut.length : 0, cutLand: s.cutLand ? s.cutLand.length : (s.cut ? s.cut.length : 0), degPerTile: snapDeg(s) }, null, null, { cut: artificialMask(s), cutEdge: cutEdgeMaskSnap(s), degPerTile: snapDeg(s), sourceDeadEnd: () => true });
+      cut: s.cut ? s.cut.length : 0, cutLand: s.cutLand ? s.cutLand.length : (s.cut ? s.cut.length : 0), degPerTile: snapDeg(s), edgeInterest: edgeInterest(s) }, null, null, { cut: artificialMask(s), cutEdge: cutEdgeMaskSnap(s), degPerTile: snapDeg(s), sourceDeadEnd: () => true });
   }
   function snapConnectors(s) { const a = api(), g = T.games[s.game] || T.game; try { return T.landforms ? T.landforms.connectors(a.tiles2D(s), s.W, s.H, lfCtx(g, s.rivers, null, s.H, null, { cut: artificialMask(s) })) : null; } catch (e) { return null; } }
   async function prepOverlay(args) { if (args && args.overlay === 'codes' && T.landforms) await T.landforms.loadCodebook(); }   // the codebook is fetched on first use
@@ -530,8 +578,8 @@
       const fx = ax !== 'y', fy = ax !== 'x', tiles = new Array(W * H);
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const t = s.tiles[(fy ? H - 1 - y : y) * W + (fx ? W - 1 - x : x)]; tiles[y * W + x] = t && typeof t === 'object' ? Object.assign({}, t) : t; }
       const nof = [], wof = [];
-      for (const [k, v] of s.rivers.nof) { const p = k.split(','); let gy = +p[0], gx = +p[1], dir = v.dir; if (fx) { gx = W - 1 - gx; dir = dir === 1 ? 3 : dir === 3 ? 1 : dir; } if (fy) gy = H - gy; if (gy >= 0 && gy < H && gx >= 0 && gx < W) nof.push([gy + ',' + gx, Object.assign({}, v, { dir })]); }
-      for (const [k, v] of s.rivers.wof) { const p = k.split(','); let gy = +p[0], gx = +p[1], dir = v.dir; if (fy) { gy = H - 1 - gy; dir = dir === 0 ? 2 : dir === 2 ? 0 : dir; } if (fx) gx = W - gx; if (gy >= 0 && gy < H && gx >= 0 && gx < W) wof.push([gy + ',' + gx, Object.assign({}, v, { dir })]); }
+      for (const [k, v] of s.rivers.nof) { const p = k.split(','); let gy = +p[0], gx = +p[1], dir = v.dir; if (fx) { gx = W - 1 - gx; dir = dir === 1 ? 3 : dir === 3 ? 1 : dir; } if (fy) gy = H - 2 - gy; if (gy >= 0 && gy <= H - 2 && gx >= 0 && gx < W) nof.push([gy + ',' + gx, Object.assign({}, v, { dir })]); }
+      for (const [k, v] of s.rivers.wof) { const p = k.split(','); let gy = +p[0], gx = +p[1], dir = v.dir; if (fy) { gy = H - 1 - gy; dir = dir === 0 ? 2 : dir === 2 ? 0 : dir; } if (fx) gx = W - 2 - gx; if (gy >= 0 && gy < H && gx >= 0 && gx <= W - 2) wof.push([gy + ',' + gx, Object.assign({}, v, { dir })]); }
       const flipIdx = L => L ? L.map(i => { const x = i % W, y = (i - x) / W; return (fy ? H - 1 - y : y) * W + (fx ? W - 1 - x : x); }).sort((p, q) => p - q) : null;   // the mask-fill flags flip with the tiles
       const snap = Object.assign({}, s, { id: a.newId(), name: args.name || (s.name + (ax === 'xy' ? ' (rotated 180)' : ax === 'x' ? ' (mirrored E-W)' : ' (mirrored N-S)')), tiles, rivers: { nof, wof }, cut: flipIdx(s.cut), cutLand: flipIdx(s.cutLand), createdAt: Date.now(), flipped: ax, thumb: null });
       snap.thumb = a.thumb(snap); snap.connectors = snapConnectors(snap);
@@ -559,8 +607,17 @@
       if (!pa) pa = a.compose.add(A, Math.round((c.W - A.W) / 2), Math.round((c.H - A.H) / 2), args.landOnly !== false);
       const RO = raggedOpts(args.ragged);
       if (args.ragged && !pa.skip && RO.feather !== false) a.compose.setSkip(pa.id, featherSkip(A, pa, eA, { preserve: RO.preserveA, preserveSides: RO.preserveSidesA, preserveCoast: RO.preserveCoast }));   // A's own cut edges and frame border, except the seam side (the min-cut below handles that)
-      const ov = args.overlap | 0, along = (eA === 'E' || eA === 'W') ? 'y' : 'x', centre = along === 'y' ? Math.round((A.H - B.H) / 2) : Math.round((A.W - B.W) / 2);
-      let sh = args.shift | 0, aligned = null;
+      const along = (eA === 'E' || eA === 'W') ? 'y' : 'x', centre = along === 'y' ? Math.round((A.H - B.H) / 2) : Math.round((A.W - B.W) / 2);
+      let sh = args.shift | 0, aligned = null, ov = args.overlap === 'auto' ? null : args.overlap | 0, fused = null;
+      /* overlap 'auto' (fuse): search overlap depth and slide together for the cheapest interest-weighted seam, so two
+         pieces merge over land where neither has anything worth keeping (the min-cut then decides each overlap tile) */
+      if (ov === null) {
+        const win2 = Math.max(1, (args.searchShift | 0) || 12), maxOv = Math.max(2, Math.min((args.maxOverlap | 0) || 14, Math.floor(Math.min(A.W, B.W, A.H, B.H) * 0.6)));
+        const posAt = (o2, s2) => eA === 'E' ? { x: pa.x + A.W - o2, y: pa.y + centre + s2 } : eA === 'W' ? { x: pa.x - B.W + o2, y: pa.y + centre + s2 } : eA === 'S' ? { x: pa.x + centre + s2, y: pa.y + A.H - o2 } : { x: pa.x + centre + s2, y: pa.y - B.H + o2 };
+        for (let o2 = 2; o2 <= maxOv; o2++) for (let d = -win2; d <= win2; d += 2) { const q = posAt(o2, sh + d), mc = minCutSkip(A, pa, B, q, eA); if (!mc) continue; const contact = Math.min(1, mc.landBoth / (1.5 * mc.length)), score = mc.cost - 0.015 * o2 + 0.9 * (1 - contact); /* fusing means land meets land: an overlap of open sea scores badly however cheap its seam */ if (!fused || score < fused.score) fused = { score, overlap: o2, shift: sh + d, seamCostPerRow: mc.cost }; }
+        ov = fused ? fused.overlap : 2; if (fused) { sh = fused.shift; fused.score = +fused.score.toFixed(3); }
+      }
+      const ragAuto = args.ragged || args.overlap === 'auto';
       /* align: line the two edges' anchors up (centre of the relief run within 4 tiles of the edge, or of the longest land run
          along it) instead of the rectangle centres, so a range meets a range (Mawhorter & Mateas anchors) */
       if (args.align) {
@@ -585,10 +642,10 @@
       let pb = patchForSnapshot(B); if (pb) a.compose.move(pb.id, x, y); else pb = a.compose.add(B, x, y, args.landOnly !== false);
       /* ragged: feather B's cut edges and frame border (not the seam side), and cut a min-cost path through the overlap strip */
       let ragged = null;
-      if (args.ragged) { const skip = new Set(RO.feather === false ? [] : featherSkip(B, pb, eB, { preserve: RO.preserve, preserveSides: RO.preserveSides, preserveCoast: RO.preserveCoast })); const mc = ov >= 2 && RO.minCut !== false ? minCutSkip(A, pa, B, pb, eA) : null; if (mc) for (const i of mc.skip) skip.add(i); a.compose.setSkip(pb.id, unpin([...skip], B, RO.preserve)); ragged = { skipped: pb.skip ? pb.skip.size : 0, skippedA: pa.skip ? pa.skip.size : 0, seam: mc ? { length: mc.length, width: mc.width, costPerTile: mc.cost } : RO.minCut === false ? 'feathered only' : 'feathered only (overlap < 2: no strip for a min-cut path)' }; }
+      if (ragAuto) { const skip = new Set(RO.feather === false ? [] : featherSkip(B, pb, eB, { preserve: RO.preserve, preserveSides: RO.preserveSides, preserveCoast: RO.preserveCoast })); const mc = ov >= 2 && RO.minCut !== false ? minCutSkip(A, pa, B, pb, eA) : null; if (mc) for (const i of mc.skip) skip.add(i); a.compose.setSkip(pb.id, unpin([...skip], B, RO.preserve)); ragged = { skipped: pb.skip ? pb.skip.size : 0, skippedA: pa.skip ? pa.skip.size : 0, seam: mc ? { length: mc.length, width: mc.width, costPerTile: mc.cost } : RO.minCut === false ? 'feathered only' : 'feathered only (overlap < 2: no strip for a min-cut path)' }; }
       else if (pb.skip) a.compose.setSkip(pb.id, null);
       a.render();
-      return Object.assign(composeReport(args), { attached: { a: pa.id, b: pb.id, x: pb.x, y: pb.y, seam: eA + '/' + eB, connectorA: A.connectors ? A.connectors[eA] : null, connectorB: B.connectors ? B.connectors[eB] : null, seamCost: (args.autoShift && best.shift !== sh) || clamped ? seamCost(A, pa.x, pa.y, B, pb.x, pb.y, eA) : cost, bestShift: best, aligned, clamped, clipped: clipped(pb, c.W, c.H), ragged } });
+      return Object.assign(composeReport(args), { attached: { a: pa.id, b: pb.id, x: pb.x, y: pb.y, seam: eA + '/' + eB, fused, connectorA: A.connectors ? A.connectors[eA] : null, connectorB: B.connectors ? B.connectors[eB] : null, seamCost: (args.autoShift && best.shift !== sh) || clamped ? seamCost(A, pa.x, pa.y, B, pb.x, pb.y, eA) : cost, bestShift: best, aligned, clamped, clipped: clipped(pb, c.W, c.H), ragged } });
     },
     /* trim_rivers: drop the collage's river systems that end on land. By default only those the source snapshots did not
        have (cut by a seam, an erase or an overlapping stamp); endorheic:'trim' drops every landlocked system; rids picks
@@ -601,6 +658,7 @@
       const drop = new Set(), kept = [];
       for (const s of R.systemsAll) {
         const rid = String(s.rid); if (want.size) { if (want.has(rid)) drop.add(rid); continue; }
+        if (s.edges < (args.minEdges == null ? 3 : args.minEdges | 0) && !s.into) { drop.add(rid); continue; }   // a stub of one or two edges is no river (seam and lasso leftovers)
         if (s.reaches === 'water' || s.reaches === 'edge') continue;
         const de = deadByRid.get(rid) || []; if (keepEndorheic && de.length && de.every(srcDead)) { kept.push(rid); continue; }
         drop.add(rid);
@@ -612,8 +670,8 @@
       /* a system that does reach water but carries a cut dead end on a side branch: walk the branch upstream from the dead end
          to the first junction (or to water) and drop just those edges */
       if (!want.size) {
-        const E = []; const addE = (m, kind) => { for (const [k, v] of m) { const p = k.split(','), x = +p[1], y = +p[0]; const c1 = [x, y], c2 = kind === 'n' ? [x + 1, y] : [x, y + 1], down = kind === 'n' ? (v.dir === 1 ? c2 : c1) : (v.dir === 2 ? c2 : c1); E.push({ kind, x, y, rid: v.rid, c1, c2, down, up: down === c1 ? c2 : c1, gone: false }); } }; addE(C.rivers.nof, 'n'); addE(C.rivers.wof, 'w');
-        const near = (e, c) => E.filter(o => o !== e && !o.gone && o.rid === e.rid && [o.c1, o.c2].some(q => Math.abs(q[0] - c[0]) <= 1 && Math.abs(q[1] - c[1]) <= 1));
+        const E = []; const addE = (m, kind) => { for (const [k, v] of m) { const p = k.split(','), x = +p[1], y = +p[0]; const c1 = kind === 'n' ? [x, y + 1] : [x + 1, y], c2 = kind === 'n' ? [x + 1, y + 1] : [x + 1, y + 1], down = kind === 'n' ? (v.dir === 1 ? c2 : c1) : (v.dir === 2 ? c2 : c1); E.push({ kind, x, y, rid: v.rid, c1, c2, down, up: down === c1 ? c2 : c1, gone: false }); } }; addE(C.rivers.nof, 'n'); addE(C.rivers.wof, 'w');
+        const near = (e, c) => E.filter(o => o !== e && !o.gone && o.rid === e.rid && [o.c1, o.c2].some(q => q[0] === c[0] && q[1] === c[1]));   // edges sharing this exact corner
         const Fw = glyphFns(T.game), wet = c => [[c[0] - 1, c[1] - 1], [c[0], c[1] - 1], [c[0] - 1, c[1]], [c[0], c[1]]].some(([x, y]) => x >= 0 && x < W && y >= 0 && y < H && Fw.isWater(C.tiles[y][x]));
         const W = C.W, H = C.H;
         for (const d of R.deadEndEdges) {
@@ -639,17 +697,22 @@
       if (!dead.length) throw new Error('no river dead end to extend' + (args.rid != null ? ' for river ' + args.rid : ''));
       const land = (x, y) => x >= 0 && x < W && y >= 0 && y < H && !F.isWater(C.tiles[y][x]), water = (x, y) => x >= 0 && x < W && y >= 0 && y < H && F.isWater(C.tiles[y][x]);
       const cornerWet = (cx, cy) => water(cx - 1, cy - 1) || water(cx, cy - 1) || water(cx - 1, cy) || water(cx, cy);
-      const cornerRiver = (cx, cy) => C.rivers.nof.has(cy + ',' + cx) || C.rivers.nof.has(cy + ',' + (cx - 1)) || C.rivers.wof.has(cy + ',' + cx) || C.rivers.wof.has((cy - 1) + ',' + cx);
-      /* from corner (cx,cy): E along the north edge of tile (cx,cy); W along the north edge of (cx-1,cy); S along the west edge of (cx,cy); N along the west edge of (cx,cy-1) */
-      const MOVES = [{ dx: 1, dy: 0, kind: 'n', key: (cx, cy) => cy + ',' + cx, dir: 1, fl: (cx, cy) => [[cx, cy - 1], [cx, cy]] }, { dx: -1, dy: 0, kind: 'n', key: (cx, cy) => cy + ',' + (cx - 1), dir: 3, fl: (cx, cy) => [[cx - 1, cy - 1], [cx - 1, cy]] },
-                     { dx: 0, dy: 1, kind: 'w', key: (cx, cy) => cy + ',' + cx, dir: 2, fl: (cx, cy) => [[cx - 1, cy], [cx, cy]] }, { dx: 0, dy: -1, kind: 'w', key: (cx, cy) => (cy - 1) + ',' + cx, dir: 0, fl: (cx, cy) => [[cx - 1, cy - 1], [cx, cy - 1]] }];
+      /* a corner where another river flows on (an edge of a different river leaves it): joining a river at its own dead end, or the river itself, is no join */
+      const outOf = new Map(), leave = (cx, cy, rid) => { const k = cx + ',' + cy; (outOf.get(k) || outOf.set(k, new Set()).get(k)).add(String(rid)); };
+      for (const [k, v] of C.rivers.nof) { const p = k.split(','), gy = +p[0], gx = +p[1]; if (v.dir === 3) leave(gx + 1, gy + 1, v.rid); else leave(gx, gy + 1, v.rid); }
+      for (const [k, v] of C.rivers.wof) { const p = k.split(','), gy = +p[0], gx = +p[1]; if (v.dir === 0) leave(gx + 1, gy + 1, v.rid); else leave(gx + 1, gy, v.rid); }
+      const drains = new Set(R.systemsAll.filter(s => s.reaches === 'water' || s.reaches === 'edge').map(s => String(s.rid)));   // and that river reaches the sea: two dead ends joined to each other drain nowhere
+      const cornerRiver = (cx, cy, rid) => { const S = outOf.get(cx + ',' + cy); return !!S && [...S].some(r => r !== String(rid) && drains.has(r)); };   // nof (cy-1, cx|cx-1) and wof (cy|cy-1, cx-1) touch corner (cx,cy)
+      /* from corner (cx,cy) (top-left of tile (cx,cy)): E = the boundary above tile (cx,cy) = nof (cy-1,cx); W = nof (cy-1,cx-1); S = the boundary left of tile (cx,cy) = wof (cy,cx-1); N = wof (cy-1,cx-1) */
+      const MOVES = [{ dx: 1, dy: 0, kind: 'n', key: (cx, cy) => (cy - 1) + ',' + cx, dir: 1, fl: (cx, cy) => [[cx, cy - 1], [cx, cy]] }, { dx: -1, dy: 0, kind: 'n', key: (cx, cy) => (cy - 1) + ',' + (cx - 1), dir: 3, fl: (cx, cy) => [[cx - 1, cy - 1], [cx - 1, cy]] },
+                     { dx: 0, dy: 1, kind: 'w', key: (cx, cy) => cy + ',' + (cx - 1), dir: 2, fl: (cx, cy) => [[cx - 1, cy], [cx, cy]] }, { dx: 0, dy: -1, kind: 'w', key: (cx, cy) => (cy - 1) + ',' + (cx - 1), dir: 0, fl: (cx, cy) => [[cx - 1, cy - 1], [cx, cy - 1]] }];
       const results = [], ents = [], maxLen = Math.max(4, (args.maxLength | 0) || 60), seenRid = new Set();
       for (const e of dead) {
         if (seenRid.has(e.rid) && args.rid == null && !args.at) continue; seenRid.add(e.rid);
         const start = e.down, prev = new Map([[start.join(','), null]]); let q = [start], found = null, depth = 0;
         while (q.length && !found && depth < maxLen) {
           const nq = [];
-          for (const [cx, cy] of q) { for (const m of MOVES) { const nx = cx + m.dx, ny = cy + m.dy, k = nx + ',' + ny; if (prev.has(k)) continue; const [f1, f2] = m.fl(cx, cy); if (!land(f1[0], f1[1]) || !land(f2[0], f2[1])) continue; prev.set(k, [cx, cy, m]); if (cornerWet(nx, ny)) { found = { c: [nx, ny], to: 'water' }; break; } if (cornerRiver(nx, ny)) { found = { c: [nx, ny], to: 'another river' }; break; } nq.push([nx, ny]); } if (found) break; }
+          for (const [cx, cy] of q) { for (const m of MOVES) { const nx = cx + m.dx, ny = cy + m.dy, k = nx + ',' + ny; if (prev.has(k)) continue; const [f1, f2] = m.fl(cx, cy); if (!land(f1[0], f1[1]) || !land(f2[0], f2[1])) continue; prev.set(k, [cx, cy, m]); if (cornerWet(nx, ny)) { found = { c: [nx, ny], to: 'water' }; break; } if (cornerRiver(nx, ny, e.rid)) { found = { c: [nx, ny], to: 'another river' }; break; } nq.push([nx, ny]); } if (found) break; }
           q = nq; depth++;
         }
         if (!found) { results.push({ rid: e.rid, from: start, error: 'no land path to water within ' + maxLen + ' edges' }); continue; }
@@ -664,12 +727,14 @@
     async scatter(args) {
       const a = api(); a.setMode('compose'); await prepOverlay(args);
       const snaps = (args.snapshots || []).map(findSnapshot); if (!snaps.length) throw new Error('snapshots: list of snapshot ids or names required');
+      if (!args.allowRepeat) { const ids = new Set(); for (const sn of snaps) { if (ids.has(sn.id)) throw new Error('"' + sn.name + '" is listed twice: every snapshot is pasted once (allowRepeat:true to override)'); ids.add(sn.id); uniquePaste(sn, false); } }
       const pts = args.along || []; if (pts.length < 1) throw new Error('along: [[x,y],...] polyline required');
       const spacing = Math.max(1, +args.spacing || 8), placed = [], samples = [];
       if (pts.length === 1) samples.push(pts[0]);
       else { let carry = 0; for (let i = 0; i + 1 < pts.length; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], L = Math.hypot(x1 - x0, y1 - y0); let d = carry; if (i === 0) samples.push([x0, y0]); while (d + spacing <= L + 1e-9) { d += spacing; samples.push([x0 + (x1 - x0) * d / L, y0 + (y1 - y0) * d / L]); } carry = d - L; } }
       /* centre each stamp on its LAND (bbox centre), not on its rectangle: an atoll capture is mostly sea around a few tiles */
       const landCentre = s => { const g = T.games[s.game] || T.game, F = glyphFns(g); let x0 = s.W, y0 = s.H, x1 = -1, y1 = -1; for (let y = 0; y < s.H; y++) for (let x = 0; x < s.W; x++) { const t = s.tiles[y * s.W + x]; if (t && !F.isWater(t)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } } return x1 < 0 ? [s.W / 2, s.H / 2] : [(x0 + x1 + 1) / 2, (y0 + y1 + 1) / 2]; };
+      if (!args.allowRepeat && samples.length > snaps.length) throw new Error(`the path has room for ${samples.length} stamps but only ${snaps.length} distinct snapshots were given: every snapshot is pasted once (give more snapshots, a larger spacing, or allowRepeat:true)`);
       samples.forEach((pt, i) => { const s = snaps[(i + (args.start | 0)) % snaps.length], c = landCentre(s); let px = Math.round(pt[0] - c[0]), py = Math.round(pt[1] - c[1]), shifted = null;
         if (args.avoidLand) { const f = freeSpot(s, px, py, args.gap == null ? 1 : args.gap | 0); if (f) { shifted = (f.dx || f.dy) ? { dx: f.dx, dy: f.dy } : null; px = f.x; py = f.y; } else shifted = { error: 'no free spot' }; }
         const p = a.compose.add(s, px, py, args.landOnly !== false); placed.push({ patch: p.id, snapshot: s.name, x: p.x, y: p.y, shifted }); });
@@ -695,6 +760,7 @@
        water between, default 1); ragged feathers its cut edges; preview reports the result without keeping the patch. */
     async place(args) {
       const a = api(); a.setMode('compose'); await prepOverlay(args); const s = findSnapshot(args.snapshot), c = a.compose.state();
+      uniquePaste(s, args.allowRepeat);
       let x = args.x | 0, y = args.y | 0, shifted = null;
       if (args.avoidLand) { const f = freeSpot(s, x, y, args.gap == null ? 1 : args.gap | 0); if (!f) throw new Error('avoidLand: no free spot on the canvas for "' + s.name + '"'); shifted = (f.dx || f.dy) ? { dx: f.dx, dy: f.dy } : null; x = f.x; y = f.y; }
       const p = a.compose.add(s, x, y, args.landOnly !== false);
@@ -719,6 +785,15 @@
     },
     async unerase(args) { const a = api(); a.setMode('compose'); await prepOverlay(args); a.compose.unerase(); a.render(); return composeReport(args); },
     async add_lake(args) { return genCmd('lake', args); },
+    async fill_gaps(args) { const a = api(); a.setMode('compose'); const g = a.gen.compose.fill(args); a.render(); return Object.assign(composeReport(args), { generated: g }); },
+    /* the sculpt pathway (core/sculpt.js): a height field built from real fragments and primitives, then realized */
+    async sculpt_new(args) { const a = api(); if (!a.sculpt) throw new Error('core/sculpt.js is not loaded'); await settle(); const r = a.sculpt.new(args); return a.sculpt.view(Object.assign({}, args, { msg: r.msg })); },
+    async sculpt_stamp(args) { const a = api(); await settle(); const r = a.sculpt.stamp(args); return a.sculpt.view(Object.assign({}, args, { msg: r.msg })); },
+    async sculpt_shape(args) { const a = api(); const r = a.sculpt.shape(args); return a.sculpt.view(Object.assign({}, args, { msg: r.msg })); },
+    async sculpt_sea(args) { const a = api(); const r = a.sculpt.sea(args); return a.sculpt.view(Object.assign({}, args, { msg: r.msg })); },
+    async sculpt_view(args) { return api().sculpt.view(args); },
+    async sculpt_realize(args) { const a = api(); await settle(); const r = await a.sculpt.realize(args); return Object.assign(composeReport(args), { realized: r }); },
+    async reclimate(args) { const a = api(); a.setMode('compose'); const r = await a.sculpt.reclimate(args); a.render(); return Object.assign(composeReport(args), { reclimated: r }); },
     async add_salt_pan(args) { return genCmd('salt_pan', args); },
     async add_river(args) { return genCmd('river', args); },
     async features(args) {

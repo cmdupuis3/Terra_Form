@@ -113,24 +113,25 @@
   function inPoly(poly, x, y) { let ins = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) ins = !ins; } return ins; }
 
   /* ---------- river edges ---------- */
-  /* nof 'gy,gx' = north edge of tile (gx,gy), dir 1 E / 3 W; wof = west edge, dir 0 N / 2 S. Corner (cx,cy) = the
+  /* nof 'gy,gx' = the SOUTH side of tile (gx,gy) (Civ4: the tile is north of the river), dir 1 E / 3 W, corners
+     (gx,gy+1)-(gx+1,gy+1); wof = the EAST side, dir 0 N / 2 S, corners (gx+1,gy)-(gx+1,gy+1). Corner (cx,cy) = the
      top-left corner of tile (cx,cy). An edge's downstream corner follows its dir; it continues if another edge
      meets that corner, reaches water if a tile around the corner is water, exits if the corner is off-grid. */
   function riverEdges(rivers) {
     const out = [], add = (m, kind) => { if (!m) return; const ents = typeof m.forEach === 'function' && typeof m.set === 'function' ? Array.from(m) : m; for (const [k, v] of ents) { const p = String(k).split(','); out.push({ kind, x: +p[1], y: +p[0], dir: v.dir, rid: v.rid, d: v.d }); } };
     add(rivers && rivers.nof, 'n'); add(rivers && rivers.wof, 'w'); return out;
   }
-  /* The rasterised channels step diagonally, so consecutive edges need not share a corner: an edge continues at a
-     corner when another edge has a corner within one step of it (not counting this edge's own far corner). */
+  /* Consecutive edges of a rasterised channel share a corner exactly: an edge continues at its downstream corner only
+     when another edge meets that very corner (a gap of one corner is a broken river, and is reported as one). */
   function riverAnalysis(tiles, W, H, ctx) {
     const edges = riverEdges(ctx.rivers);
-    for (const e of edges) { e.c1 = [e.x, e.y]; e.c2 = e.kind === 'n' ? [e.x + 1, e.y] : [e.x, e.y + 1]; e.down = e.kind === 'n' ? (e.dir === 1 ? e.c2 : e.c1) : (e.dir === 2 ? e.c2 : e.c1); e.up = e.down === e.c1 ? e.c2 : e.c1; }
+    for (const e of edges) { e.c1 = e.kind === 'n' ? [e.x, e.y + 1] : [e.x + 1, e.y]; e.c2 = [e.x + 1, e.y + 1]; e.down = e.kind === 'n' ? (e.dir === 1 ? e.c2 : e.c1) : (e.dir === 2 ? e.c2 : e.c1); e.up = e.down === e.c1 ? e.c2 : e.c1; }
     const byCell = new Map(); for (const e of edges) for (const c of [e.c1, e.c2]) { const k = c[0] + ',' + c[1]; (byCell.get(k) || byCell.set(k, []).get(k)).push(e); }
     const waterAt = (x, y) => x < 0 || x >= W || y < 0 || y >= H ? null : ctx.isWater(tiles[y][x]);
     let lastSea = 0;   // the water body id of the last corner found wet (ctx.waterLabel optional)
     const cornerWater = (cx, cy) => { let off = false; for (const [x, y] of [[cx - 1, cy - 1], [cx, cy - 1], [cx - 1, cy], [cx, cy]]) { const w = waterAt(x, y); if (w === null) off = true; else if (w) { lastSea = ctx.waterLabel ? ctx.waterLabel(x, y) : 0; return 'water'; } } return off ? 'edge' : null; };
-    const continues = (e, c, far) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const cx = c[0] + dx, cy = c[1] + dy; if (cx === far[0] && cy === far[1]) continue; const L = byCell.get(cx + ',' + cy); if (L && L.some(o => o !== e)) return true; } return false; };
-    const joins = (e, c) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const L = byCell.get((c[0] + dx) + ',' + (c[1] + dy)); if (L) for (const o of L) if (o.rid !== e.rid) return o.rid; } return null; };   // a tributary: the downstream corner meets another river
+    const continues = (e, c) => { const L = byCell.get(c[0] + ',' + c[1]); return !!(L && L.some(o => o !== e)); };
+    const joins = (e, c) => { const L = byCell.get(c[0] + ',' + c[1]); if (L) for (const o of L) if (o.rid !== e.rid) return o.rid; return null; };   // a tributary: its downstream corner is on another river
     const systems = new Map(); let deadEnd = [];
     for (const e of edges) {
       const w = cornerWater(e.down[0], e.down[1]), cont = continues(e, e.down, e.up), wUp = cornerWater(e.up[0], e.up[1]);
@@ -144,7 +145,7 @@
     const sys = [...systems.values()].sort((a, b) => b.edges - a.edges);
     return { edges: edges.length, systems: sys.length, reachWater: sys.filter(s => s.reaches === 'water').length, exitMap: sys.filter(s => s.reaches === 'edge').length, landlocked: sys.filter(s => !s.reaches).length, deadEndEdges: deadEnd,
       seasReached: [...new Set(sys.filter(s => s.sea).map(s => s.sea))], systemsTop: sys.slice(0, 8).map(s => ({ rid: s.rid, edges: s.edges, reaches: s.reaches || 'none', sea: s.sea || null, deadEnds: s.dead, at: s.at, via: s.via || undefined })),
-      systemsAll: sys.map(s => ({ rid: s.rid, edges: s.edges, reaches: s.reaches || 'none', deadEnds: s.dead })) };
+      systemsAll: sys.map(s => ({ rid: s.rid, edges: s.edges, reaches: s.reaches || 'none', deadEnds: s.dead, into: s.into != null ? s.into : undefined })) };
   }
 
   /* ---------- describe ---------- */

@@ -2045,8 +2045,8 @@ function composeMergeEdges(dst,ents,px,py,W,H,keep){
 function patchKeep(p,s){
   const sk=p.skip,rs=p.riverSkip;if(!sk&&!rs)return null;
   const skipped=(x,y)=>!!(sk&&x>=0&&y>=0&&x<s.W&&y<s.H&&sk.has(y*s.W+x));
-  return {n:(lx,ly)=>!(rs&&rs.has('n:'+ly+','+lx))&&!skipped(lx,ly)&&!skipped(lx,ly-1),   // north edge of (lx,ly): flanks (lx,ly-1) and (lx,ly)
-          w:(lx,ly)=>!(rs&&rs.has('w:'+ly+','+lx))&&!skipped(lx,ly)&&!skipped(lx-1,ly)};  // west edge of (lx,ly): flanks (lx-1,ly) and (lx,ly)
+  return {n:(lx,ly)=>!(rs&&rs.has('n:'+ly+','+lx))&&!skipped(lx,ly)&&!skipped(lx,ly+1),   // nof (ly,lx) is the boundary under tile (lx,ly): flanks (lx,ly) and (lx,ly+1)
+          w:(lx,ly)=>!(rs&&rs.has('w:'+ly+','+lx))&&!skipped(lx,ly)&&!skipped(lx+1,ly)};  // wof (ly,lx) is the boundary east of tile (lx,ly): flanks (lx,ly) and (lx+1,ly)
 }
 function compositeCompose(){
   const sig=composeSig();

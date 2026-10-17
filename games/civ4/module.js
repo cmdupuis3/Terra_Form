@@ -398,6 +398,7 @@
        ocean); a salt pan is flat desert with no feature, the same tile the classifier makes from a real playa. */
     paint(t, kind) {
       if (kind === 'lake') return Object.assign({ terrain: TERR.OCEAN, plot: PLOT.WATER, rgb: [18, 58, 81], z: (t && t.z) || 5, lat: (t && t.lat) || 0, kc: (t && t.kc) || 0, feature: null, fv: 0, special: null, bonus: null }, t && t._h != null ? { _h: t._h } : {});
+      if (kind === 'lowland') return t && t.plot !== PLOT.WATER ? Object.assign({}, t, { plot: PLOT.FLAT, terrain: t.terrain === TERR.SNOW ? TERR.TUNDRA : t.terrain, feature: null, fv: 0, special: null, bonus: null, _salt: undefined, _h: 0.09 }) : null;
       if (kind === 'salt_pan') return Object.assign({}, t, { terrain: TERR.DESERT, plot: PLOT.FLAT, feature: null, fv: 0, special: null, bonus: null, _salt: 1 });
       return null;
     },

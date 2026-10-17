@@ -183,6 +183,65 @@ Limits: on a frame the heights come from the 10 km working grid, so on very fine
 lake shores follow a smoothed version of the terrain rather than the 1 km one. OpenFront has no salt terrain: a
 pan is marked `_` but its magnitudes are unchanged.
 
+### The sculpt pathway: original terrain
+
+The frame and compose pathways can only show or rearrange the real Earth. `sculpt_*` builds terrain that is not
+Earth's (core/sculpt.js), then derives everything else from it:
+
+1. `sculpt_new {W, H, latitudes, degPerTile}` starts a height field (2x2 cells per tile, metres) at ocean floor.
+2. Build it with `sculpt_shape` primitives — `blob` (land masses: several of them make a continent and fill the
+   space between pieces), `ridge`, `rift` (a trough with raised shoulders; below sea level a narrow sea),
+   `plateau`, `basin`, `chain` (a hotspot track from tall young volcanoes to atolls at the old end, every island
+   generated individually), `fjords` (glacial troughs cut into a mountainous coast after the sea level is set),
+   `noise`, `smooth` — and `sculpt_stamp`, which drops a small fragment of real elevation anywhere at any size,
+   rotation and mirror, feathered in. Each real source box is stamped once (no piece of the world is pasted
+   twice); rotate and mix many small fragments for real-feeling relief in an original arrangement.
+3. `sculpt_sea {land: 0.35}` sets the sea level by target land share; later shapes keep that share.
+4. `sculpt_view` shows elevation glyphs (`~` deep, `-` shelf, `.` 0-200 m, `:` 200-600, `+` 600-1200,
+   `n` 1200-2400, `^` 2400+), land share, elevation bands and landmass sizes. Cheap: use it often.
+5. `sculpt_realize` makes the game map: land and relief from absolute heights (900 m / 2600 m plus local range
+   by default, so pieces agree), climate from a physical model (core/climate.js: temperature by latitude and
+   lapse rate, maritime warmth on windward mid-latitude coasts and cold lee coasts and interiors, seasonality
+   from continentality, patchy rainfall (no ruler-straight climate borders), moisture carried by each latitude
+   band's prevailing wind —
+   trades, westerlies, polar easterlies — and wrung out on windward slopes, leaving rain shadows; Mediterranean
+   west coasts and monsoon coasts; then the Köppen decision tree), satellite-like colour from the real mean
+   colour of each Köppen class, the game's own classifier and features, lakes in closed basins (salt-fringed
+   when arid) and rivers from rainfall-weighted flow accumulation (a river near the map border leaves straight
+   across it; `edgeOutlets:false` makes the border a wall, so the drainage that reaches it runs along it to
+   the sea — keep the default unless the map really ends there). The result replaces the compose canvas as one
+   patch, so `describe`, the lint, `add_lake`/`add_river` and `export` all apply, and the block prints the
+   climate mix by latitude band as a sanity check.
+
+`reclimate` runs the same climate model over a collage: every land tile gets the climate of where it now sits
+(the declared canvas latitudes, its height, its distance from the sea, the winds), the game reclassifies it,
+and the canvas is replaced by the result. Use it after moving or mirroring real pieces, so a piece does not keep
+the climate of its origin. `wetness` (default 1) scales rainfall: a temperate collage of sea-girt pieces is
+humid everywhere, so ~0.3 is what turns its interior and the lee of its ranges into steppe (Civ4 plains).
+
+`fill_gaps {width, rect}` closes the sea between pieces (morphological closing) into lowland that borrows its
+nearest land's ground; only sea-connected water fills (lakes stay), and a river mouth it would bury keeps an
+estuary channel to the open sea. After a collage: `fill_gaps`, `reclimate`, `trim_rivers` (drops seam-cut
+remnants and one- or two-edge stubs), then `extend_river` with no arguments (carries every dead end on to water,
+or into a river that flows on to the sea).
+
+### Joining pieces: interest maps, fuse, unique pastes
+
+Every snapshot has an **interest** score per land tile (0-9): high on peaks and ridge edges, rivers (by
+discharge), real coastline (more at capes and bay heads), climate boundaries, oases, flood plains, salt, lake
+shores; low in uniform interior; 0 for sea and lasso fill. `overlay:'interest'` prints it on any grid, and
+`snapshot_info` reports each edge's mean interest and its quietest five-tile stretch (`quiet@position`), the
+best place for a seam.
+
+The min-cut seam that `attach {ragged}` cuts through an overlap now weighs interest: cutting through a peak, a
+river or a coast costs what it would destroy. `attach {overlap:'auto'}` (fuse) searches overlap depth (up to
+`maxOverlap`) and slide together for the cheapest interest-weighted seam, so two pieces merge over land where
+neither has anything worth keeping instead of being parked coast to coast.
+
+A snapshot goes on the canvas **once**: `place` refuses a snapshot that is already placed and `scatter` refuses a
+list with repeats or a path with more stamps than distinct snapshots (`allowRepeat:true` overrides both). Repeated
+islands read as copy-paste.
+
 ## Worked example
 
 Frame Oman, capture it with a lasso, frame Morocco, capture, compose both, view, export. This is
