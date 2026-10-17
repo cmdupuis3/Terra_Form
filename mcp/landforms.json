@@ -49,17 +49,24 @@
    "climate": "arid",
    "notes": "Hajar mountain arc along the north-east coast, Rub al Khali sand sea inland, Musandam cape at the strait.",
    "connectors": {
-    "N": "open sea",
-    "E": "open sea",
+    "N": "cut edge",
+    "E": "cut edge",
     "S": "open sea",
-    "W": "coast",
+    "W": "cut edge",
     "corners": {
-     "NW": "open sea",
-     "NE": "open sea",
-     "SE": "open sea",
-     "SW": "open sea"
+     "NW": "cut edge",
+     "NE": "cut edge",
+     "SE": "cut edge",
+     "SW": "cut edge"
     }
-   }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 118
   },
   {
    "name": "Ferghana valley",
@@ -81,7 +88,34 @@
     "oasis"
    ],
    "climate": "continental-arid",
-   "notes": "Enclosed intermontane basin ringed by the Tian Shan and Alay ranges; landlocked, river-fed."
+   "notes": "Enclosed intermontane basin ringed by the Tian Shan and Alay ranges; landlocked, river-fed.",
+   "connectors": {
+    "N": "continental land + river exit",
+    "E": "mountain wall + river exit",
+    "S": "mountain wall + river exit",
+    "W": "desert + river exit",
+    "corners": {
+     "NW": "desert",
+     "NE": "mountain wall",
+     "SE": "mountain wall",
+     "SW": "mountain wall"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 44
+    },
+    {
+     "group": "arid",
+     "pct": 32
+    },
+    {
+     "group": "tundra",
+     "pct": 23
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Morocco and the Atlas",
@@ -121,7 +155,18 @@
      "SE": "desert",
      "SW": "coast"
     }
-   }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 82
+    },
+    {
+     "group": "temperate",
+     "pct": 18
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Italy",
@@ -224,7 +269,34 @@
     "boot"
    ],
    "climate": "temperate",
-   "notes": "Long peninsula with the Apennine spine, Alps across the neck, Sicily at the toe. Recognisable; flip it for an alien world."
+   "notes": "Long peninsula with the Apennine spine, Alps across the neck, Sicily at the toe. Recognisable; flip it for an alien world.",
+   "connectors": {
+    "N": "cut edge + river exit",
+    "E": "cut edge",
+    "S": "cut edge",
+    "W": "cut edge",
+    "corners": {
+     "NW": "cut edge",
+     "NE": "cut edge",
+     "SE": "cut edge",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 84
+    },
+    {
+     "group": "continental",
+     "pct": 13
+    },
+    {
+     "group": "tundra",
+     "pct": 3
+    }
+   ],
+   "cutTiles": 616
   },
   {
    "name": "Iberia",
@@ -291,7 +363,34 @@
     "rain-shadow"
    ],
    "climate": "temperate-arid",
-   "notes": "Square peninsula: Meseta plateau, Pyrenees across the neck, Mediterranean east, Atlantic west."
+   "notes": "Square peninsula: Meseta plateau, Pyrenees across the neck, Mediterranean east, Atlantic west.",
+   "connectors": {
+    "N": "open sea",
+    "E": "cut edge",
+    "S": "cut edge",
+    "W": "cut edge",
+    "corners": {
+     "NW": "cut edge",
+     "NE": "cut edge",
+     "SE": "cut edge",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 85
+    },
+    {
+     "group": "arid",
+     "pct": 14
+    },
+    {
+     "group": "continental",
+     "pct": 1
+    }
+   ],
+   "cutTiles": 255
   },
   {
    "name": "Anatolia",
@@ -358,7 +457,34 @@
     "isthmus"
    ],
    "climate": "temperate-continental",
-   "notes": "Peninsula-plateau between two seas, Pontic and Taurus rims, dry interior."
+   "notes": "Peninsula-plateau between two seas, Pontic and Taurus rims, dry interior.",
+   "connectors": {
+    "N": "cut edge",
+    "E": "cut edge",
+    "S": "coast + river exit",
+    "W": "cut edge + river exit",
+    "corners": {
+     "NW": "cut edge",
+     "NE": "cut edge",
+     "SE": "cut edge",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 46
+    },
+    {
+     "group": "temperate",
+     "pct": 44
+    },
+    {
+     "group": "arid",
+     "pct": 9
+    }
+   ],
+   "cutTiles": 98
   },
   {
    "name": "Korea",
@@ -432,7 +558,34 @@
     "archipelago-fringe"
    ],
    "climate": "continental-temperate",
-   "notes": "N-S peninsula with its spine on the east coast and a ragged island-fringed west coast."
+   "notes": "N-S peninsula with its spine on the east coast and a ragged island-fringed west coast.",
+   "connectors": {
+    "N": "cut edge + river exit",
+    "E": "cut edge",
+    "S": "cut edge",
+    "W": "cut edge",
+    "corners": {
+     "NW": "cut edge",
+     "NE": "continental land",
+     "SE": "cut edge",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 95
+    },
+    {
+     "group": "temperate",
+     "pct": 4
+    },
+    {
+     "group": "tropical",
+     "pct": 1
+    }
+   ],
+   "cutTiles": 289
   },
   {
    "name": "Kamchatka",
@@ -491,7 +644,30 @@
     "boreal"
    ],
    "climate": "tundra-continental",
-   "notes": "Cold volcanic peninsula, two parallel ranges, fjord-less but deeply bayed east coast."
+   "notes": "Cold volcanic peninsula, two parallel ranges, fjord-less but deeply bayed east coast.",
+   "connectors": {
+    "N": "open sea",
+    "E": "cut edge",
+    "S": "cut edge",
+    "W": "cut edge",
+    "corners": {
+     "NW": "cut edge",
+     "NE": "cut edge",
+     "SE": "cut edge",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 89
+    },
+    {
+     "group": "tundra",
+     "pct": 11
+    }
+   ],
+   "cutTiles": 194
   },
   {
    "name": "Baja California",
@@ -554,7 +730,30 @@
     "mountain-spine"
    ],
    "climate": "arid",
-   "notes": "Long thin desert peninsula with a central ridge; the gulf side is a rift."
+   "notes": "Long thin desert peninsula with a central ridge; the gulf side is a rift.",
+   "connectors": {
+    "N": "cut edge + river exit",
+    "E": "cut edge",
+    "S": "cut edge",
+    "W": "cut edge",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "cut edge",
+     "SE": "mountain wall",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 94
+    },
+    {
+     "group": "temperate",
+     "pct": 6
+    }
+   ],
+   "cutTiles": 499
   },
   {
    "name": "Florida",
@@ -613,7 +812,30 @@
     "keys"
    ],
    "climate": "temperate-tropical",
-   "notes": "Flat limestone peninsula, swamp at the tip, island keys trailing south-west. Recognisable; flip it."
+   "notes": "Flat limestone peninsula, swamp at the tip, island keys trailing south-west. Recognisable; flip it.",
+   "connectors": {
+    "N": "mountain wall + river exit",
+    "E": "coast",
+    "S": "cut edge",
+    "W": "cut edge + river exit",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "cut edge",
+     "SE": "cut edge",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 85
+    },
+    {
+     "group": "tropical",
+     "pct": 15
+    }
+   ],
+   "cutTiles": 351
   },
   {
    "name": "Yucatan",
@@ -664,7 +886,30 @@
     "jungle"
    ],
    "climate": "tropical",
-   "notes": "Blunt flat limestone peninsula, no rivers, jungle."
+   "notes": "Blunt flat limestone peninsula, no rivers, jungle.",
+   "connectors": {
+    "N": "coast",
+    "E": "cut edge",
+    "S": "cut edge + river exit",
+    "W": "cut edge + river exit",
+    "corners": {
+     "NW": "cut edge",
+     "NE": "cut edge",
+     "SE": "cut edge",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 99
+    },
+    {
+     "group": "temperate",
+     "pct": 1
+    }
+   ],
+   "cutTiles": 201
   },
   {
    "name": "Chesapeake Bay",
@@ -685,7 +930,30 @@
     "coast"
    ],
    "climate": "temperate",
-   "notes": "Drowned river valley: a long branching bay with many rivers reaching it."
+   "notes": "Drowned river valley: a long branching bay with many rivers reaching it.",
+   "connectors": {
+    "N": "mountain wall + river exit",
+    "E": "coast",
+    "S": "temperate land + river exit",
+    "W": "mountain wall + river exit",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "temperate land",
+     "SE": "open sea",
+     "SW": "temperate land"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 81
+    },
+    {
+     "group": "continental",
+     "pct": 19
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Scandinavia",
@@ -707,7 +975,34 @@
     "polar"
    ],
    "climate": "continental-tundra",
-   "notes": "Fjord coast on the west, long mountain spine, boreal forest east, tundra north. Good polar-cap material."
+   "notes": "Fjord coast on the west, long mountain spine, boreal forest east, tundra north. Good polar-cap material.",
+   "connectors": {
+    "N": "open sea",
+    "E": "continental land + river exit",
+    "S": "continental land + river exit",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "continental land",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 95
+    },
+    {
+     "group": "tundra",
+     "pct": 3
+    },
+    {
+     "group": "temperate",
+     "pct": 2
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Scotland",
@@ -770,7 +1065,26 @@
     "cool"
    ],
    "climate": "temperate",
-   "notes": "Highlands with sea lochs, Hebrides offshore."
+   "notes": "Highlands with sea lochs, Hebrides offshore.",
+   "connectors": {
+    "N": "coast",
+    "E": "cut edge",
+    "S": "cut edge",
+    "W": "cut edge",
+    "corners": {
+     "NW": "cut edge",
+     "NE": "cut edge",
+     "SE": "cut edge",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 140
   },
   {
    "name": "Honshu",
@@ -853,7 +1167,30 @@
     "island"
    ],
    "climate": "temperate",
-   "notes": "Arc island with a central spine and the Japanese Alps; Kyushu and Shikoku ride along."
+   "notes": "Arc island with a central spine and the Japanese Alps; Kyushu and Shikoku ride along.",
+   "connectors": {
+    "N": "cut edge",
+    "E": "cut edge",
+    "S": "cut edge",
+    "W": "cut edge",
+    "corners": {
+     "NW": "cut edge",
+     "NE": "cut edge",
+     "SE": "cut edge",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 60
+    },
+    {
+     "group": "continental",
+     "pct": 40
+    }
+   ],
+   "cutTiles": 805
   },
   {
    "name": "Hokkaido",
@@ -874,7 +1211,26 @@
     "boreal"
    ],
    "climate": "continental",
-   "notes": "Island with ranges meeting in a central knot; snowy."
+   "notes": "Island with ranges meeting in a central knot; snowy.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Sumatra",
@@ -954,7 +1310,30 @@
     "swamp-coast"
    ],
    "climate": "tropical",
-   "notes": "Long island with a volcanic spine on one side and swampy lowland on the other."
+   "notes": "Long island with a volcanic spine on one side and swampy lowland on the other.",
+   "connectors": {
+    "N": "cut edge",
+    "E": "cut edge",
+    "S": "cut edge",
+    "W": "cut edge",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "cut edge",
+     "SE": "cut edge",
+     "SW": "cut edge"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 98
+    },
+    {
+     "group": "temperate",
+     "pct": 2
+    }
+   ],
+   "cutTiles": 877
   },
   {
    "name": "New Guinea",
@@ -975,7 +1354,30 @@
     "large-island"
    ],
    "climate": "tropical",
-   "notes": "Huge bird-shaped island with a very high central cordillera."
+   "notes": "Huge bird-shaped island with a very high central cordillera.",
+   "connectors": {
+    "N": "open sea",
+    "E": "coast",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 88
+    },
+    {
+     "group": "temperate",
+     "pct": 12
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Madagascar",
@@ -996,7 +1398,34 @@
     "large-island"
    ],
    "climate": "tropical-arid",
-   "notes": "Elongated island, plateau spine, wet east and dry south-west."
+   "notes": "Elongated island, plateau spine, wet east and dry south-west.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 56
+    },
+    {
+     "group": "temperate",
+     "pct": 32
+    },
+    {
+     "group": "arid",
+     "pct": 12
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Tasmania",
@@ -1016,7 +1445,30 @@
     "cool"
    ],
    "climate": "temperate",
-   "notes": "Heart-shaped cool island with a highland core."
+   "notes": "Heart-shaped cool island with a highland core.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 99
+    },
+    {
+     "group": "tundra",
+     "pct": 1
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Tuvalu and the Gilberts",
@@ -1041,7 +1493,26 @@
     "islandExpand": 0.6,
     "islandBias": 0.4
    },
-   "notes": "Atoll country (data/island_regions.json); capture with the island expander or nothing survives sampling."
+   "notes": "Atoll country (data/island_regions.json); capture with the island expander or nothing survives sampling.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Maldives",
@@ -1066,7 +1537,26 @@
     "islandExpand": 0.6,
     "islandBias": 0.4
    },
-   "notes": "A N-S double chain of atolls."
+   "notes": "A N-S double chain of atolls.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Marshall Islands",
@@ -1090,7 +1580,21 @@
     "islandExpand": 0.6,
     "islandBias": 0.4
    },
-   "notes": "Two parallel atoll chains running NW-SE."
+   "notes": "Two parallel atoll chains running NW-SE.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": null,
+   "cutTiles": 0
   },
   {
    "name": "Hawaii",
@@ -1114,7 +1618,34 @@
    "params": {
     "islandExpand": 0.3
    },
-   "notes": "Volcanic chain with a size gradient: the big island at one end, islets at the other."
+   "notes": "Volcanic chain with a size gradient: the big island at one end, islets at the other.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 64
+    },
+    {
+     "group": "temperate",
+     "pct": 33
+    },
+    {
+     "group": "tundra",
+     "pct": 3
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Society Islands",
@@ -1139,7 +1670,26 @@
     "islandExpand": 0.5,
     "islandBias": 0.3
    },
-   "notes": "Tahiti and Moorea: high volcanic islands with barrier reefs, atolls to the west."
+   "notes": "Tahiti and Moorea: high volcanic islands with barrier reefs, atolls to the west.",
+   "connectors": {
+    "N": "open sea",
+    "E": "coast",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "coast",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Vanuatu",
@@ -1162,7 +1712,26 @@
    "params": {
     "islandExpand": 0.4
    },
-   "notes": "Y-shaped volcanic arc of mid-sized islands."
+   "notes": "Y-shaped volcanic arc of mid-sized islands.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "coast",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "tropical land"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Samoa",
@@ -1185,7 +1754,26 @@
    "params": {
     "islandExpand": 0.3
    },
-   "notes": "Two large volcanic islands and small ones in a row."
+   "notes": "Two large volcanic islands and small ones in a row.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Nile delta",
@@ -1218,7 +1806,14 @@
      "SE": "mountain wall",
      "SW": "desert"
     }
-   }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Sahara and the Nile",
@@ -1240,7 +1835,30 @@
     "sand-sea"
    ],
    "climate": "arid",
-   "notes": "The Nile as an exotic river across hyperarid desert, Red Sea hills on the east, delta at the top."
+   "notes": "The Nile as an exotic river across hyperarid desert, Red Sea hills on the east, delta at the top.",
+   "connectors": {
+    "N": "coast + river exit",
+    "E": "mountain wall + river exit",
+    "S": "mountain wall + river exit",
+    "W": "desert",
+    "corners": {
+     "NW": "desert",
+     "NE": "mountain wall",
+     "SE": "mountain wall",
+     "SW": "desert"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 99
+    },
+    {
+     "group": "tropical",
+     "pct": 1
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Ganges delta",
@@ -1261,7 +1879,30 @@
     "monsoon"
    ],
    "climate": "tropical",
-   "notes": "The largest delta: braided channels, mangrove, wet plains."
+   "notes": "The largest delta: braided channels, mangrove, wet plains.",
+   "connectors": {
+    "N": "temperate land + river exit",
+    "E": "mountain wall + river exit",
+    "S": "coast",
+    "W": "mountain wall + river exit",
+    "corners": {
+     "NW": "temperate land",
+     "NE": "mountain wall",
+     "SE": "tropical land",
+     "SW": "mountain wall"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 62
+    },
+    {
+     "group": "tropical",
+     "pct": 38
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Red Sea rift",
@@ -1283,7 +1924,34 @@
     "strait"
    ],
    "climate": "arid",
-   "notes": "A long straight rift sea with desert on both shores and a strait at the south end."
+   "notes": "A long straight rift sea with desert on both shores and a strait at the south end.",
+   "connectors": {
+    "N": "desert",
+    "E": "desert + river exit",
+    "S": "mountain wall + river exit",
+    "W": "desert + river exit",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "desert",
+     "SE": "open sea",
+     "SW": "desert"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 94
+    },
+    {
+     "group": "tropical",
+     "pct": 4
+    },
+    {
+     "group": "temperate",
+     "pct": 2
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Great Rift Valley",
@@ -1305,7 +1973,34 @@
     "savanna"
    ],
    "climate": "tropical-arid",
-   "notes": "Twin rift arms with long lakes, volcanic highlands between them."
+   "notes": "Twin rift arms with long lakes, volcanic highlands between them.",
+   "connectors": {
+    "N": "tropical land + river exit",
+    "E": "coast",
+    "S": "mountain wall + river exit",
+    "W": "tropical land + river exit",
+    "corners": {
+     "NW": "tropical land",
+     "NE": "desert",
+     "SE": "open sea",
+     "SW": "mountain wall"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 61
+    },
+    {
+     "group": "arid",
+     "pct": 27
+    },
+    {
+     "group": "temperate",
+     "pct": 12
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Caspian and Aral basin",
@@ -1327,7 +2022,34 @@
     "endorheic"
    ],
    "climate": "arid-continental",
-   "notes": "Landlocked seas in a desert-steppe basin; the Caspian is the largest inland sea."
+   "notes": "Landlocked seas in a desert-steppe basin; the Caspian is the largest inland sea.",
+   "connectors": {
+    "N": "desert + river exit",
+    "E": "desert + river exit",
+    "S": "mountain wall + river exit",
+    "W": "mountain wall + river exit",
+    "corners": {
+     "NW": "desert",
+     "NE": "desert",
+     "SE": "mountain wall",
+     "SW": "mountain wall"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 83
+    },
+    {
+     "group": "continental",
+     "pct": 12
+    },
+    {
+     "group": "temperate",
+     "pct": 5
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Arabia interior",
@@ -1348,7 +2070,30 @@
     "salt-pan"
    ],
    "climate": "arid",
-   "notes": "Nejd plateau and the Rub al Khali sand sea; sabkha salt flats on the Gulf coast."
+   "notes": "Nejd plateau and the Rub al Khali sand sea; sabkha salt flats on the Gulf coast.",
+   "connectors": {
+    "N": "desert + river exit",
+    "E": "desert",
+    "S": "mountain wall",
+    "W": "mountain wall",
+    "corners": {
+     "NW": "desert",
+     "NE": "mountain wall",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 99
+    },
+    {
+     "group": "temperate",
+     "pct": 1
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Gobi",
@@ -1370,7 +2115,34 @@
     "inland"
    ],
    "climate": "arid-continental",
-   "notes": "Cold desert basins with a steppe fringe to the north and mountains to the south."
+   "notes": "Cold desert basins with a steppe fringe to the north and mountains to the south.",
+   "connectors": {
+    "N": "mountain wall + river exit",
+    "E": "desert + river exit",
+    "S": "mountain wall + river exit",
+    "W": "mountain wall + river exit",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "desert",
+     "SE": "desert",
+     "SW": "mountain wall"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 84
+    },
+    {
+     "group": "continental",
+     "pct": 12
+    },
+    {
+     "group": "tundra",
+     "pct": 4
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Atacama and Altiplano",
@@ -1392,7 +2164,34 @@
     "coast"
    ],
    "climate": "arid",
-   "notes": "Hyperarid coastal desert, Andean wall, high salt-pan plateau behind it."
+   "notes": "Hyperarid coastal desert, Andean wall, high salt-pan plateau behind it.",
+   "connectors": {
+    "N": "tropical land + river exit",
+    "E": "temperate land + river exit",
+    "S": "desert",
+    "W": "coast + river exit",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "tropical land",
+     "SE": "desert",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 63
+    },
+    {
+     "group": "temperate",
+     "pct": 21
+    },
+    {
+     "group": "tundra",
+     "pct": 16
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Namib and Kalahari",
@@ -1414,7 +2213,30 @@
     "steppe"
    ],
    "climate": "arid",
-   "notes": "Coastal dune desert, escarpment, Kalahari thornveld and the Etosha pan."
+   "notes": "Coastal dune desert, escarpment, Kalahari thornveld and the Etosha pan.",
+   "connectors": {
+    "N": "desert + river exit",
+    "E": "mountain wall + river exit",
+    "S": "mountain wall + river exit",
+    "W": "coast + river exit",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "mountain wall",
+     "SE": "mountain wall",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "arid",
+     "pct": 99
+    },
+    {
+     "group": "temperate",
+     "pct": 1
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Alps",
@@ -1445,10 +2267,25 @@
     "corners": {
      "NW": "temperate land",
      "NE": "continental land",
-     "SE": "continental land",
+     "SE": "mountain wall",
      "SW": "temperate land"
     }
-   }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 55
+    },
+    {
+     "group": "temperate",
+     "pct": 38
+    },
+    {
+     "group": "tundra",
+     "pct": 7
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Carpathians",
@@ -1469,7 +2306,30 @@
     "forest"
    ],
    "climate": "continental",
-   "notes": "Forested arc enclosing the Transylvanian basin."
+   "notes": "Forested arc enclosing the Transylvanian basin.",
+   "connectors": {
+    "N": "mountain wall + river exit",
+    "E": "continental land + river exit",
+    "S": "continental land + river exit",
+    "W": "continental land + river exit",
+    "corners": {
+     "NW": "continental land",
+     "NE": "continental land",
+     "SE": "continental land",
+     "SW": "mountain wall"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 98
+    },
+    {
+     "group": "temperate",
+     "pct": 2
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Pyrenees",
@@ -1490,7 +2350,34 @@
     "straight"
    ],
    "climate": "temperate",
-   "notes": "Short straight E-W wall from sea to sea."
+   "notes": "Short straight E-W wall from sea to sea.",
+   "connectors": {
+    "N": "temperate land + river exit",
+    "E": "coast + river exit",
+    "S": "desert + river exit",
+    "W": "mountain wall + river exit",
+    "corners": {
+     "NW": "open sea",
+     "NE": "mountain wall",
+     "SE": "open sea",
+     "SW": "temperate land"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 84
+    },
+    {
+     "group": "arid",
+     "pct": 9
+    },
+    {
+     "group": "continental",
+     "pct": 7
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Caucasus",
@@ -1511,7 +2398,34 @@
     "straight"
    ],
    "climate": "continental-temperate",
-   "notes": "Straight high wall across an isthmus between two seas."
+   "notes": "Straight high wall across an isthmus between two seas.",
+   "connectors": {
+    "N": "continental land + river exit",
+    "E": "open sea",
+    "S": "mountain wall + river exit",
+    "W": "coast",
+    "corners": {
+     "NW": "temperate land",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "mountain wall"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 72
+    },
+    {
+     "group": "arid",
+     "pct": 15
+    },
+    {
+     "group": "temperate",
+     "pct": 13
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Appalachians",
@@ -1532,7 +2446,34 @@
     "old-mountains"
    ],
    "climate": "temperate",
-   "notes": "Long low forested ridges NE-SW, rivers to two coasts."
+   "notes": "Long low forested ridges NE-SW, rivers to two coasts.",
+   "connectors": {
+    "N": "continental land + river exit",
+    "E": "coast + river exit",
+    "S": "temperate land + river exit",
+    "W": "temperate land + river exit",
+    "corners": {
+     "NW": "continental land",
+     "NE": "mountain wall",
+     "SE": "open sea",
+     "SW": "temperate land"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 54
+    },
+    {
+     "group": "temperate",
+     "pct": 44
+    },
+    {
+     "group": "tropical",
+     "pct": 2
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Cascades and Sierra",
@@ -1554,7 +2495,34 @@
     "forest"
    ],
    "climate": "temperate",
-   "notes": "N-S ranges with a wet forested windward side and desert basins in the lee."
+   "notes": "N-S ranges with a wet forested windward side and desert basins in the lee.",
+   "connectors": {
+    "N": "mountain wall + river exit",
+    "E": "mountain wall + river exit",
+    "S": "desert",
+    "W": "temperate land + river exit",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "mountain wall",
+     "SE": "mountain wall",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 38
+    },
+    {
+     "group": "continental",
+     "pct": 33
+    },
+    {
+     "group": "arid",
+     "pct": 28
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Southern Alps NZ",
@@ -1575,7 +2543,34 @@
     "island"
    ],
    "climate": "temperate",
-   "notes": "South Island: spine along the west coast, fiords in the south-west, dry plains east."
+   "notes": "South Island: spine along the west coast, fiords in the south-west, dry plains east.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 82
+    },
+    {
+     "group": "tundra",
+     "pct": 17
+    },
+    {
+     "group": "continental",
+     "pct": 1
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Antarctic coast",
@@ -1596,7 +2591,26 @@
     "coast"
    ],
    "climate": "ice",
-   "notes": "A long strip of the Antarctic coast: ice cap with a ragged shore on its north side. Flip it N-S for a north polar cap."
+   "notes": "A long strip of the Antarctic coast: ice cap with a ragged shore on its north side. Flip it N-S for a north polar cap.",
+   "connectors": {
+    "N": "open sea",
+    "E": "ice",
+    "S": "ice",
+    "W": "mountain wall",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "open sea",
+     "SE": "ice",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "ice cap",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Siberian Arctic coast",
@@ -1618,7 +2632,30 @@
     "delta"
    ],
    "climate": "tundra",
-   "notes": "Tundra coast with the Lena, Yenisei and Ob mouths; Taymyr peninsula in the middle."
+   "notes": "Tundra coast with the Lena, Yenisei and Ob mouths; Taymyr peninsula in the middle.",
+   "connectors": {
+    "N": "open sea",
+    "E": "mountain wall",
+    "S": "mountain wall + river exit",
+    "W": "coast",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "mountain wall",
+     "SW": "ice"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 56
+    },
+    {
+     "group": "tundra",
+     "pct": 44
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Svalbard",
@@ -1639,7 +2676,34 @@
     "fjords"
    ],
    "climate": "ice",
-   "notes": "Glaciated archipelago; ice and tundra only."
+   "notes": "Glaciated archipelago; ice and tundra only.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "coast",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tundra",
+     "pct": 60
+    },
+    {
+     "group": "continental",
+     "pct": 23
+    },
+    {
+     "group": "arid",
+     "pct": 14
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Baffin Island",
@@ -1661,7 +2725,34 @@
     "large-island"
    ],
    "climate": "tundra",
-   "notes": "Huge tundra island with fjords on its east coast."
+   "notes": "Huge tundra island with fjords on its east coast.",
+   "connectors": {
+    "N": "mountain wall",
+    "E": "coast",
+    "S": "ice + river exit",
+    "W": "ice",
+    "corners": {
+     "NW": "mountain wall",
+     "NE": "mountain wall",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tundra",
+     "pct": 84
+    },
+    {
+     "group": "arid",
+     "pct": 11
+    },
+    {
+     "group": "temperate",
+     "pct": 5
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Hawaii Big Island",
@@ -1685,7 +2776,34 @@
    "params": {
     "islandExpand": 0.3
    },
-   "notes": "One large shield-volcano island; the summits read as snow/tundra from satellite white."
+   "notes": "One large shield-volcano island; the summits read as snow/tundra from satellite white.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "temperate",
+     "pct": 65
+    },
+    {
+     "group": "tropical",
+     "pct": 28
+    },
+    {
+     "group": "tundra",
+     "pct": 7
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Tahiti",
@@ -1710,7 +2828,26 @@
     "islandExpand": 0.6,
     "islandBias": 0.3
    },
-   "notes": "A figure-of-eight volcanic island (Moorea excluded)."
+   "notes": "A figure-of-eight volcanic island (Moorea excluded).",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "coast",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Upolu",
@@ -1735,7 +2872,26 @@
     "islandExpand": 0.6,
     "islandBias": 0.3
    },
-   "notes": "Samoa's second island, a long volcanic ridge."
+   "notes": "Samoa's second island, a long volcanic ridge.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Efate",
@@ -1759,7 +2915,26 @@
     "islandExpand": 0.7,
     "islandBias": 0.4
    },
-   "notes": "A mid-sized volcanic island of Vanuatu."
+   "notes": "A mid-sized volcanic island of Vanuatu.",
+   "connectors": {
+    "N": "coast",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Funafuti",
@@ -1783,7 +2958,26 @@
     "islandExpand": 0.9,
     "islandBias": 0.6
    },
-   "notes": "Tuvalu's main atoll; a ring of islets around a lagoon."
+   "notes": "Tuvalu's main atoll; a ring of islets around a lagoon.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Tarawa",
@@ -1807,7 +3001,26 @@
     "islandExpand": 0.9,
     "islandBias": 0.6
    },
-   "notes": "A triangular atoll; the coast-quality benchmark piece."
+   "notes": "A triangular atoll; the coast-quality benchmark piece.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Majuro",
@@ -1831,7 +3044,26 @@
     "islandExpand": 0.9,
     "islandBias": 0.6
    },
-   "notes": "A long thin atoll of the Marshalls."
+   "notes": "A long thin atoll of the Marshalls.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Addu Atoll",
@@ -1855,7 +3087,26 @@
     "islandExpand": 0.9,
     "islandBias": 0.6
    },
-   "notes": "The southernmost Maldive atoll, a heart-shaped ring."
+   "notes": "The southernmost Maldive atoll, a heart-shaped ring.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 100
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Caucasus isthmus",
@@ -1881,15 +3132,30 @@
    "connectors": {
     "N": "continental land + river exit",
     "E": "open sea",
-    "S": "continental land + river exit",
-    "W": "continental land",
+    "S": "mountain wall + river exit",
+    "W": "mountain wall",
     "corners": {
      "NW": "continental land",
      "NE": "open sea",
      "SE": "desert",
-     "SW": "continental land"
+     "SW": "mountain wall"
     }
-   }
+   },
+   "climateMeasured": [
+    {
+     "group": "continental",
+     "pct": 73
+    },
+    {
+     "group": "arid",
+     "pct": 15
+    },
+    {
+     "group": "temperate",
+     "pct": 11
+    }
+   ],
+   "cutTiles": 0
   },
   {
    "name": "Savaii",
@@ -1914,7 +3180,30 @@
     "islandExpand": 0.5,
     "islandBias": 0.3
    },
-   "notes": "Samoa's largest island, a broad shield volcano."
+   "notes": "Samoa's largest island, a broad shield volcano.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   },
+   "climateMeasured": [
+    {
+     "group": "tropical",
+     "pct": 92
+    },
+    {
+     "group": "temperate",
+     "pct": 8
+    }
+   ],
+   "cutTiles": 0
   }
  ]
 }
