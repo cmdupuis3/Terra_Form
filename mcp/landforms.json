@@ -1,0 +1,1920 @@
+{
+ "note": "Catalog of real pieces for snapshot_from_catalog. bounds [W,S,E,N] degrees; size [W,H] tiles (the default output grid; the frame keeps that aspect and covers the box); lasso [[lon,lat],...] or rect [W,S,E,N] crops the capture; tags are landform nouns for catalog_search; climate is the dominant band; params are tune settings worth applying at capture (e.g. the island expander for atolls).",
+ "entries": [
+  {
+   "name": "Oman",
+   "bounds": [
+    51.5,
+    16.5,
+    60.5,
+    26.5
+   ],
+   "size": [
+    40,
+    28
+   ],
+   "lasso": [
+    [
+     51.8,
+     24.4
+    ],
+    [
+     56.4,
+     26.6
+    ],
+    [
+     59.9,
+     22.8
+    ],
+    [
+     59.5,
+     16.6
+    ],
+    [
+     52.6,
+     16.6
+    ],
+    [
+     52,
+     19.5
+    ]
+   ],
+   "tags": [
+    "peninsula",
+    "desert",
+    "mountain-coast",
+    "gulf",
+    "cape"
+   ],
+   "climate": "arid",
+   "notes": "Hajar mountain arc along the north-east coast, Rub al Khali sand sea inland, Musandam cape at the strait.",
+   "connectors": {
+    "N": "open sea",
+    "E": "open sea",
+    "S": "open sea",
+    "W": "coast",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "open sea",
+     "SW": "open sea"
+    }
+   }
+  },
+  {
+   "name": "Ferghana valley",
+   "bounds": [
+    68,
+    39,
+    74,
+    42.5
+   ],
+   "size": [
+    40,
+    24
+   ],
+   "tags": [
+    "basin",
+    "valley",
+    "mountain-rim",
+    "inland",
+    "oasis"
+   ],
+   "climate": "continental-arid",
+   "notes": "Enclosed intermontane basin ringed by the Tian Shan and Alay ranges; landlocked, river-fed."
+  },
+  {
+   "name": "Morocco and the Atlas",
+   "bounds": [
+    -13.5,
+    27.5,
+    -0.5,
+    36
+   ],
+   "size": [
+    40,
+    28
+   ],
+   "rect": [
+    -13.5,
+    27.6,
+    -1,
+    35.9
+   ],
+   "tags": [
+    "mountain-spine",
+    "coast",
+    "desert-edge",
+    "rain-shadow",
+    "plateau"
+   ],
+   "climate": "temperate-arid",
+   "notes": "Atlas chain NE-SW with Atlantic plains windward and Sahara in the lee.",
+   "connectors": {
+    "N": "open sea",
+    "E": "desert + river exit",
+    "S": "desert",
+    "W": "open sea",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "desert",
+     "SW": "coast"
+    }
+   }
+  },
+  {
+   "name": "Italy",
+   "bounds": [
+    6,
+    36.5,
+    19,
+    47.5
+   ],
+   "size": [
+    36,
+    34
+   ],
+   "lasso": [
+    [
+     6.5,
+     44.2
+    ],
+    [
+     7,
+     45.8
+    ],
+    [
+     9,
+     46.5
+    ],
+    [
+     13.8,
+     46.6
+    ],
+    [
+     13.8,
+     45.5
+    ],
+    [
+     12.5,
+     44.8
+    ],
+    [
+     14,
+     42.2
+    ],
+    [
+     16.5,
+     41.2
+    ],
+    [
+     18.6,
+     40.2
+    ],
+    [
+     18.5,
+     39.6
+    ],
+    [
+     16.6,
+     38.4
+    ],
+    [
+     16,
+     37.6
+    ],
+    [
+     15.3,
+     36.6
+    ],
+    [
+     12.3,
+     37.4
+    ],
+    [
+     12.2,
+     38.3
+    ],
+    [
+     15.5,
+     38.3
+    ],
+    [
+     15.3,
+     40
+    ],
+    [
+     12.3,
+     41.4
+    ],
+    [
+     9.9,
+     43.6
+    ],
+    [
+     7.4,
+     43.6
+    ]
+   ],
+   "tags": [
+    "peninsula",
+    "mountain-spine",
+    "volcanic",
+    "boot"
+   ],
+   "climate": "temperate",
+   "notes": "Long peninsula with the Apennine spine, Alps across the neck, Sicily at the toe. Recognisable; flip it for an alien world."
+  },
+  {
+   "name": "Iberia",
+   "bounds": [
+    -10,
+    35.5,
+    3.5,
+    44
+   ],
+   "size": [
+    44,
+    28
+   ],
+   "lasso": [
+    [
+     -9.5,
+     43.9
+    ],
+    [
+     -1.5,
+     43.6
+    ],
+    [
+     3.4,
+     42.4
+    ],
+    [
+     3.3,
+     41
+    ],
+    [
+     0,
+     38.5
+    ],
+    [
+     -0.5,
+     36.7
+    ],
+    [
+     -5.5,
+     35.9
+    ],
+    [
+     -6.3,
+     36.7
+    ],
+    [
+     -9,
+     36.9
+    ],
+    [
+     -9.6,
+     38.9
+    ],
+    [
+     -9.3,
+     43
+    ]
+   ],
+   "tags": [
+    "peninsula",
+    "plateau",
+    "mountain-spine",
+    "rain-shadow"
+   ],
+   "climate": "temperate-arid",
+   "notes": "Square peninsula: Meseta plateau, Pyrenees across the neck, Mediterranean east, Atlantic west."
+  },
+  {
+   "name": "Anatolia",
+   "bounds": [
+    25.5,
+    35.5,
+    45,
+    42.5
+   ],
+   "size": [
+    48,
+    20
+   ],
+   "lasso": [
+    [
+     26,
+     42
+    ],
+    [
+     29.5,
+     41.5
+    ],
+    [
+     36,
+     42.2
+    ],
+    [
+     41.5,
+     41.6
+    ],
+    [
+     45,
+     41.3
+    ],
+    [
+     44.5,
+     37
+    ],
+    [
+     36,
+     36
+    ],
+    [
+     32,
+     36
+    ],
+    [
+     28,
+     36.3
+    ],
+    [
+     26,
+     37.5
+    ],
+    [
+     26.2,
+     40.2
+    ]
+   ],
+   "tags": [
+    "peninsula",
+    "plateau",
+    "mountain-rim",
+    "isthmus"
+   ],
+   "climate": "temperate-continental",
+   "notes": "Peninsula-plateau between two seas, Pontic and Taurus rims, dry interior."
+  },
+  {
+   "name": "Korea",
+   "bounds": [
+    124,
+    33.5,
+    131,
+    43
+   ],
+   "size": [
+    28,
+    36
+   ],
+   "lasso": [
+    [
+     124.5,
+     40
+    ],
+    [
+     126.5,
+     41.8
+    ],
+    [
+     128.3,
+     42.3
+    ],
+    [
+     130.9,
+     42.8
+    ],
+    [
+     131,
+     41.5
+    ],
+    [
+     129.5,
+     40.5
+    ],
+    [
+     129,
+     36.5
+    ],
+    [
+     129.6,
+     35
+    ],
+    [
+     127.5,
+     34.2
+    ],
+    [
+     126,
+     34.2
+    ],
+    [
+     126,
+     35.5
+    ],
+    [
+     125,
+     37.5
+    ],
+    [
+     124.5,
+     38.5
+    ]
+   ],
+   "tags": [
+    "peninsula",
+    "mountain-spine",
+    "archipelago-fringe"
+   ],
+   "climate": "continental-temperate",
+   "notes": "N-S peninsula with its spine on the east coast and a ragged island-fringed west coast."
+  },
+  {
+   "name": "Kamchatka",
+   "bounds": [
+    155,
+    50.5,
+    164.5,
+    61
+   ],
+   "size": [
+    28,
+    36
+   ],
+   "lasso": [
+    [
+     155.5,
+     59.5
+    ],
+    [
+     156.5,
+     61
+    ],
+    [
+     163,
+     61
+    ],
+    [
+     164.5,
+     58.5
+    ],
+    [
+     163,
+     55.5
+    ],
+    [
+     160,
+     51.5
+    ],
+    [
+     157,
+     50.8
+    ],
+    [
+     156,
+     52.5
+    ],
+    [
+     155.5,
+     56
+    ]
+   ],
+   "tags": [
+    "peninsula",
+    "volcanic",
+    "mountain-spine",
+    "boreal"
+   ],
+   "climate": "tundra-continental",
+   "notes": "Cold volcanic peninsula, two parallel ranges, fjord-less but deeply bayed east coast."
+  },
+  {
+   "name": "Baja California",
+   "bounds": [
+    -118,
+    22.5,
+    -108.5,
+    32.8
+   ],
+   "size": [
+    28,
+    36
+   ],
+   "lasso": [
+    [
+     -117.3,
+     32.6
+    ],
+    [
+     -114.5,
+     32.6
+    ],
+    [
+     -114.2,
+     30.5
+    ],
+    [
+     -112,
+     28.5
+    ],
+    [
+     -110.5,
+     25
+    ],
+    [
+     -109.4,
+     22.8
+    ],
+    [
+     -110.5,
+     22.9
+    ],
+    [
+     -112.5,
+     26
+    ],
+    [
+     -115,
+     29
+    ],
+    [
+     -117,
+     31.5
+    ]
+   ],
+   "tags": [
+    "peninsula",
+    "desert",
+    "gulf",
+    "mountain-spine"
+   ],
+   "climate": "arid",
+   "notes": "Long thin desert peninsula with a central ridge; the gulf side is a rift."
+  },
+  {
+   "name": "Florida",
+   "bounds": [
+    -88,
+    24.5,
+    -79.5,
+    31.5
+   ],
+   "size": [
+    32,
+    28
+   ],
+   "lasso": [
+    [
+     -87.5,
+     31
+    ],
+    [
+     -81.5,
+     31
+    ],
+    [
+     -80,
+     30
+    ],
+    [
+     -80,
+     25
+    ],
+    [
+     -81.5,
+     24.5
+    ],
+    [
+     -83,
+     25.5
+    ],
+    [
+     -83,
+     28.5
+    ],
+    [
+     -85,
+     30
+    ],
+    [
+     -87.5,
+     30.3
+    ]
+   ],
+   "tags": [
+    "peninsula",
+    "lowland",
+    "wetland",
+    "keys"
+   ],
+   "climate": "temperate-tropical",
+   "notes": "Flat limestone peninsula, swamp at the tip, island keys trailing south-west. Recognisable; flip it."
+  },
+  {
+   "name": "Yucatan",
+   "bounds": [
+    -92.5,
+    16,
+    -86,
+    22
+   ],
+   "size": [
+    32,
+    28
+   ],
+   "lasso": [
+    [
+     -92.3,
+     18.3
+    ],
+    [
+     -90.5,
+     21.5
+    ],
+    [
+     -87,
+     21.6
+    ],
+    [
+     -86.5,
+     20
+    ],
+    [
+     -88,
+     17.5
+    ],
+    [
+     -89.2,
+     16
+    ],
+    [
+     -91.5,
+     16
+    ]
+   ],
+   "tags": [
+    "peninsula",
+    "lowland",
+    "karst",
+    "jungle"
+   ],
+   "climate": "tropical",
+   "notes": "Blunt flat limestone peninsula, no rivers, jungle."
+  },
+  {
+   "name": "Chesapeake Bay",
+   "bounds": [
+    -78.5,
+    36.5,
+    -74.5,
+    40
+   ],
+   "size": [
+    32,
+    28
+   ],
+   "tags": [
+    "bay",
+    "estuary",
+    "drowned-valley",
+    "coast"
+   ],
+   "climate": "temperate",
+   "notes": "Drowned river valley: a long branching bay with many rivers reaching it."
+  },
+  {
+   "name": "Scandinavia",
+   "bounds": [
+    4,
+    57,
+    32,
+    71.5
+   ],
+   "size": [
+    56,
+    32
+   ],
+   "tags": [
+    "peninsula",
+    "fjords",
+    "mountain-spine",
+    "boreal",
+    "polar"
+   ],
+   "climate": "continental-tundra",
+   "notes": "Fjord coast on the west, long mountain spine, boreal forest east, tundra north. Good polar-cap material."
+  },
+  {
+   "name": "Scotland",
+   "bounds": [
+    -8,
+    54.5,
+    -0.5,
+    59
+   ],
+   "size": [
+    32,
+    24
+   ],
+   "lasso": [
+    [
+     -7.8,
+     58.6
+    ],
+    [
+     -5,
+     58.7
+    ],
+    [
+     -3,
+     58.7
+    ],
+    [
+     -1.5,
+     57.5
+    ],
+    [
+     -2,
+     56
+    ],
+    [
+     -2.5,
+     55.2
+    ],
+    [
+     -4.5,
+     54.6
+    ],
+    [
+     -6.3,
+     55.2
+    ],
+    [
+     -6,
+     56.5
+    ],
+    [
+     -7.9,
+     57
+    ]
+   ],
+   "tags": [
+    "highlands",
+    "fjord-coast",
+    "islands",
+    "cool"
+   ],
+   "climate": "temperate",
+   "notes": "Highlands with sea lochs, Hebrides offshore."
+  },
+  {
+   "name": "Honshu",
+   "bounds": [
+    129,
+    32.5,
+    142.5,
+    42
+   ],
+   "size": [
+    48,
+    32
+   ],
+   "lasso": [
+    [
+     130,
+     33
+    ],
+    [
+     129,
+     33.8
+    ],
+    [
+     131,
+     35.5
+    ],
+    [
+     133,
+     36.5
+    ],
+    [
+     136,
+     37.8
+    ],
+    [
+     138.5,
+     38.5
+    ],
+    [
+     139.5,
+     40.5
+    ],
+    [
+     140.5,
+     42
+    ],
+    [
+     142.2,
+     41.5
+    ],
+    [
+     142.3,
+     39
+    ],
+    [
+     141,
+     35.5
+    ],
+    [
+     139.5,
+     34.5
+    ],
+    [
+     137,
+     34.2
+    ],
+    [
+     135,
+     33.2
+    ],
+    [
+     133,
+     32.8
+    ]
+   ],
+   "tags": [
+    "island-arc",
+    "mountain-spine",
+    "volcanic",
+    "island"
+   ],
+   "climate": "temperate",
+   "notes": "Arc island with a central spine and the Japanese Alps; Kyushu and Shikoku ride along."
+  },
+  {
+   "name": "Hokkaido",
+   "bounds": [
+    139.5,
+    41.3,
+    146,
+    45.7
+   ],
+   "size": [
+    36,
+    24
+   ],
+   "tags": [
+    "island",
+    "volcanic",
+    "mountain-knot",
+    "boreal"
+   ],
+   "climate": "continental",
+   "notes": "Island with ranges meeting in a central knot; snowy."
+  },
+  {
+   "name": "Sumatra",
+   "bounds": [
+    94.5,
+    -6.5,
+    107,
+    6.5
+   ],
+   "size": [
+    40,
+    44
+   ],
+   "lasso": [
+    [
+     95,
+     5.8
+    ],
+    [
+     97,
+     5.5
+    ],
+    [
+     99,
+     3
+    ],
+    [
+     101,
+     1
+    ],
+    [
+     103,
+     -0.5
+    ],
+    [
+     104.5,
+     -1.5
+    ],
+    [
+     106.3,
+     -3
+    ],
+    [
+     106,
+     -6
+    ],
+    [
+     104,
+     -6
+    ],
+    [
+     102,
+     -4.5
+    ],
+    [
+     100,
+     -2
+    ],
+    [
+     98,
+     0.5
+    ],
+    [
+     96,
+     2.5
+    ],
+    [
+     95,
+     4
+    ]
+   ],
+   "tags": [
+    "island",
+    "mountain-spine",
+    "volcanic",
+    "equatorial",
+    "swamp-coast"
+   ],
+   "climate": "tropical",
+   "notes": "Long island with a volcanic spine on one side and swampy lowland on the other."
+  },
+  {
+   "name": "New Guinea",
+   "bounds": [
+    130,
+    -11,
+    151,
+    0.5
+   ],
+   "size": [
+    56,
+    28
+   ],
+   "tags": [
+    "island",
+    "mountain-spine",
+    "tropical",
+    "large-island"
+   ],
+   "climate": "tropical",
+   "notes": "Huge bird-shaped island with a very high central cordillera."
+  },
+  {
+   "name": "Madagascar",
+   "bounds": [
+    43,
+    -26,
+    51,
+    -11.5
+   ],
+   "size": [
+    24,
+    44
+   ],
+   "tags": [
+    "island",
+    "plateau",
+    "rain-shadow",
+    "large-island"
+   ],
+   "climate": "tropical-arid",
+   "notes": "Elongated island, plateau spine, wet east and dry south-west."
+  },
+  {
+   "name": "Tasmania",
+   "bounds": [
+    144,
+    -44,
+    149,
+    -40
+   ],
+   "size": [
+    32,
+    24
+   ],
+   "tags": [
+    "island",
+    "highlands",
+    "cool"
+   ],
+   "climate": "temperate",
+   "notes": "Heart-shaped cool island with a highland core."
+  },
+  {
+   "name": "Tuvalu and the Gilberts",
+   "bounds": [
+    172,
+    -11,
+    180,
+    0
+   ],
+   "size": [
+    32,
+    44
+   ],
+   "tags": [
+    "atoll",
+    "archipelago",
+    "chain",
+    "ocean"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.6,
+    "islandBias": 0.4
+   },
+   "notes": "Atoll country (data/island_regions.json); capture with the island expander or nothing survives sampling."
+  },
+  {
+   "name": "Maldives",
+   "bounds": [
+    72,
+    -1,
+    74,
+    7.5
+   ],
+   "size": [
+    16,
+    64
+   ],
+   "tags": [
+    "atoll",
+    "chain",
+    "ocean",
+    "double-chain"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.6,
+    "islandBias": 0.4
+   },
+   "notes": "A N-S double chain of atolls."
+  },
+  {
+   "name": "Marshall Islands",
+   "bounds": [
+    160,
+    4,
+    173,
+    15
+   ],
+   "size": [
+    40,
+    32
+   ],
+   "tags": [
+    "atoll",
+    "archipelago",
+    "ocean"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.6,
+    "islandBias": 0.4
+   },
+   "notes": "Two parallel atoll chains running NW-SE."
+  },
+  {
+   "name": "Hawaii",
+   "bounds": [
+    -160.5,
+    18.5,
+    -154.5,
+    22.5
+   ],
+   "size": [
+    40,
+    28
+   ],
+   "tags": [
+    "volcanic",
+    "islands",
+    "chain",
+    "high-island"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.3
+   },
+   "notes": "Volcanic chain with a size gradient: the big island at one end, islets at the other."
+  },
+  {
+   "name": "Society Islands",
+   "bounds": [
+    -152.5,
+    -18,
+    -148,
+    -16
+   ],
+   "size": [
+    40,
+    20
+   ],
+   "tags": [
+    "volcanic",
+    "atoll",
+    "islands",
+    "high-island"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.5,
+    "islandBias": 0.3
+   },
+   "notes": "Tahiti and Moorea: high volcanic islands with barrier reefs, atolls to the west."
+  },
+  {
+   "name": "Vanuatu",
+   "bounds": [
+    166,
+    -20.5,
+    170.5,
+    -13
+   ],
+   "size": [
+    24,
+    40
+   ],
+   "tags": [
+    "island-arc",
+    "volcanic",
+    "chain"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.4
+   },
+   "notes": "Y-shaped volcanic arc of mid-sized islands."
+  },
+  {
+   "name": "Samoa",
+   "bounds": [
+    -173,
+    -14.5,
+    -168,
+    -13
+   ],
+   "size": [
+    40,
+    12
+   ],
+   "tags": [
+    "volcanic",
+    "islands",
+    "high-island"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.3
+   },
+   "notes": "Two large volcanic islands and small ones in a row."
+  },
+  {
+   "name": "Nile delta",
+   "bounds": [
+    29,
+    29.5,
+    33,
+    31.8
+   ],
+   "size": [
+    40,
+    24
+   ],
+   "tags": [
+    "delta",
+    "river-mouth",
+    "desert",
+    "oasis"
+   ],
+   "climate": "arid",
+   "notes": "Fan delta into the Mediterranean with desert either side; the river comes in from the south edge.",
+   "connectors": {
+    "N": "open sea",
+    "E": "mountain wall",
+    "S": "mountain wall + river exit",
+    "W": "desert",
+    "corners": {
+     "NW": "open sea",
+     "NE": "open sea",
+     "SE": "mountain wall",
+     "SW": "desert"
+    }
+   }
+  },
+  {
+   "name": "Sahara and the Nile",
+   "bounds": [
+    24,
+    22,
+    37,
+    32
+   ],
+   "size": [
+    40,
+    32
+   ],
+   "tags": [
+    "desert",
+    "exotic-river",
+    "oasis",
+    "river",
+    "sand-sea"
+   ],
+   "climate": "arid",
+   "notes": "The Nile as an exotic river across hyperarid desert, Red Sea hills on the east, delta at the top."
+  },
+  {
+   "name": "Ganges delta",
+   "bounds": [
+    86,
+    20.5,
+    92.5,
+    25.5
+   ],
+   "size": [
+    40,
+    32
+   ],
+   "tags": [
+    "delta",
+    "wetland",
+    "river",
+    "monsoon"
+   ],
+   "climate": "tropical",
+   "notes": "The largest delta: braided channels, mangrove, wet plains."
+  },
+  {
+   "name": "Red Sea rift",
+   "bounds": [
+    32,
+    12,
+    44,
+    30
+   ],
+   "size": [
+    32,
+    48
+   ],
+   "tags": [
+    "rift",
+    "inland-sea",
+    "long-sea",
+    "desert",
+    "strait"
+   ],
+   "climate": "arid",
+   "notes": "A long straight rift sea with desert on both shores and a strait at the south end."
+  },
+  {
+   "name": "Great Rift Valley",
+   "bounds": [
+    28,
+    -9,
+    42,
+    5
+   ],
+   "size": [
+    40,
+    40
+   ],
+   "tags": [
+    "rift",
+    "lakes",
+    "highlands",
+    "volcanic",
+    "savanna"
+   ],
+   "climate": "tropical-arid",
+   "notes": "Twin rift arms with long lakes, volcanic highlands between them."
+  },
+  {
+   "name": "Caspian and Aral basin",
+   "bounds": [
+    45,
+    36,
+    62,
+    48
+   ],
+   "size": [
+    48,
+    36
+   ],
+   "tags": [
+    "inland-sea",
+    "basin",
+    "desert",
+    "steppe",
+    "endorheic"
+   ],
+   "climate": "arid-continental",
+   "notes": "Landlocked seas in a desert-steppe basin; the Caspian is the largest inland sea."
+  },
+  {
+   "name": "Arabia interior",
+   "bounds": [
+    40,
+    17,
+    56,
+    31
+   ],
+   "size": [
+    48,
+    44
+   ],
+   "tags": [
+    "desert",
+    "sand-sea",
+    "plateau",
+    "salt-pan"
+   ],
+   "climate": "arid",
+   "notes": "Nejd plateau and the Rub al Khali sand sea; sabkha salt flats on the Gulf coast."
+  },
+  {
+   "name": "Gobi",
+   "bounds": [
+    95,
+    38,
+    115,
+    48
+   ],
+   "size": [
+    56,
+    28
+   ],
+   "tags": [
+    "desert",
+    "cold-desert",
+    "steppe",
+    "basin",
+    "inland"
+   ],
+   "climate": "arid-continental",
+   "notes": "Cold desert basins with a steppe fringe to the north and mountains to the south."
+  },
+  {
+   "name": "Atacama and Altiplano",
+   "bounds": [
+    -72,
+    -28,
+    -64,
+    -14
+   ],
+   "size": [
+    24,
+    44
+   ],
+   "tags": [
+    "desert",
+    "plateau",
+    "salt-pan",
+    "mountain-wall",
+    "coast"
+   ],
+   "climate": "arid",
+   "notes": "Hyperarid coastal desert, Andean wall, high salt-pan plateau behind it."
+  },
+  {
+   "name": "Namib and Kalahari",
+   "bounds": [
+    12,
+    -30,
+    26,
+    -17
+   ],
+   "size": [
+    40,
+    36
+   ],
+   "tags": [
+    "desert",
+    "coast",
+    "sand-sea",
+    "salt-pan",
+    "steppe"
+   ],
+   "climate": "arid",
+   "notes": "Coastal dune desert, escarpment, Kalahari thornveld and the Etosha pan."
+  },
+  {
+   "name": "Alps",
+   "bounds": [
+    5,
+    43.5,
+    17,
+    48.5
+   ],
+   "size": [
+    48,
+    20
+   ],
+   "tags": [
+    "mountain-chain",
+    "arc",
+    "mountain-wall",
+    "glacial",
+    "lakes"
+   ],
+   "climate": "temperate",
+   "notes": "Arc of high mountains with foreland lakes north and plains south.",
+   "connectors": {
+    "N": "continental land + river exit",
+    "E": "continental land + river exit",
+    "S": "temperate land",
+    "W": "temperate land + river exit",
+    "corners": {
+     "NW": "temperate land",
+     "NE": "continental land",
+     "SE": "continental land",
+     "SW": "temperate land"
+    }
+   }
+  },
+  {
+   "name": "Carpathians",
+   "bounds": [
+    17,
+    44.5,
+    27,
+    49.5
+   ],
+   "size": [
+    40,
+    20
+   ],
+   "tags": [
+    "mountain-chain",
+    "arc",
+    "basin",
+    "forest"
+   ],
+   "climate": "continental",
+   "notes": "Forested arc enclosing the Transylvanian basin."
+  },
+  {
+   "name": "Pyrenees",
+   "bounds": [
+    -2,
+    41.5,
+    3.5,
+    44
+   ],
+   "size": [
+    40,
+    20
+   ],
+   "tags": [
+    "mountain-chain",
+    "mountain-wall",
+    "isthmus",
+    "straight"
+   ],
+   "climate": "temperate",
+   "notes": "Short straight E-W wall from sea to sea."
+  },
+  {
+   "name": "Caucasus",
+   "bounds": [
+    37,
+    40,
+    50,
+    45
+   ],
+   "size": [
+    48,
+    20
+   ],
+   "tags": [
+    "mountain-chain",
+    "mountain-wall",
+    "isthmus",
+    "straight"
+   ],
+   "climate": "continental-temperate",
+   "notes": "Straight high wall across an isthmus between two seas."
+  },
+  {
+   "name": "Appalachians",
+   "bounds": [
+    -85,
+    34,
+    -72,
+    44
+   ],
+   "size": [
+    40,
+    32
+   ],
+   "tags": [
+    "mountain-chain",
+    "ridge-and-valley",
+    "forest",
+    "old-mountains"
+   ],
+   "climate": "temperate",
+   "notes": "Long low forested ridges NE-SW, rivers to two coasts."
+  },
+  {
+   "name": "Cascades and Sierra",
+   "bounds": [
+    -124,
+    36,
+    -118,
+    49
+   ],
+   "size": [
+    24,
+    52
+   ],
+   "tags": [
+    "mountain-chain",
+    "volcanic",
+    "rain-shadow",
+    "coast",
+    "forest"
+   ],
+   "climate": "temperate",
+   "notes": "N-S ranges with a wet forested windward side and desert basins in the lee."
+  },
+  {
+   "name": "Southern Alps NZ",
+   "bounds": [
+    166,
+    -47,
+    174.5,
+    -40.5
+   ],
+   "size": [
+    32,
+    28
+   ],
+   "tags": [
+    "mountain-chain",
+    "fjords",
+    "rain-shadow",
+    "island"
+   ],
+   "climate": "temperate",
+   "notes": "South Island: spine along the west coast, fiords in the south-west, dry plains east."
+  },
+  {
+   "name": "Antarctic coast",
+   "bounds": [
+    -60,
+    -78,
+    20,
+    -69
+   ],
+   "size": [
+    80,
+    8
+   ],
+   "tags": [
+    "polar",
+    "ice-cap",
+    "cap",
+    "coast"
+   ],
+   "climate": "ice",
+   "notes": "A long strip of the Antarctic coast: ice cap with a ragged shore on its north side. Flip it N-S for a north polar cap."
+  },
+  {
+   "name": "Siberian Arctic coast",
+   "bounds": [
+    60,
+    68,
+    140,
+    78
+   ],
+   "size": [
+    80,
+    10
+   ],
+   "tags": [
+    "polar",
+    "tundra",
+    "cap",
+    "coast",
+    "delta"
+   ],
+   "climate": "tundra",
+   "notes": "Tundra coast with the Lena, Yenisei and Ob mouths; Taymyr peninsula in the middle."
+  },
+  {
+   "name": "Svalbard",
+   "bounds": [
+    10,
+    76.4,
+    34,
+    81
+   ],
+   "size": [
+    32,
+    16
+   ],
+   "tags": [
+    "polar",
+    "ice-cap",
+    "islands",
+    "fjords"
+   ],
+   "climate": "ice",
+   "notes": "Glaciated archipelago; ice and tundra only."
+  },
+  {
+   "name": "Baffin Island",
+   "bounds": [
+    -90,
+    61.5,
+    -61,
+    74
+   ],
+   "size": [
+    48,
+    28
+   ],
+   "tags": [
+    "polar",
+    "tundra",
+    "island",
+    "fjords",
+    "large-island"
+   ],
+   "climate": "tundra",
+   "notes": "Huge tundra island with fjords on its east coast."
+  },
+  {
+   "name": "Hawaii Big Island",
+   "bounds": [
+    -156.3,
+    18.7,
+    -154.6,
+    20.4
+   ],
+   "size": [
+    12,
+    12
+   ],
+   "tags": [
+    "volcanic",
+    "island",
+    "high-island",
+    "single-island"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.3
+   },
+   "notes": "One large shield-volcano island; the summits read as snow/tundra from satellite white."
+  },
+  {
+   "name": "Tahiti",
+   "bounds": [
+    -149.7,
+    -17.95,
+    -149.05,
+    -17.35
+   ],
+   "size": [
+    12,
+    8
+   ],
+   "tags": [
+    "volcanic",
+    "island",
+    "high-island",
+    "single-island"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.6,
+    "islandBias": 0.3
+   },
+   "notes": "A figure-of-eight volcanic island (Moorea excluded)."
+  },
+  {
+   "name": "Upolu",
+   "bounds": [
+    -172.15,
+    -14.1,
+    -171.35,
+    -13.75
+   ],
+   "size": [
+    12,
+    6
+   ],
+   "tags": [
+    "volcanic",
+    "island",
+    "high-island",
+    "single-island"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.6,
+    "islandBias": 0.3
+   },
+   "notes": "Samoa's second island, a long volcanic ridge."
+  },
+  {
+   "name": "Efate",
+   "bounds": [
+    168.1,
+    -17.9,
+    168.65,
+    -17.4
+   ],
+   "size": [
+    8,
+    8
+   ],
+   "tags": [
+    "volcanic",
+    "island",
+    "single-island"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.7,
+    "islandBias": 0.4
+   },
+   "notes": "A mid-sized volcanic island of Vanuatu."
+  },
+  {
+   "name": "Funafuti",
+   "bounds": [
+    178.9,
+    -8.8,
+    179.35,
+    -8.3
+   ],
+   "size": [
+    8,
+    8
+   ],
+   "tags": [
+    "atoll",
+    "single-island",
+    "ocean"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.9,
+    "islandBias": 0.6
+   },
+   "notes": "Tuvalu's main atoll; a ring of islets around a lagoon."
+  },
+  {
+   "name": "Tarawa",
+   "bounds": [
+    172.8,
+    1.2,
+    173.3,
+    1.7
+   ],
+   "size": [
+    8,
+    8
+   ],
+   "tags": [
+    "atoll",
+    "single-island",
+    "ocean"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.9,
+    "islandBias": 0.6
+   },
+   "notes": "A triangular atoll; the coast-quality benchmark piece."
+  },
+  {
+   "name": "Majuro",
+   "bounds": [
+    171,
+    7,
+    171.45,
+    7.25
+   ],
+   "size": [
+    8,
+    6
+   ],
+   "tags": [
+    "atoll",
+    "single-island",
+    "ocean"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.9,
+    "islandBias": 0.6
+   },
+   "notes": "A long thin atoll of the Marshalls."
+  },
+  {
+   "name": "Addu Atoll",
+   "bounds": [
+    73,
+    -0.75,
+    73.3,
+    -0.5
+   ],
+   "size": [
+    8,
+    6
+   ],
+   "tags": [
+    "atoll",
+    "single-island",
+    "ocean"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.9,
+    "islandBias": 0.6
+   },
+   "notes": "The southernmost Maldive atoll, a heart-shaped ring."
+  },
+  {
+   "name": "Caucasus isthmus",
+   "bounds": [
+    40,
+    40,
+    50,
+    45
+   ],
+   "size": [
+    40,
+    20
+   ],
+   "tags": [
+    "mountain-chain",
+    "mountain-wall",
+    "isthmus",
+    "inland-sea",
+    "two-coasts"
+   ],
+   "climate": "continental-temperate",
+   "notes": "The Caucasus wall from the Black Sea coast strip to the Caspian; rivers drain to both seas. Stamp full-rect to keep the Caspian as an inland sea.",
+   "connectors": {
+    "N": "continental land + river exit",
+    "E": "open sea",
+    "S": "continental land + river exit",
+    "W": "continental land",
+    "corners": {
+     "NW": "continental land",
+     "NE": "open sea",
+     "SE": "desert",
+     "SW": "continental land"
+    }
+   }
+  },
+  {
+   "name": "Savaii",
+   "bounds": [
+    -172.85,
+    -13.85,
+    -172.15,
+    -13.4
+   ],
+   "size": [
+    16,
+    10
+   ],
+   "tags": [
+    "volcanic",
+    "island",
+    "high-island",
+    "single-island"
+   ],
+   "climate": "tropical",
+   "params": {
+    "islandExpand": 0.5,
+    "islandBias": 0.3
+   },
+   "notes": "Samoa's largest island, a broad shield volcano."
+  }
+ ]
+}

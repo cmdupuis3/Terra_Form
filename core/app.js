@@ -1672,13 +1672,19 @@ async function generate(){
   /* Compose mode exports the collage instead of the framed region: the composite is already a grid of
      evaluated tiles + merged river edges, so it drops straight into the game's exporter. Its latitudes
      are meaningless (patches come from all over the world), so COMPOSE_LAT is written as a plain span. */
+  let r;
+  try{r=await buildExport();}catch(e){console.error('export failed:',e);setDestHint('Export failed: '+e.message);return;}
+  await writeFiles(r.built);
+  if(r.note)setDestHint((document.getElementById('destHint').textContent||'')+'  '+r.note);
+}
+/* The game's export for the current mode plus its validation rows (shown in the Validation list). Shared by
+   Generate and by TerraForm.api.export (core/bridge.js), which may hand the files to the MCP server instead of writeFiles. */
+async function buildExport(){
   const g=activeGame(),region=(mode==='compose')?composeRegion():evaluateFrame();
   const ctx={mode:mode==='compose'?'compose':'frame',hex:hexMode,riverN,patches:comp.patches.length,baseName:saveBaseName()};
-  let built;
-  try{built=await g.export.build(region,ctx);}catch(e){console.error('export failed:',e);setDestHint('Export failed: '+e.message);return;}
-  showValidation(g.export.validate?g.export.validate(region,built,ctx):[]);
-  await writeFiles(built);
-  if(g.export.note){const n=g.export.note(region,ctx);if(n)setDestHint((document.getElementById('destHint').textContent||'')+'  '+n);}
+  const built=await g.export.build(region,ctx);
+  const rows=g.export.validate?g.export.validate(region,built,ctx):[];showValidation(rows);
+  return {g,region,ctx,built,rows,note:g.export.note?(g.export.note(region,ctx)||''):''};
 }
 
 (async()=>{const pf=document.getElementById('pickFolder');if(!FS_DIR){pf.style.display='none';}else{pf.addEventListener('click',pickFolder);try{const h=await idbGet('saveDir');if(h){saveDir=h;saveDirName=h.name;}}catch(_){}}updateDestUI();if(!saveDir)setDestHint(FS_DIR?'Tip: choose your Civ4 “PublicMaps” (or “…\\My Games\\Beyond the Sword\\CustomMaps”) folder to save straight there.':(FS_SAVE?'A Save As dialog will let you pick the location each time.':'This browser downloads to the default folder — move the file into Civ4’s CustomMaps/PublicMaps afterward.'));})();
@@ -1749,7 +1755,7 @@ function updateMultiReadouts(){
   document.getElementById('vRelief').innerHTML='hills <b>'+fmt2(P.hill)+'</b> · peak <b>'+fmt2(P.peak)+'</b>';
 }
 const commit=()=>{lastTiles=null;updateMultiReadouts();schedule();};
-makeMultiSlider(document.getElementById('reliefRange'),{min:0,max:1,step:0.005,values:[P.hill,P.peak],segMode:'knots',segColors:['',TC.hills,TC.peak],
+const reliefMS=makeMultiSlider(document.getElementById('reliefRange'),{min:0,max:1,step:0.005,values:[P.hill,P.peak],segMode:'knots',segColors:['',TC.hills,TC.peak],
   onInput:v=>{P.hill=v[0];P.peak=v[1];commit();}});
 // relief BASIS: two independent thumbs (green = hills basis, grey = peak basis), 0 = raw height .. 1 = roughness
 const reliefBasisMS=makeMultiSlider(document.getElementById('reliefBasisRange'),{min:0,max:1,step:0.02,values:[P.blendHill,P.blendPeak],independent:true,segMode:'centers',thumbColors:['#7e9a52','#b9bfc4'],
@@ -2674,7 +2680,7 @@ function initShelf(){
    The compose engine owns `comp` and the canvas interaction; this section is only the wiring between
    it and the rest of the app: the rail panel, the snapshot button, and the export hand-off. */
 const COMPOSE_LAT=45;   // a collage has no real latitude span — patches come from anywhere on Earth. Civ4 uses top/bottom latitude for its own resource & feature scatter, so we write a plain temperate span rather than a fabricated one.
-function composeRegion(){const c=compositeCompose();c.topLat=COMPOSE_LAT;c.botLat=-COMPOSE_LAT;c.wrapX=0;c.game=activeGame().id;return c;}   // wrapX=0: a collage never spans the full 360
+function composeRegion(){const c=compositeCompose();c.topLat=comp.latTop!=null?comp.latTop:COMPOSE_LAT;c.botLat=comp.latBot!=null?comp.latBot:-COMPOSE_LAT;c.wrapX=0;c.game=activeGame().id;return c;}   // wrapX=0: a collage never spans the full 360. latTop/latBot: a virtual latitude span declared through TerraForm.api (the MCP bridge), else the nominal temperate span
 function selectedPatch(){return comp.sel==null?null:comp.patches.find(p=>p.id===comp.sel)||null;}
 /* The rail carries two disjoint sets of controls. Everything tagged data-rail="tune" shapes how a
    region is EVALUATED — coast, relief, terrain, features, rivers — and none of it can affect a
@@ -2768,3 +2774,50 @@ function loadCoast(done){fetch('data/coast_10m.json').then(r=>{if(!r.ok)throw ne
 function loadLakes(done){fetch('data/lakes_10m.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{LAKES=(j&&j.polys)?j:{polys:[]};done();}).catch(e=>{LAKES={polys:[]};console.warn('lakes_10m.json not loaded ('+e+').');done();});}
 function loadRivers(done){fetch('data/river_tiles/manifest.json').then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(j=>{RMAN=j;updateRiverReadout();done();}).catch(e=>{RMAN=null;console.warn('river tiles manifest not loaded ('+e+') -- serve over http(s).');done();});}
 loadElevation(()=>loadKoppen(()=>loadColor(()=>loadCoast(()=>loadLakes(()=>{landMask=buildLandMask();landAlphaCanvas=buildLandAlpha();generateWorld(1);repaintLayers();relayout();maybeWarnFileProtocol();maybeWarnMissingData();checkDataHealth();loadKoppenIndex(()=>render());loadLakesHires(()=>render());loadCoastHires(()=>render());loadCoastTileIndex(()=>render());loadLakeTileIndex(()=>render());loadPlayas(()=>render());loadSatIndex(()=>render());loadHgtIndex(()=>render());loadRivers(()=>render());})))));
+
+/* ---------- TerraForm.api: the entry points core/bridge.js drives (the MCP server in mcp/) ----------
+   Thin wrappers over the functions above, with none of their own logic. Each one also does what the
+   equivalent UI handler would have done around the call (clamp the view, drop the tile memo, redraw,
+   refresh the readouts), so a remote command leaves the page exactly as the same clicks would. render()
+   is called directly rather than through schedule(): requestAnimationFrame does not fire in a hidden tab,
+   and the bridge must not wait on it. */
+TF.api={
+  WSRC,HSRC,WRAP_PX,HALO_LOG_MIN,lonOf,latOf,wrapLon,
+  state(){const R=srcRect(),RA=rotAABB();return {mode,game:activeGame().id,games:TF.order.slice(),hex:hexMode,W:out.W,H:out.H,effH:effH(),
+    view:{cx:view.cx,cy:view.cy,spanX:view.spanX,rot:view.rot||0},bounds:frameBounds(R,RA),fill:defaultTileKind,
+    selection:worldSel?worldSel.kind:null,shelf:SHELF.length,compose:{W:comp.W,H:comp.H,patches:comp.patches.length,erased:comp.erased.size},pending:TF.api.loadsPending()};},
+  ready(){return !!landMask;},   // the base load chain (elevation, Köppen, colour, coast, lakes) has finished; nothing is worth evaluating before
+  loadsPending(){let n=0;const c=m=>{for(const v of m.values())if(v==='load')n++;};c(KTILE);c(STILE);c(HTILE);c(RTILE);c(VT.coast.cache);c(VT.lake.cache);return n;},   // tile fetches in flight for the current view: the bridge waits for 0 before it evaluates, so a command sees the same data the page will draw
+  render(){render();refreshStats();},
+  setGame(id){if(!TF.games[id])throw new Error('unknown game "'+id+'" (loaded: '+TF.order.join(', ')+')');setGame(id);},
+  setMode(m){const b=document.querySelector('.tab[data-mode="'+m+'"]');if(!b)throw new Error('unknown mode "'+m+'"');if(mode!==m)b.click();},
+  setSize(W,H){const G=activeGame().grid;if(W!=null)out.W=snapDim(W,G.min.W,G.max.W,G.step);if(H!=null)out.H=snapDim(H,G.min.H,G.max.H,G.step);if(lockAR)arRatio=out.W/out.H;afterGridChange();},
+  setView(v){if(v.cx!=null)view.cx=+v.cx;if(v.cy!=null)view.cy=+v.cy;if(v.spanX!=null)view.spanX=+v.spanX;if(v.rot!=null)view.rot=+v.rot;clampView();lastTiles=null;render();refreshStats();},
+  evaluate(){return evaluateFrame();},
+  params(){return {islandBias,seawayBias,islandExpand,expandSteep,expandMaxMult,roughHalo,mtnPass,flatSpots,coastThr,nudgeX,nudgeY,riverN,riverEstuaries,hill:P.hill,peak:P.peak,blendHill:P.blendHill,blendPeak:P.blendPeak,fill:defaultTileKind};},
+  setRelief(o){if(o.hill!=null)P.hill=+o.hill;if(o.peak!=null)P.peak=+o.peak;if(o.blendHill!=null)P.blendHill=+o.blendHill;if(o.blendPeak!=null)P.blendPeak=+o.blendPeak;
+    reliefMS.set([P.hill,P.peak]);reliefBasisMS.set([P.blendHill,P.blendPeak]);updateMultiReadouts();lastTiles=null;render();refreshStats();},
+  setFill(kind){const el=document.getElementById('tgMtnDefault'),want=(kind==='barrier'||kind==='peak');if(el.checked!==want){el.checked=want;el.dispatchEvent(new Event('change'));}},
+  /* masks: world-pinned, in source px ({kind:'lasso',pts:[[sx,sy],...]} | {kind:'rect',pts:[a,b],frame:true} | null) */
+  getWorldSelection(){return worldSel;},
+  setWorldSelection(s){worldSel=s;_selDraw=null;_selCursor=null;syncSelUI();render();},
+  capture(name){return captureSnapshot(name);},
+  tiles2D:snapshotTiles2D,
+  shelf:{list(){return SHELF;},get(id){return SHELF.find(s=>s.id===id)||null;},save:shelfSave,remove:shelfDelete,rename:shelfRename},
+  compose:{
+    state(){return comp;},composite:compositeCompose,stats:composeStats,region:composeRegion,patchById:composePatchById,
+    setSize(W,H){composeSetSize(W,H);document.getElementById('cw').value=comp.W;document.getElementById('chh').value=comp.H;relayout();syncComposeUI();},
+    clear:composeClear,
+    add(snap,x,y,landOnly){const p=composeAddPatch(snap,x,y);if(landOnly===false)composeSetLandOnly(p.id,false);return p;},
+    move(id,x,y){const p=composePatchById(id);if(!p)return false;p.x=x|0;p.y=composeSnapY(y|0);comp.sel=id;composeDirty();return true;},
+    remove:composeRemovePatch,raise:composeRaise,lower:composeLower,setLandOnly:composeSetLandOnly,
+    select(id){comp.sel=id;composeDirty();},
+    eraseRect(x0,y0,x1,y1){const prev=compSel;compSel={kind:'rect',pts:[[x0,y0],[x1+1,y1+1]]};let n=0;try{n=composeEraseSelection();}finally{compSel=prev;syncSelUI();}return n;},   // inclusive tile rect; the mask tests tile centres, so +1 on the far corner
+    unerase:composeUnerase,
+    setLatitudes(top,bot){comp.latTop=top==null?null:+top;comp.latBot=bot==null?null:+bot;}   // declared virtual latitudes for the collage (export header + the bridge's latitude lint)
+  },
+  thumb:renderSnapshotThumb,newId:nextSnapshotId,
+  async export(name){if(name!=null)document.getElementById('saveName').value=name;return buildExport();},   // {g,region,ctx,built,rows,note}: the caller decides between writeFiles (the app's destination) and shipping built.files elsewhere
+  writeFiles,destHint(){return document.getElementById('destHint').textContent||'';},
+  isWater:isWaterTile,gridRing,hexShiftX
+};

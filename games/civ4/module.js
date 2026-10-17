@@ -243,6 +243,19 @@
     if (t.feature === 'FEATURE_FOREST') c = [34, 95, 42]; else if (t.feature === 'FEATURE_JUNGLE') c = [18, 64, 26]; else if (t.feature === 'FEATURE_FLOOD_PLAINS') c = [154, 182, 66]; else if (t.feature === 'FEATURE_OASIS') c = [200, 188, 120];
     return c;
   }
+  /* One character per tile, for the text grid the MCP bridge (mcp/) hands an agent: water is '~' ocean or ',' coast;
+     land is its terrain letter (g p d t s), UPPERCASE on hills; a peak is '^' whatever the terrain; a feature wins
+     over the terrain letter (f forest, j jungle, r flood plains, o oasis). Legend keys may be one char or a range. */
+  const ASCII_TERR = { [TERR.GRASS]: 'g', [TERR.PLAINS]: 'p', [TERR.DESERT]: 'd', [TERR.TUNDRA]: 't', [TERR.SNOW]: 's' };
+  const ASCII_FEAT = { FEATURE_FOREST: 'f', FEATURE_JUNGLE: 'j', FEATURE_FLOOD_PLAINS: 'r', FEATURE_OASIS: 'o' };
+  function ascii(t) {
+    if (t.plot === PLOT.WATER) return t.terrain === TERR.COAST ? ',' : '~';
+    if (t.plot === PLOT.PEAK) return '^';
+    const c = (t.feature && ASCII_FEAT[t.feature]) || ASCII_TERR[t.terrain] || '?';
+    return t.plot === PLOT.HILLS ? c.toUpperCase() : c;
+  }
+  function asciiLegend() { return { '~': 'ocean', ',': 'coast', 'g': 'grass', 'p': 'plains', 'd': 'desert', 't': 'tundra', 's': 'snow', 'f': 'forest', 'j': 'jungle', 'r': 'flood plains', 'o': 'oasis', '^': 'peak', 'A-Z': 'hills (uppercase terrain letter)' }; }
+  const relief = t => t.plot === PLOT.PEAK ? 2 : t.plot === PLOT.HILLS ? 1 : 0;
   /* Every glyph takes its target context `g`: the same grid is drawn to the live canvas, to snapshot thumbnails and to the compose canvas. */
   function drawHillGlyph(g, px, py, w, h) {   // rounded hill: a smooth hump, drawn as a neutral shadow so the terrain hue underneath still reads
     g.fillStyle = 'rgba(18,14,8,0.30)';
@@ -385,7 +398,7 @@
       if (t.feature != null && !KNOWN_FEATURES.has(t.feature)) return 'unknown feature "' + t.feature + '"';
       return null;
     },
-    preview: { color: tileColor, glyph, legend },
+    preview: { color: tileColor, glyph, legend, ascii, asciiLegend, relief, reliefLabels: ['flat', 'hills', 'peaks'] },
     sizeLabel: worldSizeFor,
     ui,
     export: {

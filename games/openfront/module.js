@@ -48,6 +48,10 @@
     return { tiles };
   }
   const band = t => t.mag < 10 ? 'plains' : t.mag < 20 ? 'highland' : 'mountain';
+  /* text grid for the MCP bridge (mcp/): '~' water; land by magnitude band -- plains 0..9 as digits, highland 10..19 as a..j, mountain 20..30 as A..K */
+  const ascii = t => t.water ? '~' : t.mag < 10 ? String(t.mag) : t.mag < 20 ? String.fromCharCode(97 + t.mag - 10) : String.fromCharCode(65 + t.mag - 20);
+  const asciiLegend = () => ({ '~': 'water', '0-9': 'plains (magnitude 0-9)', 'a-j': 'highland (10-19)', 'A-K': 'mountain (20-30)' });
+  const relief = t => t.water ? 0 : t.mag < 10 ? 0 : t.mag < 20 ? 1 : 2;
 
   /* ---------- export: image.png + info.json (OpenFront's map-generator/assets/maps/<id>/) ---------- */
   function mapId(name) {   // export_openfront.map_id: fold (strip combining marks, lowercase), then UpperCamelCase the words
@@ -113,7 +117,8 @@
     validateTile(t) { if (typeof t.water !== 'boolean') return 'missing water flag'; if (!t.water && !(Number.isInteger(t.mag) && t.mag >= 0 && t.mag <= 30)) return 'magnitude must be 0..30'; return null; },
     preview: {
       color: t => t.water ? [0, 0, WATER_BLUE] : landRGB(t.mag),
-      legend: () => [['Water', [0, 0, WATER_BLUE]], ['Plains', landRGB(4)], ['Highland', landRGB(14)], ['Mountain', landRGB(26)]]
+      legend: () => [['Water', [0, 0, WATER_BLUE]], ['Plains', landRGB(4)], ['Highland', landRGB(14)], ['Mountain', landRGB(26)]],
+      ascii, asciiLegend, relief, reliefLabels: ['plains', 'highland', 'mountain']
     },
     sizeLabel: (W, H) => W * H >= 1e5 ? (W * H / 1e6).toFixed(2) + ' M tiles' : (W * H).toLocaleString() + ' tiles (preview)',
     ui,
