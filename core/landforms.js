@@ -130,17 +130,21 @@
     let lastSea = 0;   // the water body id of the last corner found wet (ctx.waterLabel optional)
     const cornerWater = (cx, cy) => { let off = false; for (const [x, y] of [[cx - 1, cy - 1], [cx, cy - 1], [cx - 1, cy], [cx, cy]]) { const w = waterAt(x, y); if (w === null) off = true; else if (w) { lastSea = ctx.waterLabel ? ctx.waterLabel(x, y) : 0; return 'water'; } } return off ? 'edge' : null; };
     const continues = (e, c, far) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const cx = c[0] + dx, cy = c[1] + dy; if (cx === far[0] && cy === far[1]) continue; const L = byCell.get(cx + ',' + cy); if (L && L.some(o => o !== e)) return true; } return false; };
+    const joins = (e, c) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const L = byCell.get((c[0] + dx) + ',' + (c[1] + dy)); if (L) for (const o of L) if (o.rid !== e.rid) return o.rid; } return null; };   // a tributary: the downstream corner meets another river
     const systems = new Map(); let deadEnd = [];
     for (const e of edges) {
       const w = cornerWater(e.down[0], e.down[1]), cont = continues(e, e.down, e.up), wUp = cornerWater(e.up[0], e.up[1]);
-      const s = systems.get(e.rid) || { rid: e.rid, edges: 0, reaches: null, dead: 0, sea: 0, at: [e.x, e.y] }; s.edges++;
+      const s = systems.get(e.rid) || { rid: e.rid, edges: 0, reaches: null, dead: 0, sea: 0, at: [e.x, e.y], into: null }; s.edges++;
       if (s.reaches !== 'water') { if (w === 'water' || wUp === 'water') { s.reaches = 'water'; s.sea = lastSea; } else if (!s.reaches) s.reaches = w || wUp || null; }
+      if (!w && cont && !s.into) { const j = joins(e, e.down); if (j != null) s.into = j; }
       systems.set(e.rid, s);
-      if (!w && !cont) { s.dead++; deadEnd.push({ x: e.x, y: e.y, rid: e.rid, kind: e.kind }); }
+      if (!w && !cont) { s.dead++; deadEnd.push({ x: e.x, y: e.y, rid: e.rid, kind: e.kind, down: e.down, d: e.d }); }
     }
+    for (let pass = 0; pass < 8; pass++) { let changed = false; for (const s of systems.values()) { if (s.reaches === 'water' || s.into == null) continue; const t = systems.get(s.into); if (t && t.reaches === 'water') { s.reaches = 'water'; s.sea = t.sea; s.via = s.into; changed = true; } else if (t && t.reaches === 'edge' && !s.reaches) { s.reaches = 'edge'; changed = true; } } if (!changed) break; }   // a tributary reaches what its trunk reaches
     const sys = [...systems.values()].sort((a, b) => b.edges - a.edges);
     return { edges: edges.length, systems: sys.length, reachWater: sys.filter(s => s.reaches === 'water').length, exitMap: sys.filter(s => s.reaches === 'edge').length, landlocked: sys.filter(s => !s.reaches).length, deadEndEdges: deadEnd,
-      seasReached: [...new Set(sys.filter(s => s.sea).map(s => s.sea))], systemsTop: sys.slice(0, 8).map(s => ({ rid: s.rid, edges: s.edges, reaches: s.reaches || 'none', sea: s.sea || null, deadEnds: s.dead, at: s.at })) };
+      seasReached: [...new Set(sys.filter(s => s.sea).map(s => s.sea))], systemsTop: sys.slice(0, 8).map(s => ({ rid: s.rid, edges: s.edges, reaches: s.reaches || 'none', sea: s.sea || null, deadEnds: s.dead, at: s.at, via: s.via || undefined })),
+      systemsAll: sys.map(s => ({ rid: s.rid, edges: s.edges, reaches: s.reaches || 'none', deadEnds: s.dead })) };
   }
 
   /* ---------- describe ---------- */
@@ -232,12 +236,17 @@
     R.seas = WC.list.slice(0, 8).map(c => { let border = false; for (const j of c.tiles) { const x = j % W, y = (j - x) / W; if (x === 0 || y === 0 || x === W - 1 || y === H - 1) { border = true; break; } } return { id: c.id, size: c.size, at: cxy(c), bbox: c.bbox, inland: !border }; });
     R.seaCount = WC.list.length;
     R.rivers = riverAnalysis(tiles, W, H, Object.assign({}, ctx, { waterLabel: (x, y) => WC.labels[y * W + x] }));
-    delete R.rivers.deadEndEdges;
-    if (opts.full) {   // per-row land and Köppen-group counts, for latitude-band checks
+    delete R.rivers.deadEndEdges; delete R.rivers.systemsAll;
+    if (opts.rows) {   // per-row land and Köppen-group counts, for latitude-band checks (opt-in: about half the JSON otherwise)
       R.rows = [];
       for (let y = 0; y < H; y++) { const g = [0, 0, 0, 0, 0, 0]; let n = 0, rel = [0, 0, 0]; for (let x = 0; x < W; x++) { const i = y * W + x; if (!land[i]) continue; n++; rel[relief[i]]++; if (kc && kc[i]) g[ctx.group(kc[i])]++; } R.rows.push({ y, land: n, groups: hasKc ? g : null, relief: rel }); }
     }
     R.summary = summarize(R, W, H, hasKc, hasRelief);
+    if (opts.codes && opts.codes.cb) {   // landform codebook: per-landmass top captions (the per-tile codes stay internal unless asked for)
+      const A = assignCodes(tiles, W, H, ctx, opts.codes.degPerTile, opts.codes.cb, { band: opts.codes.band });
+      R.codes = codeSummary(A, opts.codes.cb, LM.labels, LM.list, W, H); R.summary += ' ' + codeSentence(R.codes);
+      if (opts.codes.tiles) R.codeTiles = A;
+    }
     if (!opts.full) for (const c of R.landmasses) delete c.bbox;
     return R;
   }
@@ -326,42 +335,190 @@
       const C = components(flag, G.W, G.H, G.ring, 1);
       return C.list.slice(0, 8).map(c => ({ rule: 'latitude-mismatch', at: cxy(c), n: c.size, patches: G.owner ? [...new Set(c.tiles.map(j => G.owner[j]))] : [], msg: `${why.get(c.tiles[0])} (${c.size} tiles) near ${cxy(c).join(',')}` }));
     },
+    /* A dead end the source snapshot already had is a real endorheic river (a Saharan wadi) and only a note; one the
+       source did not have was made here, by a patch boundary, an erase or an overlapping stamp, and is the warning.
+       ctx.sourceDeadEnd(edge) answers "did the source have this dead end?" (the bridge replays each patch alone). */
     function riverDeadEnd(G) {
-      const byRid = new Map();
-      for (const e of G.rivers.deadEndEdges) { const r = byRid.get(e.rid) || { n: 0, at: [e.x, e.y] }; r.n++; byRid.set(e.rid, r); }
-      return [...byRid.entries()].slice(0, 8).map(([rid, r]) => ({ rule: 'river-dead-end', at: r.at, n: r.n, patches: G.owner ? [G.owner[r.at[1] * G.W + r.at[0]]] : [], msg: `river ${rid} has ${r.n} edge${r.n === 1 ? '' : 's'} ending on land with no continuation, first at ${r.at.join(',')}` }));
+      const by = new Map();
+      for (const e of G.rivers.deadEndEdges) {
+        const src = G.sourceDeadEnd ? !!G.sourceDeadEnd(e) : false, key = (src ? 's' : 'c') + e.rid;
+        const r = by.get(key) || { n: 0, at: [e.x, e.y], rid: e.rid, src }; r.n++; by.set(key, r);
+      }
+      return [...by.values()].slice(0, 12).map(r => {
+        const patch = G.owner ? G.owner[r.at[1] * G.W + r.at[0]] : 0, P = patch ? [patch] : [];
+        if (r.src) return { rule: 'river-endorheic', level: 'info', at: r.at, n: r.n, patches: P, msg: `river ${r.rid} dead-ends on land at ${r.at.join(',')} as it did in its source${patch ? ' (patch ' + patch + ')' : ''}: endorheic, not a seam` };
+        return { rule: 'river-dead-end', at: r.at, n: r.n, patches: P, msg: `river ${r.rid} has ${r.n} edge${r.n === 1 ? '' : 's'} ending on land with no continuation, first at ${r.at.join(',')}${G.sourceDeadEnd ? ' (not in its source: cut at a patch boundary, by an erase or by an overlapping stamp)' : ''}` };
+      });
+    },
+    /* A lasso or rect capture leaves ruler-straight shorelines where the mask cut through land; so does the frame
+       rectangle itself. A run of collinear land tiles of one patch all facing water on the same side is flagged at
+       7+ tiles, or at 4+ when the tiles carry the snapshot's own cut flag (G.cutEdge, from maskFrame's cut list). */
+    function straightEdgeCoast(G) {
+      const out = [], MIN = 7, MIN_CUT = 4, W = G.W, H = G.H;
+      const scan = (horizontal, sign) => {
+        const L1 = horizontal ? H : W, L2 = horizontal ? W : H, side = horizontal ? (sign > 0 ? 'S' : 'N') : (sign > 0 ? 'E' : 'W');
+        for (let a = 0; a < L1; a++) {
+          let run = 0, cutN = 0, owner = 0, start = 0;
+          const onBorder = o => {   // the run lies on its patch's rectangle edge (or the snapshot's own border): the frame / rect crop cut through land there
+            const r = G.patchRect && G.patchRect.get(o); if (r) return horizontal ? (sign < 0 ? a === r.y : a === r.y + r.H - 1) : (sign < 0 ? a === r.x : a === r.x + r.W - 1);
+            return G.owner ? false : (sign < 0 ? a === 0 : a === L1 - 1); };
+          const flush = end => { if (run && (run >= MIN || (run >= MIN_CUT && cutN * 2 >= run))) { const mid = (start + end) >> 1, at = horizontal ? [mid, a] : [a, mid], why = cutN * 2 >= run ? 'mask cut' : onBorder(owner) ? 'rect/frame cut' : 'natural'; out.push({ rule: 'straight-edge-coast', at, n: run, patches: owner ? [owner] : [], cut: cutN, why, msg: `ruler-straight coast: ${run} land tiles${owner ? ' of patch ' + owner : ''} along ${horizontal ? 'row' : 'column'} ${a} (${horizontal ? 'x' : 'y'} ${start}..${end}) face water to the ${side}${why === 'mask cut' ? ', a lasso/mask cut' : why === 'rect/frame cut' ? ', the capture rectangle edge (a rect or frame cut)' : ' (no cut flag: a straight real coast)'}` }); } run = 0; cutN = 0; };
+          for (let b = 0; b < L2; b++) {
+            const x = horizontal ? b : a, y = horizontal ? a : b, i = y * W + x, nx = horizontal ? x : x + sign, ny = horizontal ? y + sign : y;
+            const inb = nx >= 0 && nx < W && ny >= 0 && ny < H, o = G.owner ? G.owner[i] : 1;
+            const ok = G.land[i] && inb && !G.land[ny * W + nx] && o;
+            if (ok && run && o !== owner) flush(b - 1);
+            if (ok) { if (!run) { start = b; owner = o; } run++; if (G.cutEdge && G.cutEdge[i]) cutN++; } else flush(b - 1);
+          }
+          flush(L2 - 1);
+        }
+      };
+      scan(true, 1); scan(true, -1); scan(false, 1); scan(false, -1);
+      return out.sort((p, q) => q.n - p.n).slice(0, 8);
+    },
+    /* Two touching patches whose tile sizes sit more than one codebook band apart (a factor of about 2.3 in
+       degrees per tile) carry landforms from different vocabularies: a 0.05°/tile delta next to a 0.6°/tile
+       peninsula. G.patchBand: Map patch id -> {band, deg} from the bridge. */
+    function scaleMismatch(G) {
+      if (!G.owner || !G.patchBand) return [];
+      const pairs = new Map();
+      for (let i = 0; i < G.N; i++) {
+        const o1 = G.owner[i]; if (!o1) continue; const b1 = G.patchBand.get(o1); if (!b1) continue; const x = i % G.W, y = (i - x) / G.W;
+        for (const o of RING4) { const nx = x + o[0], ny = y + o[1]; if (nx < 0 || nx >= G.W || ny < 0 || ny >= G.H) continue; const o2 = G.owner[ny * G.W + nx]; if (!o2 || o2 === o1) continue; const b2 = G.patchBand.get(o2); if (!b2 || Math.abs(b1.band - b2.band) < 2) continue;
+          const key = o1 < o2 ? o1 + '/' + o2 : o2 + '/' + o1, e = pairs.get(key) || { a: Math.min(o1, o2), b: Math.max(o1, o2), n: 0, at: [x, y] }; e.n++; pairs.set(key, e); }
+      }
+      return [...pairs.values()].sort((p, q) => q.n - p.n).slice(0, 8).map(e => { const A = G.patchBand.get(e.a), B = G.patchBand.get(e.b), ratio = Math.max(A.deg, B.deg) / Math.min(A.deg, B.deg); return { rule: 'scale-mismatch', at: e.at, n: e.n, patches: [e.a, e.b], msg: `patches ${e.a} (${A.deg.toFixed(3)}°/tile, band ${A.band}) and ${e.b} (${B.deg.toFixed(3)}°/tile, band ${B.band}) touch along ${e.n} tiles: their landforms are ${Math.abs(A.band - B.band)} codebook bands apart (tile sizes differ x${ratio.toFixed(1)})` }; });
     }
   ];
   function prepare(tiles, W, H, ctx) {
     const N = W * H, land = new Uint8Array(N), relief = new Uint8Array(N), kc = new Int16Array(N); let hasKc = false, hasRelief = false;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const t = tiles[y][x], i = y * W + x; if (!t || ctx.isWater(t)) continue; land[i] = 1; if (ctx.relief) { relief[i] = ctx.relief(t) | 0; if (relief[i]) hasRelief = true; } if (ctx.kc) { kc[i] = ctx.kc(t) | 0; if (kc[i]) hasKc = true; } }
-    return { W, H, N, land, relief, kc, hasKc, hasRelief, owner: ctx.owner || null, ring: ctx.ring, group: ctx.group, latOfRow: ctx.latOfRow || null, climateAdjacency: ctx.climateAdjacency || null, rivers: riverAnalysis(tiles, W, H, ctx) };
+    return { W, H, N, land, relief, kc, hasKc, hasRelief, owner: ctx.owner || null, ring: ctx.ring, group: ctx.group, latOfRow: ctx.latOfRow || null, climateAdjacency: ctx.climateAdjacency || null, rivers: riverAnalysis(tiles, W, H, ctx),
+      cutEdge: ctx.cutEdge || null, sourceDeadEnd: ctx.sourceDeadEnd || null, patchBand: ctx.patchBand || null, patchRect: ctx.patchRect || null };
   }
-  function lint(tiles, W, H, ctx) { const G = prepare(tiles, W, H, ctx); let out = []; for (const rule of RULES) { try { out = out.concat(rule(G)); } catch (e) { out.push({ rule: rule.name, at: [0, 0], n: 0, msg: 'rule failed: ' + e.message }); } } return out; }
+  /* -> [{rule, level?, at, n, patches, msg}]; level 'info' marks a note rather than a warning. `only`: a list of rule names to run. */
+  function lint(tiles, W, H, ctx, only) { const G = prepare(tiles, W, H, ctx); let out = []; for (const rule of RULES) { if (only && !only.includes(rule.name)) continue; try { out = out.concat(rule(G)); } catch (e) { out.push({ rule: rule.name, at: [0, 0], n: 0, msg: 'rule failed: ' + e.message }); } } return out; }
 
   /* ---------- edge connectors ---------- */
+  /* ctx.cut (optional): Uint8Array W*H, 1 where the tile is mask fill (maskFrame's cut list). An edge that is mostly
+     fill is labelled "cut edge": its water is the lasso, not a shore, and attach's seam cost ignores it.
+     Anchors (Mawhorter & Mateas: where along the edge a feature sits, so attach can line features up rather than
+     rectangles): reliefAt = centre of the longest run of edge positions with hills/peaks within 4 tiles of the edge;
+     coastAt = centre of the longest land run along the edge cells; landRuns = those runs as [from, to] (up to 4). */
   function connectors(tiles, W, H, ctx) {
-    const edges = riverEdges(ctx.rivers), out = {};
-    const sides = { N: { cells: Array.from({ length: W }, (_, x) => [x, 0]), river: e => (e.kind === 'n' && e.y === 0) || (e.kind === 'w' && e.y === 0) },
-                    S: { cells: Array.from({ length: W }, (_, x) => [x, H - 1]), river: e => e.kind === 'w' && e.y === H - 1 },
-                    W: { cells: Array.from({ length: H }, (_, y) => [0, y]), river: e => (e.kind === 'w' && e.x === 0) || (e.kind === 'n' && e.x === 0) },
-                    E: { cells: Array.from({ length: H }, (_, y) => [W - 1, y]), river: e => e.kind === 'n' && e.x === W - 1 } };
+    const edges = riverEdges(ctx.rivers), out = {}, cut = ctx.cut || null, DEPTH = 4;
+    const sides = { N: { cells: Array.from({ length: W }, (_, x) => [x, 0]), river: e => (e.kind === 'n' && e.y === 0) || (e.kind === 'w' && e.y === 0), inward: (j, d) => [j, d] },
+                    S: { cells: Array.from({ length: W }, (_, x) => [x, H - 1]), river: e => e.kind === 'w' && e.y === H - 1, inward: (j, d) => [j, H - 1 - d] },
+                    W: { cells: Array.from({ length: H }, (_, y) => [0, y]), river: e => (e.kind === 'w' && e.x === 0) || (e.kind === 'n' && e.x === 0), inward: (j, d) => [d, j] },
+                    E: { cells: Array.from({ length: H }, (_, y) => [W - 1, y]), river: e => e.kind === 'n' && e.x === W - 1, inward: (j, d) => [W - 1 - d, j] } };
+    const isLand = (x, y) => { const t = tiles[y][x]; return !!t && !ctx.isWater(t) && !(cut && cut[y * W + x]); };
     const summarise = (cells, river) => {
-      let land = 0, rel = 0, hm = 0, hn = 0; const g = [0, 0, 0, 0, 0, 0]; let gn = 0;
-      for (const [x, y] of cells) { const t = tiles[y][x]; if (!t || ctx.isWater(t)) continue; land++; if (ctx.relief && ctx.relief(t)) rel++; if (ctx.kc) { const k = ctx.kc(t) | 0; if (k) { g[ctx.group(k)]++; gn++; } } if (ctx.height) { const m = ctx.height(t); if (m != null) { hm += m; hn++; } } }
-      const n = cells.length, lf = land / n, rf = land ? rel / land : 0;
+      let land = 0, rel = 0, hm = 0, hn = 0, cutN = 0; const g = [0, 0, 0, 0, 0, 0]; let gn = 0;
+      for (const [x, y] of cells) { if (cut && cut[y * W + x]) { cutN++; continue; } const t = tiles[y][x]; if (!t || ctx.isWater(t)) continue; land++; if (ctx.relief && ctx.relief(t)) rel++; if (ctx.kc) { const k = ctx.kc(t) | 0; if (k) { g[ctx.group(k)]++; gn++; } } if (ctx.height) { const m = ctx.height(t); if (m != null) { hm += m; hn++; } } }
+      const n = cells.length, lf = land / n, rf = land ? rel / land : 0, cf = cutN / n;
       let gi = -1, gb = 0; g.forEach((v, i) => { if (v > gb) { gb = v; gi = i; } });
       const climate = gn ? GROUP[gi] : null, height = hn ? Math.round(hm / hn) : null;
-      let label = lf < 0.1 ? 'open sea' : lf < 0.5 ? 'coast' : rf >= 0.5 ? 'mountain wall' : climate === 'arid' ? 'desert' : climate === 'tropical' ? 'tropical land' : climate === 'ice cap' || climate === 'tundra' ? 'ice' : climate ? climate + ' land' : 'land';
+      let label = cf >= 0.5 ? 'cut edge' : lf < 0.1 ? 'open sea' : lf < 0.5 ? 'coast' : rf >= 0.5 ? 'mountain wall' : climate === 'arid' ? 'desert' : climate === 'tropical' ? 'tropical land' : climate === 'ice cap' || climate === 'tundra' ? 'ice' : climate ? climate + ' land' : 'land';
       if (river) label += ' + river exit';
-      return { land: +lf.toFixed(2), relief: +rf.toFixed(2), climate, height, river, label };
+      const o = { land: +lf.toFixed(2), relief: +rf.toFixed(2), climate, height, river, label }; if (cut) o.cut = +cf.toFixed(2); return o;
     };
-    for (const s in sides) out[s] = summarise(sides[s].cells, edges.some(sides[s].river));
+    const runs = flags => { const R = []; let s = -1; for (let j = 0; j <= flags.length; j++) { const on = j < flags.length && flags[j]; if (on && s < 0) s = j; else if (!on && s >= 0) { R.push([s, j - 1]); s = -1; } } return R.sort((a, b) => (b[1] - b[0]) - (a[1] - a[0])); };
+    for (const s in sides) {
+      const S = sides[s], L = S.cells.length, o = summarise(S.cells, edges.some(S.river));
+      const landF = S.cells.map(([x, y]) => isLand(x, y)), relF = new Array(L).fill(false);
+      if (ctx.relief) for (let j = 0; j < L; j++) for (let d = 0; d < Math.min(DEPTH, s === 'N' || s === 'S' ? H : W); d++) { const [x, y] = S.inward(j, d); if (isLand(x, y) && ctx.relief(tiles[y][x])) { relF[j] = true; break; } }
+      const LR = runs(landF), RR = runs(relF);
+      o.landRuns = LR.slice(0, 4); o.coastAt = LR.length ? (LR[0][0] + LR[0][1]) >> 1 : null;
+      o.reliefAt = RR.length ? (RR[0][0] + RR[0][1]) >> 1 : null; o.reliefRun = RR.length ? RR[0][1] - RR[0][0] + 1 : 0;
+      out[s] = o;
+    }
     /* corner connectors (Lagae): the 3x3 around each corner tile, so four pieces meeting at a point can be matched too */
     const corner = (cx, cy) => { const cells = []; for (let y = Math.max(0, cy - 1); y <= Math.min(H - 1, cy + 1); y++) for (let x = Math.max(0, cx - 1); x <= Math.min(W - 1, cx + 1); x++) cells.push([x, y]); return summarise(cells, false).label; };
     out.corners = { NW: corner(0, 0), NE: corner(W - 1, 0), SE: corner(W - 1, H - 1), SW: corner(0, H - 1) };
     return out;
   }
 
-  T.landforms = { describe, brief, lint, connectors, rules: RULES, GROUP, components, distanceFrom };
+  /* ---------- landform codebook (data/landform/codebook.json; docs/landform-codebook.md) ----------
+     Per scale band, K centroids of 7x7 one-hot windows (water/flat/hills/peak, Köppen group on land, river on land).
+     A tile's code is the centroid nearest its window over the 8 dihedral orientations, in the band whose deg/tile
+     range holds the map's tile size:  score(k,t) = norm2[k] - 2 * sum_i w[i%11]^2 * x_t[i] * centroid[k][i].
+     The centroids are premultiplied by w^2 and laid out feature-major per orientation, so a window scores as a
+     sum of at most 3 rows per cell. Loaded lazily; the Python side is terraform/landform_codebook.py (assign). */
+  let CB = null, CB_PROMISE = null;
+  function loadCodebook(url) {
+    if (CB_PROMISE) return CB_PROMISE;
+    CB_PROMISE = fetch(url || 'data/landform/codebook.json').then(r => r.ok ? r.json() : null).then(j => { if (!j || !j.bands) return null; j._S = j.window; j._C = j.onehot_channels.length; CB = j; return j; }).catch(() => null);
+    return CB_PROMISE;
+  }
+  /* the 8 dihedral symmetries of the S x S cell grid as cell maps: cellMap[t][cell] = source cell whose content lands at `cell` */
+  function dihedralCellMaps(S) {
+    const maps = [], id = Array.from({ length: S * S }, (_, i) => i);
+    const rot = m => { const o = new Array(S * S); for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) o[x * S + (S - 1 - y)] = m[y * S + x]; return o; };   // (y,x) -> (x, S-1-y)
+    const mir = m => { const o = new Array(S * S); for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) o[y * S + (S - 1 - x)] = m[y * S + x]; return o; };
+    let m = id; for (let t = 0; t < 4; t++) { maps.push(m); m = rot(m); }
+    m = mir(id); for (let t = 0; t < 4; t++) { maps.push(m); m = rot(m); }
+    return maps;
+  }
+  function prepareBand(cb, B) {
+    if (B._CT) return B;
+    const S = cb._S, C = cb._C, D = S * S * C, K = B.codes.length, w = cb.channel_weights, maps = dihedralCellMaps(S);
+    B._K = K; B._norm2 = Float32Array.from(B.codes.map(c => c.norm2)); B._CT = [];
+    const Cw = B.codes.map(c => c.centroid.map((v, i) => v * w[i % C] * w[i % C]));
+    for (let t = 0; t < 8; t++) {   // x_t[i] = x[perm_t[i]]  =>  sum_i x_t[i] c[i] = sum_j x[j] c[perm_t^-1[j]]: store each centroid in the inverse layout, feature-major
+      const inv = new Int32Array(D); for (let cell = 0; cell < S * S; cell++) for (let ch = 0; ch < C; ch++) inv[maps[t][cell] * C + ch] = cell * C + ch;
+      const arr = new Float32Array(D * K); for (let j = 0; j < D; j++) { const src = inv[j]; for (let k = 0; k < K; k++) arr[j * K + k] = Cw[k][src]; }
+      B._CT.push(arr);
+    }
+    return B;
+  }
+  function bandFor(cb, deg) {
+    for (let i = 0; i < cb.bands.length; i++) { const [lo, hi] = cb.bands[i].range; if (lo <= deg && (hi == null || deg < hi)) return i; }
+    let best = 0, bd = Infinity; cb.bands.forEach((b, i) => { const d = Math.abs(Math.log(b.deg_per_tile / deg)); if (d < bd) { bd = d; best = i; } }); return best;
+  }
+  /* -> { band, deg, codes: Int16Array W*H (-1 = not coded), coded }. opts.all codes every tile; the default codes land
+     tiles and the water tiles that touch land (open sea is left out: it is where the time goes and reads as one code). */
+  function assignCodes(tiles, W, H, ctx, degPerTile, cb, opts) {
+    opts = opts || {}; cb = cb || CB; if (!cb) throw new Error('codebook not loaded');
+    const S = cb._S, C = cb._C, R = S >> 1, N = W * H, band = opts.band != null ? opts.band : bandFor(cb, degPerTile), B = prepareBand(cb, cb.bands[band]), K = B._K;
+    const land = new Uint8Array(N), relief = new Uint8Array(N), grp = new Int8Array(N).fill(-1), river = new Uint8Array(N);
+    const rv = ctx.riverTiles || null;   // Set 'x,y' of tiles a river edge touches (the bridge builds it)
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const t = tiles[y][x], i = y * W + x; if (!t || ctx.isWater(t)) continue; land[i] = 1; relief[i] = Math.min(2, ctx.relief ? ctx.relief(t) | 0 : 0); if (ctx.kc) { const k = ctx.kc(t) | 0; if (k) grp[i] = ctx.group(k); } if (rv && rv.has(x + ',' + y)) river[i] = 1; }
+    const want = new Uint8Array(N);
+    for (let i = 0; i < N; i++) { if (opts.all || land[i]) { want[i] = 1; continue; } const x = i % W, y = (i - x) / W; for (const o of ctx.ring(y)) { const nx = x + o[0], ny = y + o[1]; if (nx >= 0 && nx < W && ny >= 0 && ny < H && land[ny * W + nx]) { want[i] = 1; break; } } }
+    const codes = new Int16Array(N).fill(-1), dot = new Float32Array(K), feats = new Int32Array(S * S * 3); let coded = 0;
+    for (let i = 0; i < N; i++) {
+      if (!want[i]) continue; const x0 = i % W - R, y0 = (i - i % W) / W - R; let nf = 0;
+      for (let wy = 0; wy < S; wy++) for (let wx = 0; wx < S; wx++) {
+        const gx = x0 + wx, gy = y0 + wy, base = (wy * S + wx) * C;
+        if (gx < 0 || gx >= W || gy < 0 || gy >= H || !land[gy * W + gx]) { feats[nf++] = base; continue; }   // off-grid pads as water, like windows_from_grid
+        const j = gy * W + gx; feats[nf++] = base + 1 + relief[j]; if (grp[j] >= 0) feats[nf++] = base + 4 + grp[j]; if (river[j]) feats[nf++] = base + 10;
+      }
+      let best = Infinity, bk = -1;
+      for (let t = 0; t < 8; t++) {
+        const CT = B._CT[t]; dot.fill(0);
+        for (let f = 0; f < nf; f++) { const o = feats[f] * K; for (let k = 0; k < K; k++) dot[k] += CT[o + k]; }
+        for (let k = 0; k < K; k++) { const s = B._norm2[k] - 2 * dot[k]; if (s < best) { best = s; bk = k; } }
+      }
+      codes[i] = bk; coded++;
+    }
+    return { band, deg: degPerTile, bandDeg: cb.bands[band].deg_per_tile, codes, coded, K };
+  }
+  /* one glyph per code class for the 'codes' overlay: the leading caption label, else the code's kind */
+  const CODE_GLYPHS = { basin: 'b', bay: 'B', channel: 'c', coast: ',', delta: 'D', depression: 'v', desert: 'd', fjord: 'F', foothills: 'h', gorge: 'G', gulf: 'U', inlet: 'i', island: 'I', 'island group': 'A', isthmus: 'T', lagoon: 'L', lowland: 'l', 'pen/cape': 'C', peninsula: 'P', plain: 'p', plateau: 't', 'range/mtn': 'M', reef: 'r', sound: 's', strait: 'S', tundra: 'u', valley: 'V', wetlands: 'w' };
+  const KIND_GLYPHS = { 'open water / islands': '~', coast: ',', 'inland peaks': '^', 'inland hills': 'n', 'inland flat': '.' };
+  function codeGlyph(code) { if (!code) return ' '; const lead = String(code.caption || '').split(' / ')[0].trim(); return CODE_GLYPHS[lead] || KIND_GLYPHS[code.kind] || '?'; }
+  /* per-landmass top captions (not per tile): what each landmass "looks like Earth calls" at this band */
+  function codeSummary(A, cb, landLabels, landmasses, W, H) {
+    const B = cb.bands[A.band], tally = (idx) => { const m = new Map(); let n = 0; for (const i of idx) { const c = A.codes[i]; if (c < 0) continue; n++; const cap = B.codes[c].caption || 'unlabelled'; m.set(cap, (m.get(cap) || 0) + 1); } return { n, top: [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([caption, k]) => ({ caption, share: Math.round(k / Math.max(1, n) * 100) })) }; };
+    const all = []; for (let i = 0; i < W * H; i++) if (A.codes[i] >= 0) all.push(i);
+    const out = { band: A.band, degPerTile: +A.deg.toFixed(4), bandDegPerTile: +A.bandDeg.toFixed(4), coded: A.coded, captioned: B.captioned, top: tally(all).top, landmasses: [] };
+    for (const c of (landmasses || []).slice(0, 5)) { const idx = []; for (let i = 0; i < W * H; i++) if (landLabels[i] === c.id) idx.push(i); out.landmasses.push({ id: c.id, size: c.size, top: tally(idx).top }); }
+    return out;
+  }
+  function codeSentence(cs) {
+    const f = t => t.map(e => `${e.caption} ${e.share}%`).join(', ');
+    return `Codebook band ${cs.band} (${cs.bandDegPerTile}°/tile for ${cs.degPerTile}°/tile): ` + (cs.landmasses.length ? cs.landmasses.map(l => `#${l.id} reads ${f(l.top) || 'uncoded'}`).join('; ') : 'map reads ' + f(cs.top)) + '.';
+  }
+
+  T.landforms = { describe, brief, lint, connectors, riverAnalysis, rules: RULES, GROUP, components, distanceFrom, loadCodebook, codebook: () => CB, bandFor, assignCodes, codeGlyph, codeSummary, codeSentence, CODE_GLYPHS, KIND_GLYPHS };
 })();
