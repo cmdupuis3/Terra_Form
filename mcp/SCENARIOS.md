@@ -16,17 +16,18 @@ caps top and bottom, tropics in the middle, at least two inland seas and one lar
 
 **Tools to reach for.** `catalog_search` (peninsula, polar, island), `snapshot_from_catalog`, `flip_snapshot`
 (to disguise recognisable shapes and to turn the Antarctic coast into a north cap), `compose_new` with
-`latitudes:{top:80,bottom:-80}`, `place`, `erase` (inland seas), `scatter` (the archipelago), `describe`,
-`compose_view`, `export`.
+`latitudes:{top:80,bottom:-80}` and `targetLand:[0.28,0.38]` (the budget line), `place` with `ragged:true`
+(feathered frame cuts) and `avoidLand:true, gap:2` (continents never merge), `erase` (inland seas), `scatter`
+with `avoidLand` (the archipelago), `trim_rivers`, `describe`, `compose_view`, `export`.
 
 **Assertions.**
 
 | assertion | how it is measured |
 |---|---|
 | land 28-38% | land glyphs over the canvas |
-| 4-6 landmasses with >= 60 tiles, plus >= 8 landmasses under 20 tiles | `describe.landmasses` |
+| 4-6 continents (landmasses >= 60 tiles whose centroid is outside the top and bottom 10% of rows: the cap strips are landmasses too), plus >= 8 landmasses under 20 tiles | `describe.landmasses` |
 | snow/tundra only in the top and bottom 15% of rows | `s t S T` glyphs per row |
-| tropical Köppen groups only in the middle 40% of rows | `describe.rows[].groups[3]` |
+| tropical Köppen groups only in the middle 40% of rows | `describe {rows:true}` `.rows[].groups[3]` |
 | >= 2 inland seas | `describe.seas[].inland` |
 | zero seam-lint warnings | `describe.warnings` |
 | >= 80% of river systems reach water | `describe.rivers` |
@@ -57,9 +58,10 @@ with `overlay:'rivers'`, `describe`, `export`. Single-region augmentation: no co
 **Prompt.** "An ocean map with a curving chain of atolls and a few larger volcanic islands, spaced so none touch,
 a size gradient from big in the southwest to tiny in the northeast."
 
-**Tools to reach for.** `catalog_search` (atoll, volcanic, single-island), `snapshot_from_catalog` (the entries
-carry island-expander params so islets survive sampling), `compose_new`, `scatter` along arc segments with a
-different snapshot list per segment (big volcanic islands south-west, atolls north-east), `describe`.
+**Tools to reach for.** `catalog_search` (atoll, volcanic, single-island), `snapshot_from_catalog` (the single
+atolls at their default 8x8 with `params:{islandExpand}` setting the islet size, 1-6 tiles), `compose_new`,
+`scatter` along arc segments with a different snapshot list per segment (big volcanic islands south-west,
+mid-size islets, then one-tile atolls north-east) with `avoidLand:true, gap:2`, `describe`.
 
 **Assertions.**
 
@@ -67,10 +69,10 @@ different snapshot list per segment (big volcanic islands south-west, atolls nor
 |---|---|
 | land 6-14% | land glyphs |
 | 12-30 landmasses | `describe.landmassCount` |
-| no two landmasses adjacent (8-neighbourhood) | holds by construction: landmasses are 8-connected components |
+| minimum gap between islands of 5+ tiles >= 2 water tiles | 8-connected components of land glyphs; the smallest Chebyshev distance between tiles of two different islands of 5+ tiles, minus one (a piece's own satellite islets sit 1 tile off its coast and are left out) |
 | 2-4 landmasses >= 20 tiles, the rest <= 6 | `describe.landmasses[].size` |
 | centroids fit a circle, mean residual <= 2 tiles | algebraic circle fit on `landmasses[].at` |
-| size correlates with position along the arc | Pearson of angle-around-the-fitted-centre vs log size, |r| >= 0.5 |
+| size falls monotonically along the arc SW -> NE | landmasses sorted by t = x - y, split into 3 bins; mean log size non-increasing bin to bin and first > last |
 | all land tropical (A group) or arid-coastal | `landmasses[].climate[0]` |
 
 ## Scenario 4 — A temperate region with mountain chains (Civ4, 112x70 canvas)
@@ -81,14 +83,15 @@ in the lee, rivers draining from the ranges to two different coasts."
 **Tools to reach for.** `catalog_search` (mountain-chain, mountain-wall, two-coasts, rain-shadow),
 `snapshot_from_catalog` with a `bounds` override (the Caucasus isthmus wide enough to enclose the Caspian),
 `place` with `landOnly:false` (keeps the Caspian as an inland sea), `attach` (the Cascades' east edge onto the
-Caucasus' west edge, overlapping so the N-S and E-W chains meet), `tune` (forest density, relief thresholds,
+Caucasus' west edge, overlapping 22 with `align:'relief'` so the N-S range's edge anchor meets the E-W
+range's, and `ragged:true` for a min-cut seam), `trim_rivers`, `tune` (forest density, relief thresholds,
 more rivers), `describe`, `compose_view`.
 
 **Assertions.**
 
 | assertion | how it is measured |
 |---|---|
-| temperate/continental >= 70% of land | `describe.rows[].groups` |
+| temperate/continental >= 70% of land | `describe {rows:true}` `.rows[].groups` |
 | hills+peaks 18-35% of land | `describe.landmasses` |
 | 1-2 chains >= 25 tiles with a junction | `describe.spines` (junction: not machine-detected, see findings) |
 | forest density on one side of the main chain >= 1.5x the other | `f F` glyphs split by the main spine's axis |
@@ -102,72 +105,98 @@ See [scenarios/RESULTS.md](scenarios/RESULTS.md) for the full transcripts (the f
 feedback block, the describe paragraph and warnings) and `scenarios/s1.png` .. `s4.png` for the thumbnails.
 Summary and findings below.
 
-### Summary (three runs; the sequence in `scenarios.mjs` is the best one per scenario)
+### Summary (second round; the sequence in `scenarios.mjs` is the best one per scenario)
 
-| scenario | pass | notes |
-|---|---|---|
-| 1 Earthlike alien world | 4 / 8 | climate bands, caps, inland seas and the archipelago hold; land share (24.7%), continent count (7: the two cap strips count), seam lint and river continuity fail |
-| 2 A desert | 7 / 7 | all assertions hold on the real Nile/Sahara frame with features on and relief thresholds raised |
-| 3 Tropical island chain | 5 / 7 | the arc fits and the land is tropical, but single atolls vanish at capture, so the chain has 5 landmasses, not 12 |
-| 4 Temperate with mountain chains | 4 / 7 | relief share, rain shadow, grass/plains flip and two coasts hold; climate share, the knot and seam lint fail |
+| scenario | round 1 | round 2 | notes |
+|---|---|---|---|
+| 1 Earthlike alien world | 4 / 8 | 8 / 8 | the budget line sized the pieces (28.7% land), `avoidLand` kept four continents apart, `ragged` feathered the frame cuts, `trim_rivers` dropped the rivers the seams and erasures cut (36/36 reach water), zero warnings |
+| 2 A desert | 7 / 7 | 7 / 7 | unchanged; the single-frame scenario |
+| 3 Tropical island chain | 5 / 7 (two vacuous) | 7 / 7 | restated assertions (gap >= 2 water tiles between 5+ tile islands, monotone size along the arc); single atolls at their default size with the island expander set per entry, `scatter {avoidLand, gap:2}` |
+| 4 Temperate with mountain chains | 4 / 7 | 4 / 7 | `align:'relief'` made the two ranges one relief component (366 tiles, chain 54) and `ragged` + `trim_rivers` cleared every warning (19/19 rivers reach water); climate share (66.2%), the knot and the grass/plains flip still fail |
 
-18 / 29 in the final run, reproducible (the same sequence gives the same numbers once every scenario starts
-from default settings). Per-assertion results, describe paragraphs, warnings and the full feedback transcripts:
-[scenarios/RESULTS.md](scenarios/RESULTS.md). Thumbnails: `scenarios/s1.png` .. `s4.png` (the app's own
-renderer, via the `thumbnail` tool). Exports: `mcp/out/scenario<N>.CivBeyondSwordWBSave` (not committed).
+26 / 29 in the final run (18 / 29 before this round), reproducible from default settings. Per-assertion
+results, describe paragraphs, warnings and the full feedback transcripts: [scenarios/RESULTS.md](scenarios/RESULTS.md).
+Thumbnails: `scenarios/s1.png` .. `s4.png`. Exports: `mcp/out/scenario<N>.CivBeyondSwordWBSave` (not committed).
 
 Run history, for the record: run 1 (first sequences) 10 / 29; run 2 (larger canvas, land-centred scatter, raised
-relief thresholds) 15 / 29; run 3 (bigger continents, atoll chains as pieces, deeper ridge overlap) 14 / 29,
-better on 2 and 4 and worse on 1 and 3, so the file keeps run 2's sequences for 1 and 3 and run 3's for 2 and 4;
-run 4 (partial) exposed the settings-persistence drift; run 5 (every scenario reset first) 18 / 29.
+relief thresholds) 15 / 29; run 3 (bigger continents, atoll chains as pieces, deeper ridge overlap) 14 / 29;
+run 4 (partial) exposed the settings-persistence drift; run 5 (every scenario reset first) 18 / 29. Second
+round: run 6 (the new tools dropped into the old sequences, scenario 3 restated) 20 / 29: scenario 1 lost
+land to the feathering and scenario 3's blobs crowded the arc; run 7 (pieces resized against the budget
+line, `avoidLand` placements, the archipelago moved into the tropical band, atolls at their default size
+with per-entry island expander, the arc split into a mid-size and a one-tile segment) 26 / 29.
 
 ### Findings: tool and feedback shortcomings the runs exposed
 
-Agent-side misses are listed too where they point at a missing handle.
+Round 1's eleven findings, with what the second round did about each; new ones follow.
 
-0. **Settings persist on the page.** Sliders set by one scenario (or one agent) stay set for the next; a
-   re-run of scenario 1 after scenario 4 came out with 30% land instead of 25% because scenario 4's relief
-   thresholds and river count were still active. There was no way to reset. Added during the runs:
-   `tune {reset:true}`; every scenario now starts with it. The shelf likewise accumulates same-named snapshots
-   across runs (names resolve to the newest), which is fine for an agent but worth knowing when reading the app.
-1. **Land share is hard to steer.** `snapshot` reports a piece's land count, but the agent has to add them up
-   and guess the canvas total; a `place` dry-run (`preview:true`, returning the block without stamping) or a
-   `budget` line in the compose block ("land 24.7%, target 28-38%") would make the loop converge. Scenario 1
-   went 23% -> 25% -> 40% across runs by resizing pieces blind.
-2. **No collision avoidance.** `place` and `scatter` stamp wherever told; overlapping land-only stamps merged
-   two continents into one 4455-tile landmass in run 3 and produced most of scenario 1's `truncated-wall` and
-   `climate-jump` warnings (island stamps overlapping each other). Wanted: `avoidLand:true` (shift to the nearest
-   free spot) and a `collisions` line in the block naming the patches that overlap on land.
-3. **Single atolls fall below the sampling floor.** The frame cannot be narrower than 6 source px (0.53°), so a
-   0.5° atoll captured on a 12x12 grid gets about half a source pixel per tile; with the island expander at 0.9
-   Tarawa, Majuro and Addu came out as 0-1 tiles and only 5-6 landmasses survived (needed 12-30). Whole chains
-   (Maldives, Tuvalu) do survive as 4-7 islets each. Capturing atolls needs the OSM coast tiles at a finer
-   window than the viewer allows, or a catalog note that atoll entries are chains, not islands.
-4. **Big real islands are not tropical.** Hawaii's Big Island reads as temperate (Köppen C on the volcano
-   slopes) and its summit as snow; Savaii is 97% tropical. The catalog now says so for Hawaii; a `climate`
-   field computed at index time would let `catalog_search {climate:'tropical'}` be trusted.
-5. **`attach` aligns rectangles, not features.** The Cascades' N-S range never met the Caucasus' E-W range
-   because the Caucasus piece's west edge is a coast strip, so the two spines stay separate (0 knots in every
-   run) however deep the overlap. Connectors should carry *where along the edge* the mountain wall is (anchor
-   positions, Mawhorter & Mateas), and `attach` should offer `align:'relief'` to line those up; the seam cost
-   and `bestShift` only reduce mismatch, they do not create a junction.
-6. **Real pieces carry their own climate mix.** Scenario 4's 70% temperate target cannot be met by the Caucasus
-   isthmus (45% arid) plus the Cascades' lee basins. Either the assertion should be stated as *relative* to the
-   pieces' native mix, or the tool needs a per-patch climate summary so the agent can pick pieces by numbers
-   (`snapshot` now prints the landmass climate mix; `catalog_search` does not). Scenario 2's "green only near the
-   river" rule, which failed while scenario 4's settings leaked into it, passes from default settings.
-7. **River continuity across patches is the weakest seam.** 29/43 and 14/27 systems reach water in the composed
-   maps; the rest end at patch boundaries or in the sea of a land-only stamp. The lint names them, but there is
-   no repair handle: a `trim_rivers` (drop systems that cannot reach water) or `extend_river` operator would turn
-   the warning into an action.
-8. **Describe gaps closed during the runs.** Junction detection was missing (the skeleton graph now reports
-   `knots`); water bodies and "which sea does this river reach" were missing (now `seas` and `seasReached`);
-   per-row climate counts were missing (now `rows` in the JSON); the climate rule was hand-written (now mined
-   from the Köppen raster). Still missing: a coast-type rule, geomorphons/TPI (needs an elevation field; Civ4
-   tiles have only the relief class), and a min-cut ragged seam.
-9. **The desert grid is readable after all** once features are on: `r` flood plains, `o` oases, `^`/uppercase
-   relief and the `overlay:'rivers'` `=` marks give the structure the prompt asks about; without `feat:true`
-   the grid is a field of `d`.
-10. **Assertion framing.** "No two landmasses adjacent" is vacuous on this lattice (landmasses are
-    8-connected components), and "size correlates with position" is unstable with 5-6 points; both should be
-    restated (minimum gap in tiles between landmasses; a monotone size check along the arc).
+0. **Settings persist on the page.** Fixed in round 1 (`tune {reset:true}`); every scenario starts from it.
+   It came back once more as finding 3's real cause (below).
+1. **Land share is hard to steer.** Fixed: `compose_new {targetLand}` puts a `budget:` line in every compose
+   block (`land 20.7% of target 25-35% (add 152..504 land tiles)`) and `place {preview:true}` is a dry run.
+   Scenario 1 was sized against it in one pass (21.8% -> 27.2% -> 28.7%).
+2. **No collision avoidance.** Fixed: `place` / `scatter {avoidLand, gap}` shift a stamp to the nearest spot
+   whose land is at least `gap` water tiles from existing land (reported as `shifted`), and every compose
+   block carries `collisions: [1]x[2] 38 land tiles` or `none`. Scenario 1's continents stay four (they
+   merged into 1974 tiles without it); scenario 3's islets never touch.
+3. **Single atolls fall below the sampling floor.** Not a floor after all: with default settings Tarawa
+   captures at 8x8 as 14 tiles, at 16x16 as 52 and at 24x24 as 106 (the island expander fills the lagoon, so
+   they are blobs, not rings), and `islandExpand` sets the islet size (0.3 -> 5 tiles, 0.5 -> 9). The 0-1
+   tile captures of round 1 were finding 0: another scenario's settings were still active. Documented in
+   the README under scatter.
+4. **Big real islands are not tropical.** Fixed: `catalog_index` now records each entry's measured climate mix
+   (`climateMeasured`, from the captured landmasses; 57 of 58 entries, the Marshall Islands capture no land
+   at 40x32) and `catalog_search {climate}` matches it alongside the hand-written field. Hawaii reads
+   `tropical 64%, temperate 33%`, Hawaii Big Island `temperate 65%, tropical 28%`.
+5. **`attach` aligns rectangles, not features.** Half fixed: connectors carry anchors (`relief@`, `land@` with
+   the land runs) and `attach {align:'relief'|'coast'}` lines them up. In scenario 4 the Cascades and the
+   Caucasus now form one relief component (362 tiles, chain 53, was two of 222 and 152) and the seam lint is
+   clean. The skeleton still reports 0 knots on it: the ranges meet end to end, an L, not a T; a knot needs
+   a third arm. Getting a T needs the N-S range to cross the E-W one, which `align` does not try.
+6. **Real pieces carry their own climate mix.** Scenario 4 is at 66.2% temperate + continental (was 54.7%):
+   the Caucasus isthmus is 73% continental, 15% arid (the catalog now says so). Reaching 70% is a piece
+   choice, not a tool gap.
+7. **River continuity across patches is the weakest seam.** Fixed: `trim_rivers` drops the systems the seams,
+   erasures and overlaps cut (whole systems, and dangling side branches of systems that do reach the sea),
+   keeps the ones that were endorheic in their source, and `extend_river` carries a dead end to the nearest
+   water or into another river (a tributary now reaches what its trunk reaches). Scenarios 1 and 4 went
+   from 29/43 and 16/27 to 36/36 and 19/19 systems reaching water.
+8. **Describe gaps.** `rows` is opt-in (it was half the payload), `codes:true` adds the landform codebook
+   summary, warnings and notes are separate. Still missing: a coast-type rule, geomorphons / TPI.
+9. **The desert grid is readable** once features are on (unchanged).
+10. **Assertion framing.** Restated: the gap assertion measures water tiles between islands of 5+ tiles
+    (a piece's own satellite islets sit 1 tile off its coast and are left out); the size gradient is
+    checked as non-increasing mean log size over 3 bins along SW -> NE with first > last. Both pass.
+
+New in the second round (from the owner's Oman + Morocco test and the runs):
+
+11. **Cut edges read as coastline.** Fixed in layers: snapshots carry the mask-fill tiles (`cut`), connectors
+    say `cut edge`, the seam cost ignores cut pairs (40 of 116 on the Oman seam), the `straight-edge-coast`
+    rule flags collinear shores and says whether they are a lasso cut, the capture rectangle's edge, or a
+    straight real coast, and `ragged:true` feathers the cuts and min-cuts the overlap. What remains: the
+    rule also flags straight *real* coasts of 7+ tiles (Morocco's Mediterranean shore) and says so; and a
+    rect crop has no mask fill, so its edges are "rect/frame cut" only by position.
+12. **The lasso itself was rectangular.** `suggest_lasso` / `snapshot {lassoFrom}` trace the polygon from the
+    frame: a landmass outline with a sea margin (Oman: 22 vertices, the Gulf trimmed, the coast kept) or one
+    side of a mountain spine with the crest (Morocco: the Atlantic side plus the Atlas, cut along the
+    Saharan foot). Limits: the ridge cut keeps the whole relief component, and on Morocco that is 296 of
+    695 land tiles, so "the north side" is a 48-tile strip plus the crest; on Oman no land lies west of the
+    spine, so the ridge lasso equals the land lasso.
+13. **`attach` ignored the canvas edge.** Fixed: B is clamped along the seam when its land fits, and the block
+    reports what still overhangs (`clipped: 17 land tiles off the canvas (3 rows south)` on a 24-row canvas).
+14. **Best shift on the window edge.** The window is `searchShift` (default 16, was 8) and the block flags an
+    optimum on the edge. The Oman seam's optimum is 9.
+15. **Feathering costs land and leaves specks.** `ragged` removes about 3% of a continent's land along its
+    cut edges (scenario 1 fell from 24.7% to 21.8% before the pieces were resized; the budget line shows
+    it) and at first left 1-3 tile scraps, now dropped. The owner's Morocco south edge keeps a few straight
+    runs of 4-6 tiles after feathering.
+16. **Scale mismatch is a seam.** The `scale-mismatch` rule fires when touching patches sit more than one
+    codebook band apart (Tahiti at 0.075°/tile against Morocco at 0.325°/tile: bands 5 and 3). The compose
+    canvas' own scale is the patches' median unless `compose_new {degPerTile}` declares it.
+17. **The codebook port holds.** `describe {codes:true}` and `overlay:'codes'` read the Oman + Morocco collage
+    as `desert / plain / pen/cape 23%, desert / plain / depression 11%, range/mtn / desert / basin 10%` at
+    band 3; the JS codes equal the Python ones on all but one tile of 3800 across bands 2, 3 and 5.
+18. **Scenario 4's grass/plains flip flipped.** With the ranges aligned the Cascades sit 4 rows further
+    north, both sides of the main spine read plains-dominated (22% vs 4% grass) and the lee/windward
+    contrast shows in forest only (3.13x). The assertion should probably be stated on forest + grass
+    together, or on the Köppen groups per side.

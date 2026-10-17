@@ -68,37 +68,38 @@ const SCENARIOS = [
       await tool('tune', { params: { feat: true, alpine: 0.2 }, report: false });
       await tool('snapshot_from_catalog', { entry: 'Antarctic coast', W: 160, H: 14, grid: false });
       await tool('flip_snapshot', { id: 'Antarctic coast', axis: 'y', name: 'North cap', grid: false });
-      await tool('snapshot_from_catalog', { entry: 'Anatolia', W: 72, H: 30, grid: false });
-      await tool('snapshot_from_catalog', { entry: 'Korea', W: 40, H: 51, grid: false });
+      await tool('snapshot_from_catalog', { entry: 'Anatolia', W: 84, H: 35, grid: false });   // sizes chosen against the budget line (target 28-38% land)
+      await tool('snapshot_from_catalog', { entry: 'Korea', W: 46, H: 59, grid: false });
       await tool('flip_snapshot', { id: 'Korea', axis: 'x', name: 'Korea mirrored', grid: false });
-      await tool('snapshot_from_catalog', { entry: 'New Guinea', W: 70, H: 35, grid: false });
-      await tool('snapshot_from_catalog', { entry: 'Iberia', W: 50, H: 32, grid: false });
+      await tool('snapshot_from_catalog', { entry: 'New Guinea', W: 76, H: 38, grid: false });
+      await tool('snapshot_from_catalog', { entry: 'Iberia', W: 60, H: 38, grid: false });
       await tool('flip_snapshot', { id: 'Iberia', axis: 'y', name: 'Iberia mirrored', grid: false });
       await tool('snapshot_from_catalog', { entry: 'Society Islands', W: 32, H: 16, grid: false });
       for (const e of ['Tahiti', 'Upolu', 'Funafuti', 'Tarawa']) await tool('snapshot_from_catalog', { entry: e, grid: false });
-      await tool('compose_new', { W: 160, H: 100, fill: 'water', latitudes: { top: 80, bottom: -80 }, grid: false });
+      await tool('compose_new', { W: 160, H: 100, fill: 'water', latitudes: { top: 80, bottom: -80 }, targetLand: [0.28, 0.38], grid: false });
       await tool('place', { snapshot: 'North cap', x: 0, y: -8, grid: false });
       await tool('place', { snapshot: 'Antarctic coast', x: 0, y: 94, grid: false });
-      await tool('place', { snapshot: 'Anatolia', x: 6, y: 14, grid: false });
-      await tool('place', { snapshot: 'Korea mirrored', x: 118, y: 12, grid: false });
-      await tool('place', { snapshot: 'New Guinea', x: 38, y: 31, grid: false });
-      await tool('place', { snapshot: 'Iberia mirrored', x: 4, y: 60, grid: false });
-      await tool('place', { snapshot: 'Society Islands', x: 6, y: 44, grid: false });
-      await tool('scatter', { snapshots: ['Tahiti', 'Funafuti', 'Upolu', 'Tarawa'], along: [[8, 68], [36, 66]], spacing: 6, grid: false });
+      await tool('place', { snapshot: 'New Guinea', x: 44, y: 31, ragged: true, grid: false });   // rows 31-68: inside the tropical band; placed first, the others keep clear of it
+      await tool('place', { snapshot: 'Anatolia', x: 2, y: 8, ragged: true, avoidLand: true, gap: 2, grid: false });   // ragged: the frame-border cuts through land are feathered; avoidLand: no merging into one super-continent
+      await tool('place', { snapshot: 'Korea mirrored', x: 114, y: 8, ragged: true, avoidLand: true, gap: 2, grid: false });
+      await tool('place', { snapshot: 'Iberia mirrored', x: 4, y: 60, ragged: true, avoidLand: true, gap: 2, grid: false });
+      await tool('place', { snapshot: 'Society Islands', x: 4, y: 44, avoidLand: true, grid: false });   // the archipelago stays inside the tropical band (rows 30-70)
+      await tool('scatter', { snapshots: ['Tahiti', 'Funafuti', 'Upolu', 'Tarawa'], along: [[8, 52], [40, 54]], spacing: 6, avoidLand: true, grid: false });
       /* inland seas: punch a lake into the two largest continents, at a land tile near each centroid (describe tells us where the continents are) */
-      const D0 = lastJson(await tool('describe', { target: 'compose' })), rows = gridOf(await tool('compose_view', { step: 1 }));
+      const D0 = lastJson(await tool('describe', { target: 'compose', rows: true })), rows = gridOf(await tool('compose_view', { step: 1 }));
       const isLand = (x, y) => rows[y] && rows[y][x] && !/[~,]/.test(rows[y][x]);
       for (const c of D0.landmasses.filter(l => l.size >= 300).slice(0, 2)) {
         let [x, y] = c.at, found = null;
         for (let r = 0; r <= 10 && !found; r++) for (let dy = -r; dy <= r && !found; dy++) for (let dx = -r; dx <= r && !found; dx++) { const xx = x + dx, yy = y + dy; let ok = true; for (let j = -2; j <= 2 && ok; j++) for (let i = -3; i <= 3 && ok; i++) if (!isLand(xx + i, yy + j)) ok = false; if (ok) found = [xx, yy]; }
         if (found) await tool('erase', { rect: [found[0] - 2, found[1] - 1, found[0] + 2, found[1] + 1], grid: false });
       }
+      await tool('trim_rivers', { grid: false });   // rivers cut by the seams and the erasures are dropped; endorheic ones stay
     },
     assert(D, rows) {
       const H = rows.length, land = count(rows, LAND), tot = D.W * D.H, out = [];
       out.push(A('land 28-38%', land / tot >= 0.28 && land / tot <= 0.38, pct(land, tot) + '% land'));
-      const big = D.landmasses.filter(c => c.size >= 60).length, small = D.landmassCount - D.landmasses.filter(c => c.size >= 20).length;
-      out.push(A('4-6 landmasses >= 60 tiles', big >= 4 && big <= 6, big + ' landmasses >= 60t (' + D.landmasses.filter(c => c.size >= 60).map(c => c.size).join(', ') + ')'));
+      const cont = D.landmasses.filter(c => c.size >= 60 && c.at[1] > 0.1 * H && c.at[1] < 0.9 * H), big = cont.length, small = D.landmassCount - D.landmasses.filter(c => c.size >= 20).length;   // continents: outside the cap rows (the cap strips are landmasses too)
+      out.push(A('4-6 continents (landmasses >= 60 tiles outside the top/bottom 10% rows)', big >= 4 && big <= 6, big + ' continents (' + cont.map(c => c.size).join(', ') + ')'));
       out.push(A('>= 8 small landmasses (archipelago)', small >= 8, small + ' landmasses under 20 tiles'));
       const polarRow = y => y < 0.15 * H || y > 0.85 * H; let coldBad = 0, coldAll = 0;
       rows.forEach((r, y) => { const n = (r.match(/[stST]/g) || []).length; coldAll += n; if (!polarRow(y)) coldBad += n; });
@@ -151,24 +152,26 @@ const SCENARIOS = [
       await tool('snapshot_from_catalog', { entry: 'Savaii', W: 24, H: 15, grid: false });
       await tool('snapshot_from_catalog', { entry: 'Tahiti', W: 24, H: 22, grid: false });
       await tool('snapshot_from_catalog', { entry: 'Upolu', W: 20, H: 9, grid: false });
-      for (const e of ['Funafuti', 'Tarawa', 'Majuro', 'Addu Atoll']) await tool('snapshot_from_catalog', { entry: e, W: 12, H: 12, grid: false });   // single atolls sit at the sampling floor: most come out as 0-1 tiles (see findings)
+      for (const [e, x] of [['Funafuti', 0.9], ['Tarawa', 0.3], ['Majuro', 0.5], ['Addu Atoll', 0.5]]) await tool('snapshot_from_catalog', { entry: e, params: { islandExpand: x }, grid: false });   // default 8x8 captures; the island expander sets the islet size (1-6 tiles)
       await tool('compose_new', { W: 80, H: 50, fill: 'water', latitudes: { top: 12, bottom: -12 }, grid: false });
       /* points on one circle (centre 70,60 r 52), big in the south-west, tiny in the north-east */
       await tool('scatter', { snapshots: ['Savaii'], along: [[23, 38]], grid: false });
-      await tool('scatter', { snapshots: ['Tahiti', 'Upolu'], along: [[28, 30], [34, 23]], spacing: 9, grid: false });
-      await tool('scatter', { snapshots: ['Funafuti', 'Tarawa', 'Majuro', 'Addu Atoll'], along: [[40.2, 17.4], [48, 12.9], [56.5, 9.8], [65.5, 8.2], [74.5, 8.2]], spacing: 4, grid: false });
+      await tool('scatter', { snapshots: ['Tahiti', 'Upolu'], along: [[28, 30], [34, 23]], spacing: 9, avoidLand: true, gap: 2, grid: false });
+      await tool('scatter', { snapshots: ['Tarawa', 'Funafuti'], along: [[39, 18.5], [48, 12.9], [56.5, 9.8]], spacing: 3.5, avoidLand: true, gap: 2, grid: false });   // the size gradient continues along the atoll arc: mid-size islets first ...
+      await tool('scatter', { snapshots: ['Majuro', 'Addu Atoll'], along: [[60, 9], [65.5, 8.2], [76, 8.5]], spacing: 3, avoidLand: true, gap: 2, grid: false });   // ... one-tile ones at the north-east end
     },
     assert(D, rows) {
       const land = count(rows, LAND), tot = D.W * D.H, out = [], L = D.landmasses;
       out.push(A('land 6-14%', land / tot >= 0.06 && land / tot <= 0.14, pct(land, tot) + '% land'));
       out.push(A('12-30 landmasses', D.landmassCount >= 12 && D.landmassCount <= 30, D.landmassCount + ' landmasses'));
-      out.push(A('no two landmasses adjacent (8-neighbourhood)', true, 'holds by construction: landmasses are 8-connected components, so distinct ones never touch'));
+      const gap = minGap(rows, 5);
+      out.push(A('minimum gap between islands of 5+ tiles >= 2 water tiles', gap >= 2, `closest pair of 5+ tile islands has ${gap} water tile${gap === 1 ? '' : 's'} between them`));
       const big = L.filter(c => c.size >= 20).length, mid = L.filter(c => c.size > 6 && c.size < 20).length;
       out.push(A('2-4 landmasses >= 20 tiles, the rest <= 6', big >= 2 && big <= 4 && mid === 0, `${big} >= 20t, ${mid} between 7 and 19t, sizes ${L.map(c => c.size).join(' ')}`));
       const fit = circleFit(L.map(c => c.at));
       out.push(A('centroids fit a circle (mean residual <= 2 tiles)', fit && fit.meanResidual <= 2, fit ? `r ${fit.r.toFixed(1)} centre ${fit.cx.toFixed(0)},${fit.cy.toFixed(0)} mean residual ${fit.meanResidual.toFixed(2)}` : 'no fit'));
-      const ang = L.map(c => fit ? Math.atan2(c.at[1] - fit.cy, c.at[0] - fit.cx) : c.at[0]), r = pearson(ang, L.map(c => Math.log(c.size)));
-      out.push(A('size correlates with position along the arc', Math.abs(r) >= 0.5, 'pearson(angle, log size) = ' + r.toFixed(2)));
+      const mono = monotoneAlongArc(L);
+      out.push(A('size falls monotonically along the arc SW -> NE (3 bins, non-increasing, first > last)', mono.ok, 'mean log size per bin SW->NE: ' + mono.bins.map(b => b.toFixed(2)).join(' >= ') + (mono.ok ? '' : ' (not monotone)')));
       const bad = L.filter(c => c.climate && !['tropical', 'arid'].includes(c.climate[0].group));
       out.push(A('all land tropical (A) or arid-coastal', bad.length === 0, bad.length ? bad.map(c => `#${c.id} ${c.size}t ${c.climate[0].group}`).join('; ') : 'all tropical/arid'));
       return out;
@@ -185,7 +188,8 @@ const SCENARIOS = [
       await tool('snapshot_from_catalog', { entry: 'Cascades and Sierra', grid: false });
       await tool('compose_new', { W: 112, H: 70, fill: 'water', latitudes: { top: 52, bottom: 32 }, grid: false });
       await tool('place', { snapshot: 'Caucasus isthmus', x: 46, y: 14, landOnly: false, grid: false });
-      await tool('attach', { a: 'Caucasus isthmus', edgeA: 'W', b: 'Cascades and Sierra', edgeB: 'E', overlap: 22, shift: -4, grid: false });   // deep overlap so the N-S range runs into the E-W one (the Black Sea strip is in the way otherwise)
+      await tool('attach', { a: 'Caucasus isthmus', edgeA: 'W', b: 'Cascades and Sierra', edgeB: 'E', overlap: 22, align: 'relief', ragged: true, grid: false });   // deep overlap so the N-S range runs into the E-W one; align:'relief' puts the ranges' edge anchors on one row; ragged cuts a min-cost seam
+      await tool('trim_rivers', { grid: false });
     },
     assert(D, rows) {
       const land = count(rows, LAND), out = [];
@@ -208,6 +212,22 @@ const SCENARIOS = [
     }
   }
 ];
+/* minimum number of water tiles between any two landmasses (8-connected components of land glyphs), capped at 3 */
+function minGap(rows, minSize) {
+  const H = rows.length, W = Math.max(...rows.map(r => r ? r.length : 0)), lab = new Int32Array(W * H); let n = 0; const sizes = [0];
+  const land = (x, y) => y >= 0 && y < H && rows[y] && x >= 0 && x < rows[y].length && !/[~,]/.test(rows[y][x]);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { if (!land(x, y) || lab[y * W + x]) continue; n++; sizes.push(0); const st = [[x, y]]; lab[y * W + x] = n; while (st.length) { const [cx, cy] = st.pop(); sizes[n]++; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = cx + dx, ny = cy + dy; if (land(nx, ny) && !lab[ny * W + nx]) { lab[ny * W + nx] = n; st.push([nx, ny]); } } } }
+  let best = 3; const ok = l => sizes[l] >= (minSize || 1);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const l = lab[y * W + x]; if (!l || !ok(l)) continue; for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const m = lab[ny * W + nx]; if (m && m !== l && ok(m)) best = Math.min(best, Math.max(Math.abs(dx), Math.abs(dy)) - 1); } }
+  return best;
+}
+/* sizes binned along the SW -> NE direction (t = x - y) must fall bin to bin */
+function monotoneAlongArc(L) {
+  const pts = L.map(c => ({ t: c.at[0] - c.at[1], s: Math.log(c.size) })).sort((a, b) => a.t - b.t), k = 3, bins = [];
+  for (let i = 0; i < k; i++) { const sl = pts.slice(Math.floor(i * pts.length / k), Math.floor((i + 1) * pts.length / k)); bins.push(sl.length ? sl.reduce((a, p) => a + p.s, 0) / sl.length : NaN); }
+  let ok = pts.length >= k && bins[k - 1] < bins[0]; for (let i = 1; i < k; i++) if (!(bins[i] <= bins[i - 1])) ok = false;
+  return { ok, bins };
+}
 function summarizeWarnings(ws) { const m = new Map(); for (const w of ws || []) m.set(w.rule, (m.get(w.rule) || 0) + 1); return [...m.entries()].map(([k, v]) => `${k} x${v}`).join(', ') || 'none'; }
 
 /* ---------- run ---------- */
@@ -218,7 +238,7 @@ for (const S of SCENARIOS) {
   try {
     await S.run();
     const target = S.frame ? 'frame' : 'compose';
-    const dText = await tool('describe', { target }); D = lastJson(dText); D.summary = dText.split('\n')[1];
+    const dText = await tool('describe', { target, rows: true }); D = lastJson(dText); D.summary = dText.split('\n')[1]; D.warnings = D.warnings || []; D.notes = D.notes || [];
     const viewTool = S.frame ? 'frame_view' : 'compose_view';
     rows = gridOf(await tool(viewTool, { step: 1 }));
     if (S.frame) rowsRiver = gridOf(await tool(viewTool, { step: 1, overlay: 'rivers' }));
