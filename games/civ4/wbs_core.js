@@ -1,5 +1,5 @@
-/* civ4_wbs_core.js -- viewer tile grid -> Civ4 BtS WorldBuilder save (.CivBeyondSwordWBSave)
- * Kept in sync with the inlined copy in index.html; validated by civ4_wbs_test.js.
+/* wbs_core.js (games/civ4) -- viewer tile grid -> Civ4 BtS WorldBuilder save (.CivBeyondSwordWBSave)
+ * Loaded by index.html as a script (the app no longer inlines a copy); validated by wbs_test.js.
  * (No node/python on this machine: run the test by pasting core+test into the browser console
  * or the Claude Browser pane -- both files are dual node/browser.)
  *

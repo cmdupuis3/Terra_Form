@@ -18,7 +18,7 @@ The best mainland candidates are refined at 30 m (GLO-30, heights opened to stri
 parcel-width test, connected ground). Writes <report>/<id>.json, <id>.png and <report>/frames.json, which
 export_city_sites.py --frames reads.
 
-  python scripts/score_city_sites.py --pack <Unity>/Assets/StreamingAssets/WorldPacks/earth16k \\
+  python games/culture_wars/score_city_sites.py --pack <Unity>/Assets/StreamingAssets/WorldPacks/earth16k \\
       --report <Unity>/Artifacts/CitySiteScores --seats 171,62,650,1907
 """
 import argparse, json, math, os, sys, time
@@ -882,7 +882,7 @@ def main():
     ap.add_argument("--pack", required=True)
     ap.add_argument("--seats", required=True, help="comma-separated seat ids")
     ap.add_argument("--report", required=True, help="folder for <id>.json, <id>.png and frames.json")
-    ap.add_argument("--cache", default=os.path.normpath(os.path.join(HERE, "..", "cache", "copernicus")))
+    ap.add_argument("--cache", default=os.path.normpath(os.path.join(HERE, "..", "..", "cache", "copernicus")))
     ap.add_argument("--weights", default=os.path.join(HERE, "city_site_score.json"))
     ap.add_argument("--extra-seat", action="append", default=[], help="'id:name:lat:lon' (as export_city_sites.py)")
     args = ap.parse_args()

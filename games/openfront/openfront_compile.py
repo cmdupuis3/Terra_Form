@@ -37,7 +37,7 @@ API
   render_preview(bin_bytes, width, height, mark_lakes=False) -> PIL.Image RGB
 
 CLI
-  python scripts/openfront_compile.py <folder with image.png + info.json> --out <resources folder>
+  python games/openfront/openfront_compile.py <folder with image.png + info.json> --out <resources folder>
                                       [--preview preview.png] [--keep-small]
 """
 from __future__ import annotations

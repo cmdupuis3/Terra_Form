@@ -37,7 +37,7 @@ only the blocks under the window cross the wire. The result of each read is cach
 Attribution for the credits: produced using Copernicus WorldDEM-30 (c) DLR e.V. 2010-2014 and (c) Airbus
 Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.
 
-  python scripts/export_city_sites.py --pack <Unity>/Assets/StreamingAssets/WorldPacks/earth16k \
+  python games/culture_wars/export_city_sites.py --pack <Unity>/Assets/StreamingAssets/WorldPacks/earth16k \
       --out <Unity>/Assets/StreamingAssets/CitySites/earth --seats 171,71,62,633,1509,5
 """
 import argparse, json, math, os, struct, sys, time
@@ -50,10 +50,11 @@ from rasterio.transform import from_origin, Affine
 from rasterio.warp import reproject, Resampling, transform, transform_geom
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DATA = os.path.normpath(os.path.join(HERE, "..", "data"))
 sys.path.insert(0, HERE)
-from elev16 import SEA                                   # the world pack's height floor, -500 m
-from export_world_pack import decode_coast_tile, rings_to_polygon
+sys.path.insert(0, os.path.normpath(os.path.join(HERE, "..", "..")))   # the core: terraform/
+from terraform import DATA, ROOT                         # noqa: E402  <repo>/data, <repo>
+from terraform import SEA                                # noqa: E402  the world pack's height floor, -500 m
+from terraform import decode_coast_tile, rings_to_polygon  # noqa: E402
 
 WGS84 = CRS.from_epsg(4326)
 INNER, INNER_M = 271, 30.0
@@ -248,6 +249,7 @@ def _overture_table(kind, bounds, cache, release, log, prefix=""):
         return pq.read_table(os.path.join(cache, hits[0])), hits[0][len(key) + 1:-len(".parquet")]
     import pyarrow.compute as pc, pyarrow.dataset as ds, pyarrow.fs as pfs
     if not release:
+        sys.path.insert(0, os.path.join(ROOT, "scripts"))   # fetch_osm_waterways.py is data preparation, in scripts/
         from fetch_osm_waterways import latest_release
         release = latest_release()
     t0 = time.time()
@@ -986,10 +988,10 @@ def main():
     ap.add_argument("--pack", required=True, help="world pack folder holding seats.yaml")
     ap.add_argument("--out", required=True, help="output folder; one subfolder per seat id, plus index.json")
     ap.add_argument("--seats", required=True, help="comma-separated seat ids")
-    ap.add_argument("--cache", default=os.path.normpath(os.path.join(HERE, "..", "cache", "copernicus")))
+    ap.add_argument("--cache", default=os.path.join(ROOT, "cache", "copernicus"))
     ap.add_argument("--outer-km", type=float, default=24.0, help="outer ring span in km (24 is the plan's default)")
     ap.add_argument("--offset", default="", help="per-seat centre offsets, 'id:eastKm,northKm;id:...'")
-    ap.add_argument("--overture-cache", default=os.path.normpath(os.path.join(HERE, "..", "cache", "overture")))
+    ap.add_argument("--overture-cache", default=os.path.join(ROOT, "cache", "overture"))
     ap.add_argument("--overture-release", default=None, help="Overture release for new fetches (default: latest)")
     ap.add_argument("--height-step", type=float, default=HEIGHT_STEP, help="metres a height unit in the m16 PNGs (1 = whole metres)")
     ap.add_argument("--frames", default=None, help="frames.json from score_city_sites.py: each seat's chosen window")

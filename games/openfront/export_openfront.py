@@ -16,15 +16,16 @@ highland, otherwise mountain. Maps are authored as the input of OpenFront's map 
 The generator (`npm run gen-maps` in an OpenFront checkout) drops land bodies under 30 tiles and lakes
 under 200, finds the ocean, the shore and the water depth, writes resources/maps/<folder>/ (map.bin,
 map4x.bin, map16x.bin, manifest.json, thumbnail.webp) and registers the map (Maps.gen.ts, en.json).
---compiled writes those runtime files here instead, through scripts/openfront_compile.py (a port of the
-generator, checked byte for byte against OpenFront's shipped maps); a map still needs gen-maps to be
-registered in the game, so --compiled is for checking what the game will see. --preview draws the
+--compiled writes those runtime files here instead, through openfront_compile.py (beside this script: a
+port of the generator, checked byte for byte against OpenFront's shipped maps); a map still needs gen-maps
+to be registered in the game, so --compiled is for checking what the game will see. --preview draws the
 compiled map in the game's colours.
 
-The world comes from export_world_pack.py: a FRAME (a lon/lat box at a pixel density, W > E crosses the
-antimeridian) with the same elevation (ETOPO 2022, fine hgt_tiles above the working density), land mask
-(OpenStreetMap coast tiles, HydroLAKES with the reservoirs gone and the historic lakes back, Natural
-Earth playas as land) and small-island expander. On top of it this module adds OpenFront's two pieces:
+The world comes from Terra Form's core (terraform/frame.py, the frame Culture Wars' world pack is cut
+from too): a FRAME (a lon/lat box at a pixel density, W > E crosses the antimeridian) with the same
+elevation (ETOPO 2022, fine hgt_tiles above the working density), land mask (OpenStreetMap coast tiles,
+HydroLAKES with the reservoirs gone and the historic lakes back, Natural Earth playas as land) and
+small-island expander. On top of it this module adds OpenFront's two pieces:
 
 The land classifier. Magnitude follows elevation on a square-root scale with three anchors (metres):
 plains below --plains-top, highland below --highland-top, magnitude 30 at --mountain-top and above.
@@ -66,14 +67,14 @@ and names it after the country. Flags are the country's code in OpenFront's reso
 --nations-file takes your own: a CSV or JSON of name, lat, lon and optional flag.
 
     # The Aegean, into an OpenFront checkout, with the runtime files and a preview
-    python scripts/export_openfront.py --bounds 19 34 30 42 --name "Aegean Sea" --openfront C:/src/OpenFrontIO \\
+    python games/openfront/export_openfront.py --bounds 19 34 30 42 --name "Aegean Sea" --openfront C:/src/OpenFrontIO \\
         --out C:/src/OpenFrontIO/map-generator/assets/maps/aegeansea \\
         --compiled C:/src/OpenFrontIO/resources/maps/aegeansea --preview aegean_preview.png
     # The British Isles, relief stretched to the region, 24 nations, the big rivers navigable
-    python scripts/export_openfront.py --bounds -11 49.5 2.5 61 --name "Isles" --mix 40,45 --nations 24 --rivers 3 \\
+    python games/openfront/export_openfront.py --bounds -11 49.5 2.5 61 --name "Isles" --mix 40,45 --nations 24 --rivers 3 \\
         --out out/isles --preview out/isles_preview.png
     # Arabia with its desert as rough ground
-    python scripts/export_openfront.py --bounds 34 12 60 32 --name "Arabia" --desert --out out/arabia --preview out/arabia.png
+    python games/openfront/export_openfront.py --bounds 34 12 60 32 --name "Arabia" --desert --out out/arabia --preview out/arabia.png
 
 Data credits for the map's CREDITS.md entry are printed at the end (OpenStreetMap is ODbL: maps made
 from it are produced works that need the credit line).
@@ -85,7 +86,11 @@ from rasterio import features
 from rasterio.transform import Affine
 from scipy import ndimage as nd
 
-import export_world_pack as wp
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)                                                 # openfront_compile.py, beside this one
+sys.path.insert(0, os.path.normpath(os.path.join(HERE, "..", "..")))     # the core: terraform/
+from terraform import cli                                                # noqa: E402
+from terraform import frame as tf                                        # noqa: E402
 
 WATER_BLUE = 106
 PLAINS_TOP, HIGHLAND_TOP, MOUNTAIN_TOP = 250.0, 1000.0, 2250.0   # metres; the World map fit (docstring)
@@ -126,7 +131,7 @@ def river_valleys(grid, elev):
     """Tiles on the valley floor of a big river (a channel of 100 m3/s or more): within VALLEY_KM of it and
     at most VALLEY_RISE_M above it. --desert leaves them as the elevation has them, so the Nile, the
     Euphrates and the Indus stay plains through the desert while the plateaus beside them are lifted."""
-    shapes = [(g, 1) for g, c in wp.river_shapes(grid.frame) if c >= 2]
+    shapes = [(g, 1) for g, c in tf.river_shapes(grid.frame) if c >= 2]
     river = grid.burn(shapes, all_touched=True).astype(bool) if shapes else None
     if river is None or not river.any():
         return np.zeros(elev.shape, bool)
@@ -193,7 +198,7 @@ class Grid:
         return Affine(self.res_x, 0.0, self.frame.lon_min + lon_shift, 0.0, -self.res_y, self.frame.lat_max)
 
     def pixel(self, lon, lat):
-        lon = lon if lon >= self.frame.lon_min - wp.EPS else lon + 360.0
+        lon = lon if lon >= self.frame.lon_min - tf.EPS else lon + 360.0
         return (lon - self.frame.lon_min) / self.res_x, (self.frame.lat_max - lat) / self.res_y
 
     def burn(self, shapes, all_touched=False):
@@ -219,7 +224,7 @@ def frame_for(args):
         ppd = args.height / (n - s)
     else:
         ppd = math.sqrt(args.pixels / (span * (n - s) * kx))
-    frame = wp.Frame(args.bounds, ppd, 4)
+    frame = tf.Frame(args.bounds, ppd, 4)
     width = max(4, int(round(frame.w * kx / 4.0)) * 4)
     return frame, width, kx
 
@@ -373,7 +378,7 @@ def main():
     ap.add_argument("--out", required=True, help="folder for image.png + info.json (an OpenFront map-generator/assets/maps/<folder>)")
     ap.add_argument("--name", required=True, help="the map's name (OpenFront's wire name: never change it once the map ships)")
     ap.add_argument("--id", help="UpperCamelCase id; lowercased it is the folder name (default: from --name)")
-    ap.add_argument("--bounds", type=float, nargs=4, metavar=("W", "S", "E", "N"), required=True, help="lon/lat box (W > E crosses 180)")
+    cli.add_frame_args(ap, bounds_required=True, resolution=False, islands=False)   # --bounds, --elev/koppen/coast-source
     size = ap.add_mutually_exclusive_group()
     size.add_argument("--pixels", type=float, default=TARGET_PIXELS, help="target tile count (default 2.5 M)")
     size.add_argument("--width", type=int, help="pixel width")
@@ -381,8 +386,6 @@ def main():
     size.add_argument("--ppd", type=float, help="rows per degree of latitude")
     ap.add_argument("--aspect", choices=("auto", "true", "plate"), default="auto",
                     help="true: columns cos(mid-latitude) as wide, shapes true at the middle; plate: square degrees; auto: plate only for the whole globe")
-    for layer in ("elev", "coast", "koppen"):
-        ap.add_argument(f"--{layer}-source", choices=("auto", "base", "fine"), default="auto")
     ap.add_argument("--plains-top", type=float, default=PLAINS_TOP, help="metres; plains below (default fitted to OpenFront's World map)")
     ap.add_argument("--highland-top", type=float, default=HIGHLAND_TOP, help="metres; highland below, mountain above")
     ap.add_argument("--mountain-top", type=float, default=MOUNTAIN_TOP, help="metres; magnitude 30 from here")
@@ -392,17 +395,12 @@ def main():
                          f"magnitude MAG (default {DESERT_MAG}) from 50 m up; off unless given")
     ap.add_argument("--rivers", type=int, default=0, choices=(0, 1, 2, 3),
                     help="cut channels of this class and up into the land as water (1 minor, 2 >= 100 m3/s, 3 >= 1000; 0 off)")
-    ap.add_argument("--island-expand", type=float, default=0.0, help="the small-island expander (export_world_pack.py), 0..1")
-    ap.add_argument("--island-min-deg", type=float, default=0.15)
-    ap.add_argument("--island-min-area", type=float, default=0.3)
-    ap.add_argument("--island-isolation", type=float, default=0.0)
-    ap.add_argument("--island-regions", default="")
-    ap.add_argument("--island-merge", action="store_true")
+    cli.add_island_args(ap)          # the small-island expander (terraform/frame.py build_landmask): --island-*
     ap.add_argument("--nations", type=int, help="how many nations (default: one per ~60,000 land tiles, 4..60; OpenFront's maps run 40-80,000)")
     ap.add_argument("--nation-names", choices=("city", "country"), default="city",
                     help="city: sites named after the place; country: one site per country, named after it")
     ap.add_argument("--nations-file", help="CSV/JSON of name, lat, lon[, flag] to use instead of the gazetteer")
-    ap.add_argument("--gazetteer", default=os.path.join(wp.DATA, "seats", "historic_*.csv"))
+    ap.add_argument("--gazetteer", default=os.path.join(tf.DATA, "seats", "historic_*.csv"))
     ap.add_argument("--openfront", help="an OpenFront checkout: flags from its resources/countries.json")
     ap.add_argument("--categories", help=f"comma-separated (default: guessed from the frame); one of {', '.join(CATEGORIES)}")
     ap.add_argument("--frequency", type=int, default=1, help="multiplayer_frequency (OpenFront's tests want > 0)")
@@ -417,19 +415,17 @@ def main():
     grid = Grid(frame, width)
     print(f"frame {frame.w}x{frame.h} at {frame.ppd:.4f} rows/deg -> {grid.w}x{grid.h} ({grid.w * grid.h / 1e6:.2f} M tiles, "
           f"x squeeze {kx:.3f}): lon {frame.lon_min:.4f}..{frame.lon_max:.4f}, lat {frame.lat_min:.4f}..{frame.lat_max:.4f}")
-    fine = {k: (v == "fine" or (v == "auto" and frame.ppd > wp.BASE_PPD + wp.EPS))
-            for k, v in (("elev", args.elev_source), ("coast", args.coast_source), ("koppen", args.koppen_source))}
+    fine = cli.fine_sources(args, frame)
 
-    code, elev_src = wp.build_elevation(frame, os.path.join(wp.DATA, "elev_4096.png"), fine["elev"])
-    elev = squeeze_x(wp.SEA + code * np.float32((wp.PEAK - wp.SEA) / 65535.0), grid.w)
+    code, elev_src = tf.build_elevation(frame, os.path.join(tf.DATA, "elev_4096.png"), fine["elev"])
+    elev = squeeze_x(tf.SEA + code * np.float32((tf.PEAK - tf.SEA) / 65535.0), grid.w)
     del code
-    mask, land_src = wp.build_landmask(frame, fine["coast"], args.island_expand, args.island_min_deg, args.island_min_area,
-                                       args.island_isolation, wp.parse_regions(args.island_regions), args.island_merge)
+    mask, land_src = tf.build_landmask(frame, fine["coast"], **cli.island_kwargs(args))
     land = squeeze_x(mask, grid.w) >= 127.5
     del mask
     print(f"elevation from {elev_src}\nland from {land_src}: {100.0 * land.mean():.1f}% land")
     if args.rivers:
-        shapes = [(g, 1) for g, c in wp.river_shapes(frame) if c >= args.rivers]
+        shapes = [(g, 1) for g, c in tf.river_shapes(frame) if c >= args.rivers]
         cut = grid.burn(shapes, all_touched=True).astype(bool) & land
         land &= ~cut
         print(f"rivers: {len(shapes)} reaches of class >= {args.rivers} cut {cut.sum()} land tiles to water")
@@ -448,7 +444,7 @@ def main():
     if not n_land:
         sys.exit("no land in the frame")
     if args.desert is not None:
-        kop, kop_src = wp.build_koppen(frame, os.path.join(wp.DATA, "koppen_2048.png"), fine["koppen"])
+        kop, kop_src = tf.build_koppen(frame, os.path.join(tf.DATA, "koppen_2048.png"), fine["koppen"])
         if kop.shape != (frame.h, frame.w):    # the base raster at its own resolution, the frame a whole multiple of it
             k = frame.h // kop.shape[0]
             kop = np.repeat(np.repeat(kop, k, axis=0), k, axis=1)

@@ -10,7 +10,7 @@
 # --deg 10 --px 600. 12-bit keeps 1.6 m precision at ~30% smaller PNGs than full 16-bit.
 #
 #   pip install rasterio numpy pillow
-#   python scripts/elev16.py ETOPO_2022_v1_30s_N90W180_surface.tif \
+#   python terraform/elev16.py ETOPO_2022_v1_30s_N90W180_surface.tif \
 #       --out-dir data/hgt_tiles --deg 2.5 --px 300 --bits 12 --no-base
 import argparse, os, json, shutil
 import numpy as np, rasterio

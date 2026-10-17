@@ -1,14 +1,14 @@
-/* civ4_wbs_test.js -- validate civ4_wbs_core.js against the vanilla WBSave format
+/* civ4_wbs_test.js -- validate wbs_core.js against the vanilla WBSave format
  * (grounded on PublicMaps/Europe.CivBeyondSwordWBSave, Version=11).
- * Dual-mode: `node scripts/civ4_wbs_test.js`, or in a browser load civ4_wbs_core.js and
- * rivers_core.js first (they attach Civ4WBS / RiversCore to globalThis) then this file.
+ * Dual-mode: `node games/civ4/wbs_test.js`, or in a browser load wbs_core.js and
+ * core/rivers_core.js first (they attach Civ4WBS / RiversCore to globalThis) then this file.
  */
 (function () {
   "use strict";
   const isNode = typeof module !== "undefined" && module.exports;
   const { worldSizeFor, plotRiverLines, serialize: serializeRaw } =
-    isNode ? require("./civ4_wbs_core.js") : globalThis.Civ4WBS;
-  const { reachesToEdges } = isNode ? require("./rivers_core.js") : globalThis.RiversCore;
+    isNode ? require("./wbs_core.js") : globalThis.Civ4WBS;
+  const { reachesToEdges } = isNode ? require("../../core/rivers_core.js") : globalThis.RiversCore;
 
   let fails = 0;
   const ok = (name, cond, extra) => { console.log((cond ? "  PASS " : "  FAIL ") + name + (extra ? "  " + extra : "")); if (!cond) fails++; };

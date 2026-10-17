@@ -8,7 +8,7 @@ relative to the local spacing, dense and sparse country lose about the same shar
 keeps its shape; ALPHA is found by bisection so the output holds --target seats. Ids are renumbered
 1..N in the kept order, as the selector numbers them.
 
-  python scripts/cull_city_seats.py --seats <pack>/seats.yaml --target 5000 --out <pack>/seats.yaml
+  python games/culture_wars/cull_city_seats.py --seats <pack>/seats.yaml --target 5000 --out <pack>/seats.yaml
 """
 import argparse, math, re, sys
 import numpy as np

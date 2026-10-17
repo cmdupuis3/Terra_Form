@@ -1,8 +1,12 @@
 # Terra-WBS
 
-Convert real-world geographic data into a viable **Civilization IV** WorldBuilder
-save (`.CivBeyondSwordWBSave`). Frame a region in the viewer, tune the
-classification, preview the discrete Civ terrain, and export.
+Convert real-world geographic data into a game map. Frame a region in the viewer, tune the
+classification, preview the tiles and export. The core is game-agnostic: it measures the
+world (height, relief, climate, colour, coast, rivers) and a **game module** in `games/<id>/`
+turns that into the game's tiles and map file. Four ship: **Civilization IV** (a viable
+`.CivBeyondSwordWBSave`), **Civilization V** (the same save laid out on the hex lattice Civ5
+imports), **OpenFront** and **Culture Wars**. The Game selector in the Output grid panel
+switches; the module contract is in [games/README.md](games/README.md).
 
 This build uses **real elevation** (NASA-derived), the **real 10 m Natural Earth
 coastline + lakes**, a **real Köppen-Geiger climate map** (Beck et al. 2023,
@@ -90,25 +94,24 @@ the folder.
   A halo around each tile decides which regime it's in; the halo radius scales with zoom (larger when zoomed in) for stable classification at high zoom.
 - **⟳ reseed climate** reseeds the moisture-driven colour & Köppen; real height &
   coastline are untouched.
-- **hex grid (Civ5 import layout)** — Output grid panel checkbox. Civ5 imports a
-  Civ4 map by placing square plot (x,y) on its hex plot (x,y): odd rows (in Civ5's
-  south-origin count) sit half a tile east and rows are √3/2 ≈ 0.866 tile apart.
-  In hex mode the app computes tiles on that lattice so the import lands right:
-  sampling footprints on shifted rows move +½ tile east (including the crisp
-  vector-coast regime), the viewer/sampling frame uses the 0.866 row pitch (so the
-  imported map isn't ~15% vertically stretched), and game adjacency — coast
-  detection, seaway/mountain-pass chokepoints — runs on the hex 6-neighbourhood
-  instead of the square 8 (oasis spacing stays a mode-independent 3×3 box; the
-  hex 6-ring packed them too densely). The civ preview draws real pointy-top
-  hexagons (odd rows indented half a tile) with authentic jagged edges — the block
-  is fitted with a thin margin so all four borders show the ragged hex teeth
-  (half-tile zig-zag on the sides, sawtooth top/bottom). The export is still a
-  normal Civ4 WBS. Known limits: rivers stay on the square lattice (Civ5's importer
-  auto-converts them), so in the hex preview river lines cross shifted-row tile
-  interiors — expected, not a bug; on regional (non-wrapping) maps the last tile
-  of each shifted row samples ~half a footprint at the frame edge; edge-of-map
-  adjacency doesn't wrap on wrap-X maps (same as square mode).
-- **Generate** writes a `.CivBeyondSwordWBSave` and runs a validator
+- **Game** — Output grid panel selector. Each game module sets the lattice (square or hex),
+  the size limits, its own inspector panels (Civ4/Civ5: Base Terrain and Features), the Civ
+  preview's colours and glyphs, and what Export writes. Civ5 imports a Civ4 map by placing
+  square plot (x,y) on its hex plot (x,y): odd rows (in Civ5's south-origin count) sit half a
+  tile east and rows are √3/2 ≈ 0.866 tile apart. The Civ5 game is therefore the Civ4 module
+  on that lattice: sampling footprints on shifted rows move +½ tile east (including the crisp
+  vector-coast regime), the viewer/sampling frame uses the 0.866 row pitch (so the imported map
+  isn't ~15% vertically stretched), and game adjacency — coast detection, seaway/mountain-pass
+  chokepoints — runs on the hex 6-neighbourhood instead of the square 8 (oasis spacing stays a
+  mode-independent 3×3 box). The civ preview draws real pointy-top hexagons with authentic
+  jagged edges. The export is still a normal Civ4 WBS. Known limits: rivers stay on the square
+  lattice (Civ5's importer auto-converts them), so in the hex preview river lines cross
+  shifted-row tile interiors — expected, not a bug; on regional (non-wrapping) maps the last
+  tile of each shifted row samples ~half a footprint at the frame edge; edge-of-map adjacency
+  doesn't wrap on wrap-X maps (same as square mode). OpenFront previews its magnitude classifier
+  and writes `image.png` + `info.json` (the Python exporter is the production path); Culture
+  Wars is a frame picker that writes a `frame.json` with the matching exporter command.
+- **Export** (Civ4 / Civ5) writes a `.CivBeyondSwordWBSave` and runs a validator
   (plot count = W×H, land↔plot-type consistency, starts on land, header present).
 - **Save destination** (under the Generate button) controls where the file lands.
   In the WebView2 app (and any Chromium browser) *Choose folder…* lets you pick a
@@ -120,8 +123,8 @@ the folder.
   *Save As* dialog, or as a last resort downloads to the browser's Downloads folder.
   Browsers only expose the chosen folder's *name*, not its full path, so the panel
   shows the folder name rather than an absolute path.
-  The serializer lives in `scripts/civ4_wbs_core.js` (inlined in `index.html`, the
-  two kept in sync like the rivers core; `scripts/civ4_wbs_test.js` validates both
+  The serializer lives in `games/civ4/wbs_core.js` (loaded by `index.html` as a script;
+  `games/civ4/wbs_test.js` validates it
   against the vanilla `PublicMaps/Europe.CivBeyondSwordWBSave` format). Format
   choices grounded in that vanilla map: with 0 players placed it writes 18
   `LeaderType=NONE` + `RandomStartLocation=true` seats (no team blocks) so the game
@@ -136,69 +139,10 @@ the folder.
   misreads LF-only files (token boundaries slip → a `findInfoTypeNum` error and a
   crash to desktop at game start), so CRLF is required, not cosmetic.
 
-## OpenFront maps (`scripts/export_openfront.py`)
+## OpenFront maps
 
-[OpenFront](https://openfront.io) maps are pixel maps: one tile per pixel, water
-or land, with a land magnitude 0–30 that the game reads as plains (< 10),
-highland (< 20) or mountain. The exporter builds the frame with the world-pack
-pipeline (`export_world_pack.py`: same elevation, OSM coast, curated lakes,
-playas and island expander), so only the OpenFront parts are new:
-
-- **Land classifier.** The magnitude follows elevation on a square-root scale
-  through three anchors: plains below 250 m, highland below 1000 m, and 30 from
-  2250 m (`--plains-top/--highland-top/--mountain-top`). These come from
-  OpenFront's own World map. Registered on our layers (97.8 % land agreement),
-  its magnitude is a function of elevation alone, ≈ 0.63·√metres. Our classifier
-  reproduces its terrain type on 85 % of land tiles, and the
-  plains/highland/mountain mix to within ~2 points.
-  Africa, Mena and Australia follow the same curve. `--mix 40,45` sets the
-  anchors from the frame's own land heights instead, the way OpenFront's
-  regional maps stretch their relief.
-- **Desert depends on the map.** The maps above give desert no lift. Some of
-  the desert maps (Horn of Africa, the Levant, the Middle East, Bab el-Mandeb)
-  draw desert as mid-rough terrain, highland ~12-15, with only a low coastal
-  strip left as plains. `--desert [MAG]` follows that convention. Köppen BW
-  land is at least magnitude MAG (default 12), on a square-root ramp that
-  reaches highland at 50 m. A big river's valley floor (≤ 15 km from a channel
-  of ≥ 100 m³/s, ≤ 30 m above it) keeps its elevation magnitude, so the Nile
-  and the Euphrates stay plains. On those four maps it lifts the desert tiles'
-  terrain-type agreement from 50-70 % to 64-80 %. On the elevation-style maps
-  it would cost 6-27 points, so it is off by default. Steppe (BS) is never
-  lifted: that helped on none of them. `--rivers 1|2|3` cuts
-  channels of that class and larger into the land as navigable water.
-- **Output.** It writes the map generator's input, `image.png` (a 32-colour
-  palette PNG in OpenFront's own map palette, blue 106 = water, land blue
-  = 140 + 2·magnitude, both sides multiples of 4) and `info.json` (id, name,
-  translation key, categories, frequency, nations). By default the size is
-  2.5 M tiles. The aspect is equirectangular with the columns squeezed by
-  cos(mid-latitude), so the frame's middle is true to shape (`--aspect plate`
-  keeps square degrees).
-- **Nations.** These are the best-scoring sites of the curated gazetteer
-  (`data/seats/historic_*.csv`) under the frame, snapped onto land the
-  generator keeps and spaced out. `--nation-names country` gives one per
-  country, named after it. Flags come from `resources/countries.json` of the
-  OpenFront checkout given as `--openfront`. `--nations-file` takes your own
-  list.
-- **Compiled files.** `--compiled DIR` also writes OpenFront's runtime files
-  (`map.bin`, `map4x.bin`, `map16x.bin`, `manifest.json`, `thumbnail.webp`)
-  through `scripts/openfront_compile.py`. That is a port of OpenFront's Go
-  generator, checked byte for byte against its shipped maps by
-  `scripts/openfront_compile_test.py`. `--preview PNG` draws the compiled map
-  in the game's colours.
-
-```bash
-python scripts/export_openfront.py --bounds 19 34 30 42 --name "Aegean Sea" \
-    --openfront C:/src/OpenFrontIO --out C:/src/OpenFrontIO/map-generator/assets/maps/aegeansea \
-    --preview aegean_preview.png
-cd C:/src/OpenFrontIO && npm run gen-maps     # compiles and registers the map (needs Go)
-```
-
-The output folder's name must be the lowercased id (`AegeanSea` → `aegeansea`).
-A map only appears in the game once `gen-maps` has added it to `Maps.gen.ts`, so
-`--compiled` is for checking what the game will see, not for skipping that step.
-The script prints the data credits for OpenFront's `CREDITS.md`; the
-OpenStreetMap coast is ODbL, and a map made from it is a produced work that
-needs the credit line.
+Export [OpenFront](https://openfront.io) maps with `games/openfront/export_openfront.py`;
+see [games/openfront/README.md](games/openfront/README.md).
 
 ## How the coastline works
 
@@ -227,22 +171,30 @@ water automatically.
 Terra-WBS.exe                  Windows launcher (native window, no server)
 Terra-WBS-standalone.exe       same, bundled .NET — for sharing the folder
 app/                           source for the launcher (C# + WebView2)
-index.html                     the app (self-contained; coastline embedded)
+index.html                     the app's HTML/CSS shell: the TerraForm registry stub, then games/*/module.js, then core/app.js
+core/                          the game-agnostic core (JavaScript)
+  app.js                       the app: viewer, sampling, rivers, compose, save flow (formerly inline in index.html)
+  rivers_core.js               centerline -> river-edge rasterizer, kept in sync with app.js; rivers_test.js validates it
 data/
-  coast_reduced.json           simplified coastline embedded in index.html
+  coast_reduced.json           simplified coastline embedded in core/app.js
   landmask_3600x1800.png       equirectangular land/water mask (batch pipeline)
   elev_4096.png                coarse base elevation (RG16), zoomed-out fallback
   hgt_tiles/                   fine elevation: 30 arc-sec (120 px/deg), 2.5-deg RG16 12-bit
                                tiles, LAND ONLY -- index.json carries a `tiles` manifest so
                                the app skips the dropped pure-ocean cells
 scripts/
-  civ4_wbs_core.js             viewer tile grid -> Civ4 WBSave serializer (inlined in index.html)
-  civ4_wbs_test.js             serializer test suite (dual node/browser; no node needed)
   coastline_to_mask.py         land-polygon vector -> equirectangular raster mask
   reduce_coastline.py          land-polygon vector -> compact JSON for the app (zoomed-out set)
   build_coast_tiles.py         OSM land polygons -> data/coast_tiles (two-LOD, gzipped binary tiles)
-  export_openfront.py          lon/lat frame -> OpenFront map (image.png + info.json; --compiled runtime files)
-  openfront_compile.py         OpenFront's map generator in Python (image.png -> map.bin etc.); tested by openfront_compile_test.py
+terraform/                     Terra Form's core (Python, game-agnostic): a lon/lat frame and its layers
+  frame.py                     Frame + layer builders (elevation, Koppen, land mask + island expander, rivers, playas)
+  cli.py                       the shared frame / --*-source / --island-* arguments for game exporters
+  elev16.py                    RG16 elevation codec (SEA/PEAK); builds data/hgt_tiles + elev_4096.png from ETOPO
+games/                         one folder per game: the app module (module.js: grid, classifier, preview, export) and the batch scripts (import terraform/); contract in games/README.md
+  civ4/                        Civ4 module + the WBSave serializer (wbs_core.js, inlined no more) and its test (wbs_test.js)
+  civ5/                        Civ5 = the Civ4 module on the hex lattice
+  culture_wars/                Culture Wars module (frame picker) + world pack and city-site exporters, province-seat tools (README.md)
+  openfront/                   OpenFront module (preview + image.png/info.json) + the Python exporter, generator port and its test (README.md)
 ```
 
 ## Regenerating the coastline data
@@ -260,7 +212,7 @@ python scripts/coastline_to_mask.py ne_50m_land.geojson --width 3600 --height 18
 
 # 2) compact coastline for the interactive app (windowed LOD renderer)
 python scripts/reduce_coastline.py ne_50m_land.geojson --eps 0.04 --out coast_reduced.json
-#    then embed: replace the `const COAST=...;` value in index.html with the file contents
+#    then embed: replace the `const COAST=...;` value in core/app.js with the file contents
 ```
 
 Lower `--eps` for higher fidelity (e.g. GSHHG full resolution); raise it for a
@@ -319,7 +271,7 @@ days, a lake the river runs through — the Arrow Lakes, Kamloops, Winokapau —
 it for months). Named lakes the numbers would drop are kept by `RIVER_LAKE_KEEP` (the
 St Lawrence's Saint-Pierre, Saint-François and Saint-Louis). The dropped rows go
 to `data/lake_tiles/river_reaches.csv`; the script run on its own prints the
-drops, the keeps and the near misses for review. `scripts/audit_lake_rivers.py`
+drops, the keeps and the near misses for review. `games/culture_wars/audit_lake_rivers.py`
 screens an exported world pack's inland water for thin river-threaded pieces,
 before and after.
 
@@ -328,7 +280,7 @@ Both tile sets share the same two LODs and one index layout:
 | lod | cells | tolerance | used when the window is |
 |-----|-------|-----------|-------------------------|
 | `c` | 10°  (36×18)   | ~300 m | ≤ vector cutoff (30°) and > 8° wide |
-| `f` | 2.5° (144×72)  | ~22 m  | ≤ 8° wide (`FINE_COAST_DEG` in index.html) |
+| `f` | 2.5° (144×72)  | ~22 m  | ≤ 8° wide (`FINE_COAST_DEG` in core/app.js) |
 
 Each tile is clipped (with a small overlap so neighbouring fills union without
 a seam), unioned, Douglas-Peucker simplified with a tolerance that grows up to
@@ -403,13 +355,13 @@ serialize time.
   salt flat rather than snow). Snow-capped ranges are caught by the white-pixel
   *fraction* per tile (the "Alpine cold" tilt), not by average colour, since tile
   averaging washes thin snow into "plains". If the load fails, the procedural
-  interior is used as a fallback. To swap the source, replace `SAT_SRC` in `index.html`.
+  interior is used as a fallback. To swap the source, replace `SAT_SRC` in `core/app.js`.
 - Elevation: **ETOPO 2022** (NOAA, public domain). The fine `data/hgt_tiles/` are
   generated from the 30 arc-second surface DEM at native 120 px/deg (2× finer than the
   60 px/deg satellite, so elevation is now the finest raster layer), packed RG16 at 12-bit
   precision, on a 2.5-deg grid, **land only** — pure-ocean cells are dropped and the
   survivors listed in `index.json`'s `tiles` manifest. The coarse `data/elev_4096.png` base
-  is the zoomed-out fallback. Regenerate with `scripts/elev16.py` (see its header). Norway's
+  is the zoomed-out fallback. Regenerate with `terraform/elev16.py` (see its header). Norway's
   snow is still driven by the satellite snow-fraction rather than altitude, a holdover from
   the old low-fidelity bump map. `scripts/dem_to_height.py` remains as a simpler single-PNG
   path (embed as `ELEV_SRC`).
@@ -483,8 +435,8 @@ horizontal edge = south edge of the tile to its north (`isNOfRiver` +
 `RiverWEDirection`), vertical edge = east edge of the tile to its west
 (`isWOfRiver` + `RiverNSDirection`); N=0,E=1,S=2,W=3. Edges touching a coast tile or
 between two water tiles are dropped. The rasterizer + serializer mapping is validated offline
-by `scripts/rivers_test.js` (`node scripts/rivers_test.js`); the same logic is inlined in
-`index.html`.
+by `core/rivers_test.js` (`node core/rivers_test.js`); the same logic is inlined in
+`core/app.js`.
 
 Four-sided tiles (river edges on all four sides — invalid in Civ) and hairpin wraps (a river
 looping around three sides of one tile) are cleared by a single post-pass, `nudgeRiverEdges`.
@@ -558,7 +510,7 @@ grass/plains/tundra, flood plains and oasis on flat desert.
 
 - Higher-resolution colour analysis: the satellite source is 2 km, but the
   working grid is 4096×2048 (~9.8 km/px), so per-tile colour is averaged at
-  that scale. The grid size is the single constant `WSRC,HSRC` in `index.html`;
+  that scale. The grid size is the single constant `WSRC,HSRC` in `core/app.js`;
   raising it further is possible but memory/compute scale with it (a browser tops
   out well below the source's native 2 km), so the windowed streaming path below is
   the real fix for finer analysis.

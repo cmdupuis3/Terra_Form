@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Check scripts/openfront_compile.py against the runtime files OpenFront ships.
+"""Check openfront_compile.py (beside this script) against the runtime files OpenFront ships.
 
 For each map it compiles map-generator/assets/maps/<name>/image.png and compares with
 resources/maps/<name>/: map.bin, map4x.bin and map16x.bin byte-for-byte (on a mismatch: counts by
 differing field and the first few tiles decoded), the manifest's three size blocks, and the
 thumbnail's dimensions (the WebP is lossy, so only its size is checked).
 
-  python -P scripts/openfront_compile_test.py --openfront <extracted OpenFrontIO folder>
-                                              [--maps world,britannia,...] [--no-all] [--test-maps]
+  python -P games/openfront/openfront_compile_test.py --openfront <extracted OpenFrontIO folder>
+                                                      [--maps world,britannia,...] [--no-all] [--test-maps]
 
 By default a spread of maps (palette, RGB, RGBA, 16-bit grey+alpha, anti-aliased edges, impassable
 terrain, lakes, tiny islands) is reported in detail, then every map is run for the overall pass rate.

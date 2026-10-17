@@ -10,7 +10,7 @@ screen, not a judge -- a fjord lake with a river through it has the same silhoue
 before and after a lake-layer change (scripts/river_lakes.py) to see the thin set shrink while the
 big lakes stay put.
 
-  python scripts/audit_lake_rivers.py "<Unity>/Assets/StreamingAssets/WorldPacks/earth16k" [--list 40]
+  python games/culture_wars/audit_lake_rivers.py "<Unity>/Assets/StreamingAssets/WorldPacks/earth16k" [--list 40]
 """
 import argparse, json, os
 
