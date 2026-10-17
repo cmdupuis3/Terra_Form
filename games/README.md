@@ -44,6 +44,8 @@ core it reads at call time through `TerraForm.util`, never at load time.
     preview: { color(t) -> [r,g,b],                      // required
                glyph(g, t, px, py, w, h) { ... },        // optional: draw over the tile (hills, oasis...) on the 2D context g
                legend() -> [[label, [r,g,b]], [label, null, 'Λ'], ...] },   // required: swatches, or a text glyph instead of a colour
+               ascii(t) -> 'g', asciiLegend() -> {'g':'grass','a-j':'highland',...},   // optional: one character per tile for the MCP bridge's text grid (mcp/README.md); legend keys are a char or a range
+               relief(t) -> 0 | 1 | 2, reliefLabels: ['flat','hills','peaks'] },        // optional: relief class of a finished tile, for the bridge's counts (the core has no samples for a snapshot or a collage)
     sizeLabel(W, H) -> 'STANDARD',                       // optional: the "world size" stat
     ui: { rail: '<button ...>',                        // optional: controls mounted on the rail outside any panel (Civ4's Emit Features toggle)
           panels: [{ section, title, help, html }],      // optional: inspector panels mounted once, shown while this game is active

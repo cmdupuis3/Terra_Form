@@ -1,0 +1,17 @@
+{
+  "name": "terra-form-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP server that drives a running Terra Form page over a local WebSocket bridge",
+  "type": "module",
+  "bin": { "terra-form-mcp": "server.mjs" },
+  "scripts": {
+    "start": "node server.mjs",
+    "example": "node example.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.0",
+    "ws": "^8.18.0",
+    "zod": "^3.25.0"
+  }
+}
