@@ -222,6 +222,20 @@ and the canvas is replaced by the result. Use it after moving or mirroring real 
 the climate of its origin. `wetness` (default 1) scales rainfall: a temperate collage of sea-girt pieces is
 humid everywhere, so ~0.3 is what turns its interior and the lee of its ranges into steppe (Civ4 plains).
 
+`add_island {path, width, gaps}` raises a low island, sandbar or key along a tile polyline (1 tile wide by default;
+`gaps` leaves a share of it as passes). Thin real islands vanish at coarse scales — the Chandeleurs are ~1 km wide
+against ~4 km tiles on a 128-wide South Louisiana map — so trace them back with this, then `reclimate`.
+
+`paint {kind, polygon|rect, density}` stamps a feature or terrain over the land inside a polygon: jungle (grass
+under it), forest, oasis, flood_plains, grass / plains / desert / tundra, clear. It is for the pockets a climate
+model cannot know — a cypress swamp in a desert, a gallery forest, an oasis belt — and goes AFTER `reclimate`,
+which reclassifies everything. Reclimated and sculpted land carries a synthetic colour, so the game's oasis
+detector (which reads green specks in the satellite colour) finds nothing there: give a desert its oases with
+`paint {kind:'oasis', rect, density: ~0.01}` (flat desert only). `add_river {path}` hand-draws a channel along tile points (source first), for the
+bayous and distributaries the river data lacks; `extend_river {at}` then joins its end to a real river. Note that a
+real river's edges flanked by coast are dropped when the snapshot is made, so a river that "drains prematurely"
+(the Mississippi below Venice) is restored by raising the banks with `add_island` and then `extend_river {rid}`.
+
 `fill_gaps {width, rect}` closes the sea between pieces (morphological closing) into lowland that borrows its
 nearest land's ground; only sea-connected water fills (lakes stay), and a river mouth it would bury keeps an
 estuary channel to the open sea. After a collage: `fill_gaps`, `reclimate`, `trim_rivers` (drops seam-cut

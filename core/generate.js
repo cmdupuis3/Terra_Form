@@ -36,7 +36,7 @@
   const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
   const N8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
   const N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-  function hash01(a, b, s) { let h = (Math.imul(a + 1, 374761393) ^ Math.imul(b + 1, 668265263) ^ Math.imul((s | 0) + 1, 1274126177)) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; h ^= h >>> 16; return h / 4294967296; }
+  function hash01(a, b, s) { let h = (Math.imul(a + 1, 374761393) ^ Math.imul(b + 1, 668265263) ^ Math.imul((s | 0) + 1, 1274126177)) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; h = (h ^ (h >>> 16)) >>> 0; return h / 4294967296; }   // unsigned: 0..1
 
   /* binary min-heap over (key, value) */
   function Heap() { this.k = []; this.v = []; }
@@ -425,7 +425,17 @@
     if (!comp.genNext) comp.genNext = 1;
     const A = composeAnalysis(), id = (kind === 'river' ? 'river-' : kind === 'lake' ? 'lake-' : 'pan-') + (comp.genNext++), items = [];
     const edgesOf = (line, d, rid) => { const rr = reachesOf(line, d, rid, p => [p[0], A.H - p[1]]); const E = reachesToEdges(rr, { lonL: 0, lonR: A.W, latT: A.H, latB: 0 }, A.W, A.H, null); return { n: Array.from(E.nof), w: Array.from(E.wof) }; };
-    if (kind === 'river') {
+    if (kind === 'river' && opts.path) {   // hand-drawn: the polyline is the channel, source first, mouth last
+      const P = opts.path, rid = 3e9 + comp.genNext; if (P.length < 2) throw new Error('path: at least two [x,y] tile points, source first');
+      const cells = [], seen = new Set(); let len = 0;
+      for (let i = 1; i < P.length; i++) { const [x0, y0] = P[i - 1], [x1, y1] = P[i], L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(L * 3)); len += L;
+        for (let j = i === 1 ? 0 : 1; j <= n; j++) { const x = Math.floor(x0 + (x1 - x0) * j / n), y = Math.floor(y0 + (y1 - y0) * j / n); if (x < 0 || y < 0 || x >= A.W || y >= A.H) continue; const c = y * A.W + x; if (!seen.has(c)) { seen.add(c); cells.push(c); } } }
+      if (cells.length < 2) throw new Error('the path stays inside one tile');
+      const d = Math.max(5, Math.round(+opts.discharge || 15 * len)), line = riverLine(cells, A.W, opts.meander != null ? +opts.meander : 0.3, rid & 0xffff);
+      const end = cells[cells.length - 1], ex = end % A.W, ey = (end - ex) / A.W, mouthWet = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const x = ex + dx, y = ey + dy; return x >= 0 && y >= 0 && x < A.W && y < A.H && !!A.water[(y * A.k) * A.GW + x * A.k]; });
+      const info = { kind: 'river', rid, from: [cells[0] % A.W, (cells[0] - cells[0] % A.W) / A.W], to: mouthWet ? 'water' : 'land (the path ends short of water: extend it, or run extend_river)', lengthTiles: +len.toFixed(1), discharge: d, notes: ['hand-drawn along ' + P.length + ' points'] };
+      items.push({ id, kind, name: opts.name || null, info, edges: edgesOf(line, d, rid), W: A.W, H: A.H });
+    } else if (kind === 'river') {
       const r = makeRiver(A, opts), rid = 3e9 + comp.genNext; r.info.rid = rid;
       items.push({ id, kind, name: opts.name || null, info: r.info, edges: edgesOf(r.line, r.info.discharge, rid), W: A.W, H: A.H });
     } else {
@@ -458,7 +468,7 @@
     let estuary = null;   // lowland fill must not bury a river mouth: keep a channel of sea from each buried mouth to the open water
     if (nearestLand) {
       const F = new Uint8Array(W * H);
-      for (const it of items) if (it.kind === 'lowland') for (const c of it.cells) { const x = c % it.W, y = (c - x) / it.W; if (x < W && y < H && isWaterTile(tiles[y][x])) F[y * W + x] = 1; }
+      for (const it of items) if (it.kind === 'lowland' && !it.noEstuary) for (const c of it.cells) { /* islands are asked-for land: no channel is kept through them */ const x = c % it.W, y = (c - x) / it.W; if (x < W && y < H && isWaterTile(tiles[y][x])) F[y * W + x] = 1; }
       const deg = new Map(), flow = (a, b) => { const ka = a[1] * (W + 1) + a[0], kb = b[1] * (W + 1) + b[0]; deg.set(ka, (deg.get(ka) || 0) | 2); deg.set(kb, (deg.get(kb) || 0) | 1); };   // bit 1 inflow, bit 2 outflow
       for (const [key, v] of nof) { const c = key.split(','), gy = +c[0], gx = +c[1], w = [gx, gy + 1], e = [gx + 1, gy + 1]; if (v.dir === 3) flow(e, w); else flow(w, e); }
       for (const [key, v] of wof) { const c = key.split(','), gy = +c[0], gx = +c[1], n = [gx + 1, gy], s = [gx + 1, gy + 1]; if (v.dir === 0) flow(s, n); else flow(n, s); }
@@ -480,6 +490,7 @@
     for (const it of items) if (it.cells) for (const c of it.cells) {
       const x = c % it.W, y = (c - x) / it.W; if (x >= W || y >= H) continue;
       const t = tiles[y][x]; if (it.kind === 'salt_pan' && isWaterTile(t)) continue;
+      if (it.kind === 'feature') { if (isWaterTile(t)) continue; const r = g.paint && g.paint(t, it.feature); if (r) tiles[y][x] = r; continue; }
       if (it.kind === 'lowland') { if (!isWaterTile(t) || !nearestLand || nearestLand[y * W + x] < 0 || estuary[y * W + x]) continue; const n = nearestLand[y * W + x], src = tiles[(n / W) | 0][n % W]; const r = g.paint && g.paint(src, 'lowland'); tiles[y][x] = r || Object.assign({}, src, { _h: 0.09 }); continue; }
       tiles[y][x] = paint(t, it.kind);
     }
@@ -506,6 +517,39 @@
       },
       compose: {
         add: composeAdd,
+        /* paint a feature or terrain over the land inside a polygon (or rect), on a share `density` of its tiles */
+        paint(o) {
+          o = o || {}; const C = compositeCompose(), W = C.W, H = C.H, kind = String(o.kind || ''), dens = o.density == null ? 1 : Math.min(1, Math.max(0, +o.density)), seed = (o.seed | 0) || 5;
+          const KINDS = ['jungle', 'forest', 'oasis', 'flood_plains', 'grass', 'plains', 'desert', 'tundra', 'clear']; if (!KINDS.includes(kind)) throw new Error('kind: one of ' + KINDS.join(', '));
+          const poly = o.polygon || (o.rect ? [[o.rect[0], o.rect[1]], [o.rect[2], o.rect[1]], [o.rect[2], o.rect[3]], [o.rect[0], o.rect[3]]] : null); if (!poly || poly.length < 3) throw new Error('polygon [[x,y],...] (3+ tile points) or rect [x0,y0,x1,y1] required');
+          const g = activeGame(), cells = []; let skipped = 0;
+          for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { if (!inRings([poly], x + 0.5, y + 0.5)) continue; const t = C.tiles[y][x]; if (isWaterTile(t)) continue; if (hash01(x, y, seed) >= dens) continue; if (g.paint && !g.paint(t, kind)) { skipped++; continue; } cells.push(y * W + x); }
+          if (!cells.length) throw new Error('nothing to paint: no land tile inside takes ' + kind + (skipped ? ' (' + skipped + ' tiles refused it: wrong terrain or relief for it)' : ''));
+          if (!comp.genItems) comp.genItems = []; if (!comp.genNext) comp.genNext = 1;
+          const id = 'paint-' + (comp.genNext++), info = { kind: 'feature', feature: kind, tiles: cells.length, density: dens, notes: skipped ? [skipped + ' tiles inside refused it (wrong terrain or relief)'] : [] };
+          comp.genItems.push({ id, kind: 'feature', feature: kind, info, cells, W, H }); comp.genGen = (comp.genGen | 0) + 1; composeDirty();
+          return Object.assign({ id, target: 'compose' }, info);
+        },
+        /* a barrier island, sandbar or key: low ground along a tile polyline, `width` tiles wide (default 1), broken into
+           islets by passes when `gaps` (0..1, the share of the line left as water) is given; same 'lowland' painting as fill */
+        island(o) {
+          o = o || {}; const C = compositeCompose(), W = C.W, H = C.H, P = o.path || [], w = Math.max(0.5, +o.width || 1), gaps = Math.min(1, Math.max(0, +o.gaps || 0));
+          if (P.length < 1) throw new Error('path: [[x,y],...] in tile coordinates required');
+          const pts = P.length === 1 ? [P[0]] : []; let tot = 0;
+          for (let i = 1; i < P.length; i++) { const [x0, y0] = P[i - 1], [x1, y1] = P[i], L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(L * 4)); for (let j = 0; j <= n; j++) pts.push([x0 + (x1 - x0) * j / n, y0 + (y1 - y0) * j / n, tot + L * j / n]); tot += L; }
+          const seen = new Set(), cells = [], seed = (o.seed | 0) || 7, r = (w - 1) / 2;
+          for (const [px, py, s] of pts) {
+            if (gaps > 0 && pts.length > 1 && hash01(Math.floor((s || 0) / 1.5), 13, seed) < gaps) continue;   // passes, ~1.5 tiles long
+            for (let dy = -Math.ceil(r); dy <= Math.ceil(r); dy++) for (let dx = -Math.ceil(r); dx <= Math.ceil(r); dx++) {
+              if (dx * dx + dy * dy > r * r + 0.01) continue; const x = Math.floor(px + dx), y = Math.floor(py + dy); if (x < 0 || y < 0 || x >= W || y >= H) continue;
+              const i = y * W + x; if (seen.has(i) || !isWaterTile(C.tiles[y][x])) continue; seen.add(i); cells.push(i); }
+          }
+          if (!cells.length) throw new Error('the path crosses no water: nothing to raise');
+          if (!comp.genItems) comp.genItems = []; if (!comp.genNext) comp.genNext = 1;
+          const id = 'island-' + (comp.genNext++), info = { kind: 'lowland', tiles: cells.length, width: w, notes: ['a low island of ' + cells.length + ' tiles along ' + tot.toFixed(1) + ' tiles of path' + (gaps ? ', broken by passes' : '') + '; run reclimate to give it its climate'] };
+          comp.genItems.push({ id, kind: 'lowland', noEstuary: true, info, cells, W, H }); comp.genGen = (comp.genGen | 0) + 1; composeDirty();
+          return Object.assign({ id, target: 'compose' }, info);
+        },
         /* close the canvas' land mask by `width` tiles: sea narrower than that between land becomes lowland */
         fill(o) {
           o = o || {}; const C = compositeCompose(), W = C.W, H = C.H, r = Math.max(1, o.width | 0 || 3), land = new Uint8Array(W * H);

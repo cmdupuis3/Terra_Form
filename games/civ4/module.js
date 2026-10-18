@@ -399,6 +399,12 @@
     paint(t, kind) {
       if (kind === 'lake') return Object.assign({ terrain: TERR.OCEAN, plot: PLOT.WATER, rgb: [18, 58, 81], z: (t && t.z) || 5, lat: (t && t.lat) || 0, kc: (t && t.kc) || 0, feature: null, fv: 0, special: null, bonus: null }, t && t._h != null ? { _h: t._h } : {});
       if (kind === 'lowland') return t && t.plot !== PLOT.WATER ? Object.assign({}, t, { plot: PLOT.FLAT, terrain: t.terrain === TERR.SNOW ? TERR.TUNDRA : t.terrain, feature: null, fv: 0, special: null, bonus: null, _salt: undefined, _h: 0.09 }) : null;
+      if (kind === 'jungle') return t && t.plot !== PLOT.WATER && t.plot !== PLOT.PEAK ? Object.assign({}, t, { terrain: TERR.GRASS, feature: 'FEATURE_JUNGLE', fv: 0, _salt: undefined }) : null;
+      if (kind === 'forest') return t && t.plot !== PLOT.WATER && t.plot !== PLOT.PEAK ? Object.assign({}, t, { terrain: t.terrain === TERR.DESERT ? TERR.PLAINS : t.terrain === TERR.SNOW ? TERR.TUNDRA : t.terrain, feature: 'FEATURE_FOREST', fv: t.terrain === TERR.TUNDRA || t.terrain === TERR.SNOW ? 1 : 0, _salt: undefined }) : null;
+      if (kind === 'oasis') return t && t.plot === PLOT.FLAT && t.terrain === TERR.DESERT ? Object.assign({}, t, { feature: 'FEATURE_OASIS', fv: 0, _salt: undefined }) : null;
+      if (kind === 'flood_plains') return t && t.plot === PLOT.FLAT && t.terrain === TERR.DESERT ? Object.assign({}, t, { feature: 'FEATURE_FLOOD_PLAINS', fv: 0, _salt: undefined }) : null;
+      if (kind === 'grass' || kind === 'plains' || kind === 'desert' || kind === 'tundra') { if (!t || t.plot === PLOT.WATER) return null; const terrain = { grass: TERR.GRASS, plains: TERR.PLAINS, desert: TERR.DESERT, tundra: TERR.TUNDRA }[kind], keep = t.feature === 'FEATURE_FOREST' && terrain !== TERR.DESERT || t.feature === 'FEATURE_JUNGLE' && terrain === TERR.GRASS; return Object.assign({}, t, { terrain, feature: keep ? t.feature : null, fv: keep ? t.fv : 0, _salt: undefined }); }
+      if (kind === 'clear') return t && t.plot !== PLOT.WATER ? Object.assign({}, t, { feature: null, fv: 0 }) : null;
       if (kind === 'salt_pan') return Object.assign({}, t, { terrain: TERR.DESERT, plot: PLOT.FLAT, feature: null, fv: 0, special: null, bonus: null, _salt: 1 });
       return null;
     },

@@ -132,7 +132,7 @@
     return null;
   }
   /* ---------- placement helpers ---------- */
-  function hash01(x, y, s) { let h = (Math.imul(x + 1, 374761393) ^ Math.imul(y + 1, 668265263) ^ Math.imul((s | 0) + 1, 1274126177)) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; h ^= h >>> 16; return h / 4294967296; }
+  function hash01(x, y, s) { let h = (Math.imul(x + 1, 374761393) ^ Math.imul(y + 1, 668265263) ^ Math.imul((s | 0) + 1, 1274126177)) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; h = (h ^ (h >>> 16)) >>> 0; return h / 4294967296; }   // unsigned: 0..1
   const RING4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   /* nearest top-left (spiral by Chebyshev radius) at which the snapshot's land stays on the canvas and comes no closer
      than `gap` tiles to existing land (gap 1 = at least one water tile between, so landmasses do not merge) */
@@ -785,6 +785,8 @@
     },
     async unerase(args) { const a = api(); a.setMode('compose'); await prepOverlay(args); a.compose.unerase(); a.render(); return composeReport(args); },
     async add_lake(args) { return genCmd('lake', args); },
+    async paint(args) { const a = api(); a.setMode('compose'); const g = a.gen.compose.paint(args); a.render(); return Object.assign(composeReport(args), { generated: g }); },
+    async add_island(args) { const a = api(); a.setMode('compose'); const g = a.gen.compose.island(args); a.render(); return Object.assign(composeReport(args), { generated: g }); },
     async fill_gaps(args) { const a = api(); a.setMode('compose'); const g = a.gen.compose.fill(args); a.render(); return Object.assign(composeReport(args), { generated: g }); },
     /* the sculpt pathway (core/sculpt.js): a height field built from real fragments and primitives, then realized */
     async sculpt_new(args) { const a = api(); if (!a.sculpt) throw new Error('core/sculpt.js is not loaded'); await settle(); const r = a.sculpt.new(args); return a.sculpt.view(Object.assign({}, args, { msg: r.msg })); },

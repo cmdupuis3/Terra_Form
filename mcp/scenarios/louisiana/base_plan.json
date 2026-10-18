@@ -1,0 +1,390 @@
+[
+ [
+  "tune",
+  {
+   "reset": true,
+   "params": {
+    "feat": true,
+    "hill": 0.8,
+    "peak": 0.95,
+    "riverN": 30
+   },
+   "report": false
+  }
+ ],
+ [
+  "set_game",
+  {
+   "id": "civ4"
+  }
+ ],
+ [
+  "set_frame",
+  {
+   "bounds": [
+    -94.35,
+    28.8,
+    -88.55,
+    31.25
+   ],
+   "W": 128,
+   "H": 62
+  }
+ ],
+ [
+  "snapshot",
+  {
+   "name": "South Louisiana 2"
+  }
+ ],
+ [
+  "compose_new",
+  {
+   "W": 128,
+   "H": 62,
+   "latitudes": {
+    "top": 31.43,
+    "bottom": 28.62
+   }
+  }
+ ],
+ [
+  "place",
+  {
+   "snapshot": "South Louisiana 2",
+   "x": 0,
+   "y": 0
+  }
+ ],
+ [
+  "add_island",
+  {
+   "path": [
+    [
+     121.6,
+     30.4
+    ],
+    [
+     122,
+     32.7
+    ],
+    [
+     121.2,
+     34.9
+    ],
+    [
+     119.6,
+     37.1
+    ],
+    [
+     117.6,
+     39.3
+    ],
+    [
+     115.9,
+     41.5
+    ],
+    [
+     114.1,
+     43.2
+    ]
+   ],
+   "gaps": 0.2
+  }
+ ],
+ [
+  "add_island",
+  {
+   "path": [
+    [
+     109.5,
+     50.5
+    ],
+    [
+     109.5,
+     49.5
+    ],
+    [
+     111.5,
+     49.5
+    ]
+   ]
+  }
+ ],
+ [
+  "extend_river",
+  {
+   "rid": 130303
+  }
+ ],
+ [
+  "add_river",
+  {
+   "path": [
+    [
+     51.4,
+     24.5
+    ],
+    [
+     51.9,
+     27.1
+    ],
+    [
+     50.8,
+     29.8
+    ],
+    [
+     49,
+     32.2
+    ],
+    [
+     49.7,
+     34.6
+    ],
+    [
+     49.5,
+     36.5
+    ]
+   ],
+   "name": "Vermilion",
+   "discharge": 60
+  }
+ ],
+ [
+  "add_river",
+  {
+   "path": [
+    [
+     74.5,
+     30.5
+    ],
+    [
+     74.5,
+     34.5
+    ]
+   ],
+   "name": "Bayou Lafourche (upper)",
+   "discharge": 40
+  }
+ ],
+ [
+  "extend_river",
+  {
+   "at": [
+    74,
+    35
+   ]
+  }
+ ],
+ [
+  "add_island",
+  {
+   "path": [
+    [
+     110.5,
+     50.5
+    ],
+    [
+     111.5,
+     50.5
+    ]
+   ]
+  }
+ ],
+ [
+  "extend_river",
+  {
+   "rid": 130303
+  }
+ ],
+ [
+  "tune",
+  {
+   "params": {
+    "oasisDens": 0.8,
+    "fpAmt": 0.6,
+    "forestDens": 0.7
+   },
+   "report": false
+  }
+ ],
+ [
+  "reclimate",
+  {
+   "name": "South Louisiana desert 2",
+   "wetness": 0.6
+  }
+ ],
+ [
+  "paint",
+  {
+   "kind": "jungle",
+   "polygon": [
+    [
+     61,
+     19
+    ],
+    [
+     66,
+     19
+    ],
+    [
+     70,
+     24
+    ],
+    [
+     71,
+     32
+    ],
+    [
+     69,
+     38
+    ],
+    [
+     64,
+     38
+    ],
+    [
+     61,
+     32
+    ],
+    [
+     60,
+     24
+    ]
+   ],
+   "density": 0.65
+  }
+ ],
+ [
+  "paint",
+  {
+   "kind": "jungle",
+   "polygon": [
+    [
+     81,
+     23
+    ],
+    [
+     89,
+     23
+    ],
+    [
+     90,
+     28
+    ],
+    [
+     84,
+     30
+    ],
+    [
+     80,
+     28
+    ]
+   ],
+   "density": 0.5
+  }
+ ],
+ [
+  "paint",
+  {
+   "kind": "jungle",
+   "polygon": [
+    [
+     82,
+     32
+    ],
+    [
+     90,
+     33
+    ],
+    [
+     91,
+     38
+    ],
+    [
+     86,
+     41
+    ],
+    [
+     81,
+     38
+    ]
+   ],
+   "density": 0.45
+  }
+ ],
+ [
+  "paint",
+  {
+   "kind": "jungle",
+   "polygon": [
+    [
+     100,
+     21
+    ],
+    [
+     105,
+     21
+    ],
+    [
+     106,
+     28
+    ],
+    [
+     101,
+     29
+    ]
+   ],
+   "density": 0.45
+  }
+ ],
+ [
+  "paint",
+  {
+   "kind": "oasis",
+   "rect": [
+    0,
+    0,
+    127,
+    61
+   ],
+   "density": 0.012,
+   "seed": 3
+  }
+ ],
+ [
+  "trim_rivers",
+  {}
+ ],
+ [
+  "extend_river",
+  {
+   "at": [
+    3,
+    12
+   ]
+  }
+ ],
+ [
+  "describe",
+  {
+   "target": "compose"
+  }
+ ],
+ [
+  "export",
+  {
+   "name": "South_Louisiana_desert",
+   "dir": "mcp/out"
+  }
+ ],
+ [
+  "thumbnail",
+  {
+   "target": "compose",
+   "path": "mcp/out/South_Louisiana_desert.png",
+   "maxPx": 1024
+  }
+ ]
+]

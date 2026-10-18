@@ -62,6 +62,11 @@
         mDir[i] = m; prev = e;
       }
     }
+    /* air spreads sideways as it travels: blur the advected moisture across rows (a Gaussian of ~150 km), so a lake or an
+       inlet crossed by one row does not draw a one-tile-thick wet streak downwind, and the wind-band switch is soft */
+    { const sg = Math.min(H / 4, Math.max(1, 150 / km)), R = Math.ceil(sg * 2.5), wk = []; for (let d = -R; d <= R; d++) wk.push(Math.exp(-d * d / (2 * sg * sg)));
+      const m2 = new Float32Array(N); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let s = 0, ws = 0; for (let d = -R; d <= R; d++) { const yy = y + d; if (yy < 0 || yy >= H) continue; s += mDir[yy * W + x] * wk[d + R]; ws += wk[d + R]; } m2[y * W + x] = s / ws; }
+      mDir.set(m2); }
     const Ta = new Float32Array(N), warm = new Float32Array(N), cold = new Float32Array(N), P = new Float32Array(N), kc = new Uint8Array(N), seas = new Uint8Array(N);
     for (let y = 0; y < H; y++) {
       const lat = grid.lat(y), a = Math.abs(lat);
