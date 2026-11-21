@@ -1,0 +1,22 @@
+{
+  // Shared compiler options. TypeScript is the source of truth; tsc emits the JavaScript IN PLACE, next to each
+  // source (core/app.ts -> core/app.js, mcp/server.mts -> mcp/server.mjs), and that output is committed: the app
+  // is served as-is (TerraForm.exe, serve.py) and the MCP client runs mcp/server.mjs, so nothing builds at run time.
+  "compilerOptions": {
+    // ES2022 is what the hand-written JavaScript already used: tsc erases types and downlevels nothing.
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    // The one strict-family flag that is off, on purpose. It is not a checking flag: with it on, tsc writes
+    // "use strict" at the top of every emitted script, which would switch core/generate.js, core/climate.js,
+    // core/sculpt.js and core/rivers_test.js from sloppy to strict mode. The conversion must not change behaviour,
+    // so each file keeps exactly the directives its author wrote. (TypeScript 7 removed this option and always
+    // emits the prologue; that is why the compiler is pinned to 5.9 in package.json.)
+    "alwaysStrict": false,
+    "noEmitOnError": true,
+    "newLine": "lf",
+    "removeComments": false,
+    "forceConsistentCasingInFileNames": true,
+    "types": []
+  }
+}

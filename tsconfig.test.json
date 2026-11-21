@@ -1,0 +1,11 @@
+{
+  // The Node test scripts (node core/rivers_test.js, node games/civ4/wbs_test.js). They require() the dual
+  // browser / Node files and take those files' types from the ambient declarations.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleDetection": "legacy",
+    "types": ["node"]
+  },
+  "files": ["core/types.d.ts", "games/civ4/types.d.ts", "core/rivers_test.ts", "games/civ4/wbs_test.ts"]
+}

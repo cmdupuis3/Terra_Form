@@ -103,6 +103,19 @@ Compose writes the whole canvas.
 `mcp/` holds an MCP server that lets an AI agent drive the running app: frame regions, tune,
 capture snapshots, compose, and export. See [mcp/README.md](mcp/README.md).
 
+## Development
+
+The app is written in TypeScript. The compiled `.js` sits next to each `.ts` and is committed,
+so running the app needs no build step. Edit the `.ts`, then:
+
+```bash
+npm install          # once
+npm run build        # compile in place
+npm test
+```
+
+To add a game, see [games/README.md](games/README.md).
+
 ## Rebuilding the data
 
 Everything the app needs is already in `data/`. The scripts that built it from the sources

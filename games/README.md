@@ -1,21 +1,21 @@
 # Game modules
 
-Terra Form is game-agnostic. The core (`core/app.js`, loaded by `index.html`, and the `terraform/` Python
-package for batch work) reads the real world and measures it; everything a particular game needs
-lives in `games/<id>/`:
+Terra Form is game-agnostic. The core (`core/app.ts`, compiled to the `core/app.js` that `index.html` loads, and
+the `terraform/` Python package for batch work) reads the real world and measures it; everything a particular
+game needs lives in `games/<id>/`:
 
-| | in the app (`games/<id>/module.js`) | batch (`games/<id>/*.py`) |
+| | in the app (`games/<id>/module.ts`) | batch (`games/<id>/*.py`) |
 |---|---|---|
 | 1. grid | `grid`: square or hex lattice, min / max / default size, step | the exporter's own `--width` / `--ppd` / `--pixels` arguments |
 | 2. classifier | `classify(samples)`: per-tile measurements -> the game's tiles | the script's own functions on `terraform.Frame` layers |
 | 3. export | `export.build(region)`: the map file(s) | the script's writer |
 
 Nothing in the core knows a game's vocabulary (no `TERRAIN_GRASS`, no magnitude 0..30, no hex).
-To add a game you write one folder and list its script in `index.html`; no core change, no PR.
+To add a game you write one folder and list its compiled script in `index.html`; no core change, no PR.
 
 ```
 games/
-  civ4/           Civilization IV: classifier, features, preview, .CivBeyondSwordWBSave writer (wbs_core.js + wbs_test.js)
+  civ4/           Civilization IV: classifier, features, preview, .CivBeyondSwordWBSave writer (wbs_core.ts + wbs_test.ts)
   civ5/           Civilization V: the Civ4 module on the hex lattice (Civ5 imports the Civ4 save)
   openfront/      OpenFront: preview + image.png/info.json in the app; the full exporter and generator port in Python
   culture_wars/   Culture Wars (local, WIP): frame picker in the app; world-pack and city-site exporters in Python
@@ -23,10 +23,18 @@ games/
 
 ## The app contract (`window.TerraForm`)
 
-`index.html` defines a tiny registry before the module scripts load, then the app fills in the
-helpers. A module is a classic script (no ES modules: the Windows launcher and `serve.py` both
-serve the folder as-is) that calls `TerraForm.registerGame({...})`. Everything it reads from the
-core it reads at call time through `TerraForm.util`, never at load time.
+`core/registry.ts` defines a tiny registry before the module scripts load, then the app fills in the
+helpers. A module is a classic script (no ES modules, no `import` / `export`: the Windows launcher and
+`serve.py` both serve the folder as-is) that calls `TerraForm.registerGame({...})`. Everything it reads
+from the core it reads at call time through `TerraForm.util`, never at load time.
+
+Modules are written in TypeScript. `games/<id>/module.ts` is the source; `tsc` emits `games/<id>/module.js`
+beside it (`npm install` once, then `npm run build` in the repository root) and that emitted file is what
+`index.html` lists and what gets committed, so the app itself still needs no build step. The contract below is
+declared in `core/types.d.ts` (`GameModule<Tile, Built>`, `Samples`, `Region`, `RiverEdges`, `ExportCtx`,
+`UiApi`, `TerraFormUtil` ...): the declarations are ambient, so a module uses them without importing anything,
+and `T.registerGame<MyTile, MyBuilt>({...})` checks the whole module against it. A game's own tile shapes can
+live in a `games/<id>/types.d.ts` (see `games/civ4/types.d.ts`).
 
 ```js
 (function () {
@@ -65,9 +73,9 @@ core it reads at call time through `TerraForm.util`, never at load time.
 })();
 ```
 
-Add the script to `index.html` under the other game modules (`<script src="games/mygame/module.js">`),
+Add the compiled script to `index.html` under the other game modules (`<script src="games/mygame/module.js">`),
 after any file it depends on (Civ4 loads `wbs_core.js` first; Civ5 is registered after Civ4
-because it reuses that module object).
+because it reuses that module object). `tsconfig.json` already includes `games/*/*.ts`.
 
 ### What `classify` receives: `samples`
 

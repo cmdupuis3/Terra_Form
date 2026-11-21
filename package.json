@@ -1,0 +1,19 @@
+{
+  "name": "terra-form",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Terra Form: real-world geography to game maps. TypeScript sources; tsc emits the JavaScript in place and it is committed, so the app runs with no build step.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.test.json && tsc -p mcp/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p mcp/tsconfig.json --noEmit",
+    "test": "node core/rivers_test.js && node games/civ4/wbs_test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.18.0",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

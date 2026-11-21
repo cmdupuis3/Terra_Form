@@ -1,0 +1,14 @@
+{
+  // The browser code: core/*.ts and games/<id>/*.ts. Every file is a CLASSIC SCRIPT (no import / export), loaded by
+  // <script src> in index.html, so all of them share one global scope and tsc checks them as one program.
+  // Shared declarations: core/types.d.ts, core/bridge-protocol.d.ts, core/commonjs.d.ts, games/civ4/types.d.ts.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // no file here is a module; "legacy" detection keeps it that way (only import / export would make one)
+    "module": "ES2022",
+    "moduleDetection": "legacy"
+  },
+  "include": ["core/*.ts", "games/*/*.ts"],
+  // the two Node test scripts have their own project (tsconfig.test.json): their top-level names would collide here
+  "exclude": ["core/rivers_test.ts", "games/civ4/wbs_test.ts"]
+}

@@ -3,3 +3,10 @@
 # Unrelated to the EXPORT: the .CivBeyondSwordWBSave the app writes is CRLF by design (Civ4's
 # parser is Windows-native and CTDs on LF-only saves) — that's runtime output, never a tracked file.
 * text=auto eol=lf
+# TypeScript is the source of truth. The JavaScript beside each .ts / .mts is emitted in place by tsc
+# (npm run build) and committed, because the app is served as-is with no build step (TerraForm.exe,
+# serve.py, the MCP entry point mcp/server.mjs). Mark it generated so GitHub collapses it in diffs and
+# leaves it out of the language stats. Edit the .ts, never the .js.
+core/*.js           linguist-generated
+games/*/*.js        linguist-generated
+mcp/*.mjs           linguist-generated

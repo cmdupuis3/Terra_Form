@@ -1,0 +1,17 @@
+{
+  // The MCP server and its command-line helpers: real Node ES modules (*.mts -> *.mjs, emitted in place).
+  // Needs the runtime dependencies (npm install in this folder) and the dev dependencies (npm install in the
+  // repository root, which holds typescript, @types/node and @types/ws).
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "typeRoots": ["../node_modules/@types"],
+    // the MCP SDK's own .d.ts files mention DOM types (HeadersInit ...) that this Node-only project does not load
+    "skipLibCheck": true
+  },
+  // core/bridge-protocol.d.ts: the wire messages shared with the page (core/bridge.ts)
+  "include": ["*.mts", "../core/bridge-protocol.d.ts"]
+}

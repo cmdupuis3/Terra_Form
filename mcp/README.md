@@ -22,6 +22,12 @@ cd mcp
 npm install
 ```
 
+The server and its helpers are written in TypeScript (`server.mts`, `call.mts`, `example.mts`, `scenarios.mts`);
+the `.mjs` files beside them are the compiled output, committed so that `node mcp/server.mjs` runs with no build
+step. After editing a `.mts` (or `core/bridge.ts`), run `npm install` once in the repository root and then
+`npm run build` there; `npm run typecheck` checks without writing. The wire messages between the page and this
+server are declared in `core/bridge-protocol.d.ts`.
+
 1. Start the app: `python serve.py` in the project folder and open <http://localhost:8000/> (TerraForm.exe
    works too). Leave the tab open.
 2. Start the server. From a shell, for a quick look:
@@ -82,7 +88,7 @@ lint, such as rivers that were already endorheic in their source); `placed` / `a
 | tool | what it does |
 |---|---|
 | `status` | game, mode, frame size and bounds, compose canvas, shelf count, every tunable parameter, the glyph legend |
-| `set_game {id}` | `civ4`, `civ5` (hex), `openfront`, `culture_wars` |
+| `set_game {id}` | `civ4`, `civ5` (hex) |
 | `set_frame {bounds:[W,S,E,N] \| center:[lon,lat], spanX, W, H, rot, game}` | frame a region; the frame keeps the grid's W:H aspect, so it covers the box and may extend beyond it on one axis (the block reports the actual bounds). Switches the page to the Civ preview |
 | `tune {params:{...}, reset}` | set sliders by name (see below) and re-evaluate; `{}` just reads them; `reset:true` first puts every control back to its default (settings persist on the page between sessions) |
 | `frame_view` | the feedback block for the current frame |
