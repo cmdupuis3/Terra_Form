@@ -15,7 +15,7 @@ Claude Code ──stdio (MCP)──▶ mcp/server.mjs ──ws://127.0.0.1:8765�
 
 ## Run it
 
-Requirements: Node 18+, and the app open in a browser.
+Requirements: Node 20+, and the app open (TerraForm.exe or a browser).
 
 ```bash
 cd mcp
