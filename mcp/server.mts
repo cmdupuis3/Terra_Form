@@ -32,7 +32,9 @@ let page: PageSocket | null = null, pageInfo: BridgeHello['hello'] | null = null
 const pending = new Map<number, Pending>();   // id -> {resolve, reject, timer}
 const wss = new WebSocketServer({
   host: HOST, port: PORT, path: '/terraform',
-  verifyClient: ({ origin }: { origin: string }) => !origin || origin === 'null' || /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(origin)   // the app served locally, or TerraForm.exe (file://)
+  // the app served locally (serve.py, file://), or TerraForm.exe, which serves it as https://terra-form.example
+  // (app/Program.cs; .example is reserved, so no real site can present that origin)
+  verifyClient: ({ origin }: { origin: string }) => !origin || origin === 'null' || origin === 'https://terra-form.example' || /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(origin)
 });
 wss.on('listening', () => log(`listening on ws://${HOST}:${PORT}/terraform — open the Terra Form app and it will connect`));
 wss.on('error', e => { log('WebSocket server error:', e.message); if ((e as NodeJS.ErrnoException).code === 'EADDRINUSE') { log(`port ${PORT} is busy: is another terra-form-mcp running? Set TERRAFORM_WS_PORT=<port> for this server and open the app as http://localhost:8000/?mcp=<port>`); process.exit(1); } });

@@ -39,7 +39,9 @@ static class Program
 
 class MainForm : Form
 {
-    const string Host = "terra-form.app";
+    // A reserved .example name (RFC 2606) rather than a real-looking domain: the MCP server
+    // (mcp/server.mjs) accepts this origin, and no website on the internet can claim it.
+    const string Host = "terra-form.example";
     readonly string _root;
     readonly WebView2 _web = new() { Dock = DockStyle.Fill, DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x0c, 0x18, 0x20) };
 
@@ -70,7 +72,7 @@ class MainForm : Form
             core.Settings.AreBrowserAcceleratorKeysEnabled = true;   // F12, Ctrl+F5 for debugging
             core.Settings.IsZoomControlEnabled = false;              // app owns scroll-to-zoom
 
-            // Serve the app folder as https://terra-form.app/ so relative fetch('data/...')
+            // Serve the app folder as https://terra-form.example/ so relative fetch('data/...')
             // works without any local HTTP server.
             core.SetVirtualHostNameToFolderMapping(Host, _root, CoreWebView2HostResourceAccessKind.Allow);
 

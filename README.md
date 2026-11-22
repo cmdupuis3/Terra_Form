@@ -10,8 +10,9 @@ This app uses real elevation, coastline, lake, climate zone, river, and satellit
 
 ## Run it
 
-On Windows, run `TerraForm.exe` (needs the .NET 7 Desktop Runtime; keep the exe next to
-`index.html` and `data/`). Anywhere else, run `python serve.py` to open the app in a browser.
+On Windows, run `TerraForm.exe`, keeping it next to `index.html` and `data/`. The release zip's
+exe runs as is; the copy in the repository needs the .NET 7 Desktop Runtime. Anywhere else, run
+`python serve.py` to open the app in a browser.
 
 - **View** - Drag to pan, scroll to zoom, Ctrl+drag to rotate. The viewer aspect is locked to
   the output grid, so what you frame is exactly what gets sampled into tiles. Switch between

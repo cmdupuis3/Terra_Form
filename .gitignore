@@ -11,3 +11,5 @@ cache/
 data/landform/windows.npz
 # TypeScript toolchain (npm install); the compiled .js / .mjs next to each .ts / .mts ARE committed
 node_modules/
+# release zips (built from a staged copy of the app; see the release notes)
+dist/
